@@ -151,14 +151,6 @@ static ELM *seqpart(ELM *low, ELM *high)
 	  return curr_high - 1;
 }
 
-#define swap(a, b) \
-{ \
-  ELM tmp;\
-  tmp = a;\
-  a = b;\
-  b = tmp;\
-}
-
 static void insertion_sort(ELM *low, ELM *high)
 {
      ELM *p, *q;
@@ -262,14 +254,6 @@ void seqmerge(ELM *low1, ELM *high1, ELM *low2, ELM *high2,
      }
 }
 
-#define swap_indices(a, b) \
-{ \
-  ELM *tmp;\
-  tmp = a;\
-  a = b;\
-  b = tmp;\
-}
-
 ELM *binsplit(ELM val, ELM *low, ELM *high)
 {
      /*
@@ -300,7 +284,7 @@ void cilkmerge_par(ELM *low1, ELM *high1, ELM *low2, ELM *high2, ELM *lowdest)
       * into the range [lowdest, ...]  
       */
 
-     ELM *split1, *split2;	/*
+     ELM *split1, *split2, *tmp;	/*
 				 * where each of the ranges are broken for 
 				 * recursive merge 
 				 */
@@ -317,8 +301,12 @@ void cilkmerge_par(ELM *low1, ELM *high1, ELM *low2, ELM *high2, ELM *lowdest)
       */
 
      if (high2 - low2 > high1 - low1) {
-	  swap_indices(low1, low2);
-	  swap_indices(high1, high2);
+       tmp = low1;
+       low1 = low2;
+       low2 = tmp;
+       tmp = high1;
+       high1 = high2;
+       high2 = tmp;
      }
      if (high2 < low2) {
 	  /* smaller range is empty */
@@ -393,11 +381,14 @@ void scramble_array( ELM *array )
 {
      unsigned long i;
      unsigned long j;
+     ELM tmp;
 
      for (i = 0; i < bots_arg_size; ++i) {
 	  j = my_rand();
 	  j = j % bots_arg_size;
-	  swap(array[i], array[j]);
+       tmp = array[i];
+       array[i] = array[j];
+       array[j] = tmp;
      }
 }
 

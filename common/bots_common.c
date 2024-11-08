@@ -20,6 +20,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <unistd.h>
 #include <string.h>
 #include <time.h>
@@ -30,6 +31,41 @@
 #include "bots_common.h"
 #include "bots_main.h"
 #include "bots.h"
+
+void 
+bots_message(char *message, ...) {
+   if (bots_verbose_mode >= BOTS_VERBOSE_DEFAULT) {
+      va_list args;
+      va_start(args, message);
+      vfprintf(stdout, message, args);
+      va_end(args);
+   }
+}
+
+#ifdef BOTS_DEBUG
+void 
+bots_debug(char *message, ...) {
+   if (bots_verbose_mode >= BOTS_VERBOSE_DEBUG) {
+      va_list args;
+      va_start(args, message);
+      vfprintf(stdout, message, args);
+      va_end(args);
+   }
+}
+
+void 
+bots_debug_with_location_info(char *message, ...) {
+   if (bots_verbose_mode >= BOTS_VERBOSE_DEBUG) {
+      va_list args;
+      va_start(args, message);
+      vfprintf(stdout, "%s:%d:%s:" message,__FILE__, __LINE__,__func__, args);
+      va_end(args);
+   }
+}
+#else
+void bots_debug(char *message, ...) { }
+void bots_debug_with_location_info(char *message, ...) { }
+#endif
 
 void
 bots_error(int error, char *message)

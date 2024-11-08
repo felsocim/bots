@@ -35,12 +35,9 @@
 
 int solution = -1;
 
-typedef char ibrd[ROWS][COLS];
-typedef char (*pibrd)[COLS];
-
 FILE * inputFile;
 
-struct cell {
+typedef struct {
   int   n;
   int **alt;
   int   top;
@@ -50,18 +47,18 @@ struct cell {
   int   left;
   int   above;
   int   next;
-};
+} cell;
 
-struct cell * gcells;
+cell * gcells;
 
 int  MIN_AREA;
-ibrd BEST_BOARD;
-int *MIN_FOOTPRINT;
+char BEST_BOARD[ROWS][COLS];
+int  *MIN_FOOTPRINT;
 
 int N;
 
 /* compute all possible locations for nw corner for cell */
-static int starts(int id, int shape, int **NWS, struct cell *cells) {
+static int starts(int id, int shape, int **NWS, cell *cells) {
   int i, n, top, bot, lhs, rhs;
   int rows, cols, left, above;
 
@@ -123,7 +120,7 @@ static int starts(int id, int shape, int **NWS, struct cell *cells) {
    by the cells top, bottom, left, and right edges. If the cell can
    not be layed down, return 0; else 1.
 */
-static int lay_down(int id, ibrd board, struct cell *cells) {
+static int lay_down(int id, char board[ROWS][COLS], cell *cells) {
   int  i, j, top, bot, lhs, rhs;
 
   top = cells[id].top;
@@ -153,7 +150,7 @@ static void read_inputs() {
   read_integer(inputFile,n);
   N = n;
   
-  gcells = (struct cell *) malloc((n + 1) * sizeof(struct cell));
+  gcells = (cell *) malloc((n + 1) * sizeof(cell));
 
   gcells[0].n     =  0;
   gcells[0].alt   =  0;
@@ -201,10 +198,10 @@ static void write_outputs() {
     }  
 }
 
-static int add_cell(int id, int FOOTPRINT[COOR], ibrd BOARD, struct cell *CELLS) {
+static int add_cell(int id, int FOOTPRINT[COOR], char BOARD[ROWS][COLS], cell *CELLS) {
   int  i, j, nn, area, nnc,nnl;
 
-  ibrd board;
+  char board[ROWS][COLS];
   int footprint[COOR];
   int **NWS = (int **) malloc(DMAX * sizeof(int *));
   for (i = 0; i < DMAX; i++) {
@@ -220,15 +217,15 @@ static int add_cell(int id, int FOOTPRINT[COOR], ibrd BOARD, struct cell *CELLS)
     nnl += nn;
     /* for all possible locations */
     for (j = 0; j < nn; j++) {
-      struct cell cells[N+1];
-      memcpy(cells,CELLS,sizeof(struct cell)*(N+1));
+      cell cells[N+1];
+      memcpy(cells,CELLS,sizeof(cell)*(N+1));
       /* extent of shape */
       cells[id].top = NWS[j][0];
       cells[id].bot = cells[id].top + cells[id].alt[i][0] - 1;
       cells[id].lhs = NWS[j][1];
       cells[id].rhs = cells[id].lhs + cells[id].alt[i][1] - 1;
 
-      memcpy(board, BOARD, sizeof(ibrd));
+      memcpy(board, BOARD, (size_t) ROWS * COLS * sizeof(char));
 
       /* if the cell cannot be layed down, prune search */
       if (! lay_down(id, board, cells)) {
@@ -249,7 +246,7 @@ static int add_cell(int id, int FOOTPRINT[COOR], ibrd BOARD, struct cell *CELLS)
             MIN_AREA         = area;
             MIN_FOOTPRINT[0] = footprint[0];
             MIN_FOOTPRINT[1] = footprint[1];
-            memcpy(BEST_BOARD, board, sizeof(ibrd));
+            memcpy(BEST_BOARD, board, (size_t) ROWS * COLS * sizeof(char));
             bots_debug("N  %d\n", MIN_AREA);
           }
         }
@@ -272,7 +269,7 @@ _end:;
   return nnc+nnl;
 }
 
-ibrd board;
+char board[ROWS][COLS];
 
 void floorplan_init (char *filename)
 {

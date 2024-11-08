@@ -38,6 +38,7 @@ int get_matrix(int *matptr, int *xref, int scale);
 void forward_pass(char *ia, char *ib, int n, int m, int *se1, int *se2, int *maxscore, int g, int gh);
 void reverse_pass(char *ia, char *ib, int se1, int se2, int *sb1, int *sb2, int maxscore, int g, int gh);
 int diff(int A, int B, int M, int N, int tb, int te, int *pr_ptr, int *last_print, int *displ, int seq1, int seq2, int g, int gh);
+int diff_seq(int A, int B, int M, int N, int tb, int te, int *pr_ptr, int *last_print, int *displ, int seq1, int seq2, int g, int gh);
 double tracepath(int tsb1, int tsb2, int *print_ptr, int *displ, int seq1, int seq2);
 
 void init_matrix(void);

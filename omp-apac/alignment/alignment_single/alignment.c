@@ -392,6 +392,129 @@ int diff (int A, int B, int M, int N, int tb, int te, int *print_ptr, int *last_
    return midh;
 }
 
+
+int diff_seq (int A, int B, int M, int N, int tb, int te, int *print_ptr, int *last_print, int *displ, int seq1, int seq2, int g, int gh)
+{
+   int i, j, f, e, s, t, hh;
+   int midi, midj, midh, type;
+   int HH[MAX_ALN_LENGTH];
+        int DD[MAX_ALN_LENGTH];
+   int RR[MAX_ALN_LENGTH];
+   int SS[MAX_ALN_LENGTH];
+
+   if (N <= 0) {if (M > 0) del(M, print_ptr, last_print, displ); return( - (int) tbgap(M)); }
+
+   if (M <= 1) {
+
+      if (M <= 0) {add(N, print_ptr, last_print, displ); return( - (int)tbgap(N));}
+
+      midh = -(tb+gh) - tegap(N);
+      hh   = -(te+gh) - tbgap(N);
+
+      if (hh > midh) midh = hh;
+      midj = 0;
+
+      for (j = 1; j <= N; j++) {
+         hh = calc_score(1,j,A,B,seq1,seq2) - tegap(N-j) - tbgap(j-1);
+         if (hh > midh) {midh = hh; midj = j;}
+      }
+
+      if (midj == 0) {
+         del(1, print_ptr, last_print, displ);
+         add(N, print_ptr, last_print, displ);
+      } else {
+         if (midj > 1) add(midj-1, print_ptr, last_print, displ);
+         displ[(*print_ptr)++] = *last_print = 0;
+         if (midj < N) add(N-midj, print_ptr, last_print, displ);
+      }
+
+      return midh;
+   }
+
+   midi  = M / 2;
+   HH[0] = 0.0;
+   t     = -tb;
+
+   for (j = 1; j <= N; j++) {
+      HH[j] = t = t - gh;
+      DD[j] = t - g;
+   }
+
+   t = -tb;
+
+   for (i = 1; i <= midi; i++) {
+      s     = HH[0];
+      HH[0] = hh = t = t - gh;
+      f     = t - g;
+      for (j = 1; j <= N; j++) {
+         if ((hh = hh - g - gh)    > (f = f - gh))    f = hh;
+         if ((hh = HH[j] - g - gh) > (e = DD[j]- gh)) e = hh;
+         hh = s + calc_score(i,j,A,B,seq1,seq2);
+         if (f > hh) hh = f;
+         if (e > hh) hh = e;
+
+         s = HH[j];
+         HH[j] = hh;
+         DD[j] = e;
+      }
+   }
+
+   DD[0] = HH[0];
+   RR[N] = 0;
+   t     = -te;
+
+   for (j = N-1; j >= 0; j--) {RR[j] = t = t - gh; SS[j] = t - g;}
+
+   t = -te;
+
+   for (i = M - 1; i >= midi; i--) {
+      s     = RR[N];
+      RR[N] = hh = t = t-gh;
+      f     = t - g;
+      for (j = N - 1; j >= 0; j--) {
+         if ((hh = hh - g - gh)    > (f = f - gh))     f = hh;
+         if ((hh = RR[j] - g - gh) > (e = SS[j] - gh)) e = hh;
+         hh = s + calc_score(i+1,j+1,A,B,seq1,seq2);
+         if (f > hh) hh = f;
+         if (e > hh) hh = e;
+
+         s     = RR[j];
+         RR[j] = hh;
+         SS[j] = e;
+      }
+   }
+
+   SS[N] = RR[N];
+
+   midh = HH[0] + RR[0];
+   midj = 0;
+   type = 1;
+
+   for (j = 0; j <= N; j++) {
+      hh = HH[j] + RR[j];
+      if (hh >= midh)
+      if (hh > midh || (HH[j] != DD[j] && RR[j] == SS[j]))
+         {midh = hh; midj = j;}
+   }
+
+   for (j = N; j >= 0; j--) {
+      hh = DD[j] + SS[j] + g;
+      if (hh > midh) {midh = hh;midj = j;type = 2;}
+   }
+
+
+   if (type == 1) {
+      diff_seq(A, B, midi, midj, tb, g, print_ptr, last_print, displ, seq1, seq2, g, gh);
+      diff_seq(A+midi, B+midj, M-midi, N-midj, g, te, print_ptr, last_print, displ, seq1, seq2, g, gh);
+   } else {
+      diff_seq(A, B, midi-1, midj, tb, 0.0, print_ptr, last_print, displ, seq1, seq2, g, gh);
+      del(2, print_ptr, last_print, displ);
+      diff_seq(A+midi+1, B+midj, M-midi-1, N-midj, 0.0, te, print_ptr, last_print, displ, seq1, seq2, g, gh);
+   }
+
+   return midh;
+}
+
 /***********************************************************************
  * : 
  **********************************************************************/
@@ -547,7 +670,7 @@ int pairalign_seq()
             print_ptr  = 1;
             last_print = 0;
 
-            diff(sb1-1, sb2-1, se1-sb1+1, se2-sb2+1, 0, 0, &print_ptr, &last_print, displ, seq1, seq2, g, gh);
+            diff_seq(sb1-1, sb2-1, se1-sb1+1, se2-sb2+1, 0, 0, &print_ptr, &last_print, displ, seq1, seq2, g, gh);
             mm_score = tracepath(sb1, sb2, &print_ptr, displ, seq1, seq2);
 
             if (len1 == 0 || len2 == 0) mm_score  = 0.0;

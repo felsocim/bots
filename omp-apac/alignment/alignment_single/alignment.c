@@ -441,12 +441,14 @@ int pairalign()
 
    for (si = 0; si < nseqs; si++) {
       n = seqlen_array[si+1];
-      for (i = 1, len1 = 0; i <= n; i++) {
+      
+      len1 = 0;
+      for (i = 1; i <= n; i++) {
          char c = seq_array[si+1][i];
          if ((c != gap_pos1) && (c != gap_pos2)) len1++;
       }
-      for (sj = si + 1; sj < nseqs; sj++)
-      {
+
+      for (sj = si + 1; sj < nseqs; sj++) {
          m = seqlen_array[sj+1];
          if ( n == 0 || m == 0 ) {
             bench_output[si*nseqs+sj] = (int) 1.0;
@@ -454,11 +456,13 @@ int pairalign()
             int se1, se2, sb1, sb2, maxscore, seq1, seq2, g, gh;
             int displ[2*MAX_ALN_LENGTH+1];
             int print_ptr, last_print;
-
-            for (i = 1, len2 = 0; i <= m; i++) {
+            
+            len2 = 0;
+            for (i = 1; i <= m; i++) {
                char c = seq_array[sj+1][i];
                if ((c != gap_pos1) && (c != gap_pos2)) len2++;
             }
+
             if ( dnaFlag == TRUE ) {
                g  = (int) ( 2 * INT_SCALE * pw_go_penalty * gap_open_scale ); // gapOpen
                gh = (int) (INT_SCALE * pw_ge_penalty * gap_extend_scale); //gapExtend
@@ -467,7 +471,6 @@ int pairalign()
                g  = (int) ((mat_avscore <= 0) ? (2 * INT_SCALE * gg) : (2 * mat_avscore * gg * gap_open_scale) ); // gapOpen
                gh = (int) (INT_SCALE * pw_ge_penalty); //gapExtend
             }
-
             seq1 = si + 1;
             seq2 = sj + 1;
 
@@ -484,9 +487,9 @@ int pairalign()
             else                        mm_score /= (double) MIN(len1,len2);
 
             bench_output[si*nseqs+sj] = (int) mm_score;
-         } // end if (n == 0 || m == 0)
-      } // for (j)
-   } // end parallel for (i)
+         }
+      }
+   }
    bots_message(" completed!\n");
    return 0;
 }
@@ -505,7 +508,9 @@ int pairalign_seq()
 
    for (si = 0; si < nseqs; si++) {
       n = seqlen_array[si+1];
-      for (i = 1, len1 = 0; i <= n; i++) {
+      len1 = 0;
+
+      for (i = 1; i <= n; i++) {
          char c = seq_array[si+1][i];
          if ((c != gap_pos1) && (c != gap_pos2)) len1++;
       }
@@ -518,8 +523,9 @@ int pairalign_seq()
             int se1, se2, sb1, sb2, maxscore, seq1, seq2, g, gh;
             int displ[2*MAX_ALN_LENGTH+1];
             int print_ptr, last_print;
+            len2 = 0;
 
-            for (i = 1, len2 = 0; i <= m; i++) {
+            for (i = 1; i <= m; i++) {
                char c = seq_array[sj+1][i];
                if ((c != gap_pos1) && (c != gap_pos2)) len2++;
             }

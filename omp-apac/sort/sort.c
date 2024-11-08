@@ -345,12 +345,9 @@ void cilkmerge_par(ELM *low1, ELM *high1, ELM *low2, ELM *high2, ELM *lowdest)
       * the appropriate location
       */
      *(lowdest + lowsize + 1) = *split1;
-#pragma omp task untied
      cilkmerge_par(low1, split1 - 1, low2, split2, lowdest);
-#pragma omp task untied
      cilkmerge_par(split1 + 1, high1, split2 + 1, high2,
 		     lowdest + lowsize + 2);
-#pragma omp taskwait
 
      return;
 }
@@ -381,21 +378,13 @@ void cilksort_par(ELM *low, ELM *tmp, long size)
      D = C + quarter;
      tmpD = tmpC + quarter;
 
-#pragma omp task untied
      cilksort_par(A, tmpA, quarter);
-#pragma omp task untied
      cilksort_par(B, tmpB, quarter);
-#pragma omp task untied
      cilksort_par(C, tmpC, quarter);
-#pragma omp task untied
      cilksort_par(D, tmpD, size - 3 * quarter);
-#pragma omp taskwait
 
-#pragma omp task untied
      cilkmerge_par(A, A + quarter - 1, B, B + quarter - 1, tmpA);
-#pragma omp task untied
      cilkmerge_par(C, C + quarter - 1, D, low + size - 1, tmpC);
-#pragma omp taskwait
 
      cilkmerge_par(tmpA, tmpC - 1, tmpC, tmpA + size - 1, A);
 }
@@ -467,10 +456,7 @@ void sort_init ( void )
 void sort_par ( void )
 {
 	bots_message("Computing multisort algorithm (n=%d) ", bots_arg_size);
-	#pragma omp parallel
-	#pragma omp single nowait
-	#pragma omp task untied
-	     cilksort_par(array, tmp, bots_arg_size);
+	cilksort_par(array, tmp, bots_arg_size);
 	bots_message(" completed!\n");
 }
 

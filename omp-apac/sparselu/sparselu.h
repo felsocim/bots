@@ -16,7 +16,7 @@ void sparselu_init (float ***pBENCH, char *pass);
 void sparselu(float **BENCH);
 void sparselu_fini (float **BENCH, char *pass); 
 
-void sparselu_seq_call(float **BENCH);
+void sparselu_seq(float **BENCH);
 void sparselu_par_call(float **BENCH);
 
 int sparselu_check(float **SEQ, float **BENCH);

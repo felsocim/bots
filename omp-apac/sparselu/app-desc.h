@@ -36,7 +36,7 @@
 
 void sparselu_init(float ***pM, char *pass);
 void sparselu_fini(float **M, char *pass);
-void sparselu_seq_call(float **SEQ);
+void sparselu_seq(float **SEQ);
 void sparselu_par_call(float **BENCH);
 int sparselu_check(float **SEQ, float **BENCH);
 
@@ -45,7 +45,7 @@ int sparselu_check(float **SEQ, float **BENCH);
 #define KERNEL_FINI sparselu_fini(BENCH,"benchmark");
 
 #define KERNEL_SEQ_INIT sparselu_init(&SEQ,"serial");
-#define KERNEL_SEQ_CALL sparselu_seq_call(SEQ);
+#define KERNEL_SEQ_CALL sparselu_seq(SEQ);
 #define KERNEL_SEQ_FINI sparselu_fini(SEQ,"serial");
 
 #define BOTS_APP_CHECK_USES_SEQ_RESULT

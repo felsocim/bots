@@ -255,7 +255,7 @@ void sparselu_par_call(float **BENCH)
 }
 
 
-void sparselu_seq_call(float **BENCH)
+void sparselu_seq(float **BENCH)
 {
    int ii, jj, kk;
 

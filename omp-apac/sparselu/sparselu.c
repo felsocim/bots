@@ -218,38 +218,29 @@ void sparselu_par_call(float **BENCH)
 
    bots_message("Computing SparseLU Factorization (%dx%d matrix with %dx%d blocks) ",
            bots_arg_size,bots_arg_size,bots_arg_size_1,bots_arg_size_1);
-#pragma omp parallel
-#pragma omp single nowait
-#pragma omp task untied
    for (kk=0; kk<bots_arg_size; kk++) 
    {
       lu0(BENCH[kk*bots_arg_size+kk]);
       for (jj=kk+1; jj<bots_arg_size; jj++)
          if (BENCH[kk*bots_arg_size+jj] != NULL)
-            #pragma omp task untied firstprivate(kk, jj) shared(BENCH)
          {
             fwd(BENCH[kk*bots_arg_size+kk], BENCH[kk*bots_arg_size+jj]);
          }
       for (ii=kk+1; ii<bots_arg_size; ii++) 
          if (BENCH[ii*bots_arg_size+kk] != NULL)
-            #pragma omp task untied firstprivate(kk, ii) shared(BENCH)
          {
             bdiv (BENCH[kk*bots_arg_size+kk], BENCH[ii*bots_arg_size+kk]);
          }
-
-      #pragma omp taskwait
 
       for (ii=kk+1; ii<bots_arg_size; ii++)
          if (BENCH[ii*bots_arg_size+kk] != NULL)
             for (jj=kk+1; jj<bots_arg_size; jj++)
                if (BENCH[kk*bots_arg_size+jj] != NULL)
-               #pragma omp task untied firstprivate(kk, jj, ii) shared(BENCH)
                {
                      if (BENCH[ii*bots_arg_size+jj]==NULL) BENCH[ii*bots_arg_size+jj] = allocate_clean_block();
                      bmod(BENCH[ii*bots_arg_size+kk], BENCH[kk*bots_arg_size+jj], BENCH[ii*bots_arg_size+jj]);
                }
 
-      #pragma omp taskwait
    }
    bots_message(" completed!\n");
 }

@@ -166,7 +166,7 @@ void cc_seq(int *cc)
    {
       if (visited[i] == 0)
       {
-         CC_par(i, *cc);
+         CC_seq(i, *cc);
          (*cc)++;
       }
    }

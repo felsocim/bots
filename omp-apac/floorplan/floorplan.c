@@ -29,12 +29,12 @@
 #define ROWS 64
 #define COLS 64
 #define DMAX 64
+#define COOR  2
 #define max(a, b) ((a > b) ? a : b)
 #define min(a, b) ((a < b) ? a : b)
 
 int solution = -1;
 
-typedef int  coor[2];
 typedef char ibrd[ROWS][COLS];
 typedef char (*pibrd)[COLS];
 
@@ -42,7 +42,7 @@ FILE * inputFile;
 
 struct cell {
   int   n;
-  coor *alt;
+  int **alt;
   int   top;
   int   bot;
   int   lhs;
@@ -56,12 +56,12 @@ struct cell * gcells;
 
 int  MIN_AREA;
 ibrd BEST_BOARD;
-coor MIN_FOOTPRINT;
+int *MIN_FOOTPRINT;
 
 int N;
 
 /* compute all possible locations for nw corner for cell */
-static int starts(int id, int shape, coor *NWS, struct cell *cells) {
+static int starts(int id, int shape, int **NWS, struct cell *cells) {
   int i, n, top, bot, lhs, rhs;
   int rows, cols, left, above;
 
@@ -168,9 +168,10 @@ static void read_inputs() {
   for (i = 1; i < n + 1; i++) {
 
       read_integer(inputFile, gcells[i].n);
-      gcells[i].alt = (coor *) malloc(gcells[i].n * sizeof(coor));
+      gcells[i].alt = (int **) malloc(gcells[i].n * sizeof(int *));
 
       for (j = 0; j < gcells[i].n; j++) {
+          gcells[i].alt[j] = (int *) malloc(COOR * sizeof(int));
           read_integer(inputFile, gcells[i].alt[j][0]);
           read_integer(inputFile, gcells[i].alt[j][1]);
       }
@@ -200,11 +201,15 @@ static void write_outputs() {
     }  
 }
 
-static int add_cell(int id, coor FOOTPRINT, ibrd BOARD, struct cell *CELLS) {
+static int add_cell(int id, int FOOTPRINT[COOR], ibrd BOARD, struct cell *CELLS) {
   int  i, j, nn, area, nnc,nnl;
 
   ibrd board;
-  coor footprint, NWS[DMAX];
+  int footprint[COOR];
+  int **NWS = (int **) malloc(DMAX * sizeof(int *));
+  for (i = 0; i < DMAX; i++) {
+    NWS[i] = (int *) malloc(COOR * sizeof(int));
+  }
 
   nnc = nnl = 0;
 
@@ -259,6 +264,11 @@ _end:;
     }
   }
 
+  for (i = 0; i < DMAX; i++) {
+    free(NWS[i]);
+  }
+  free(NWS);
+
   return nnc+nnl;
 }
 
@@ -287,7 +297,7 @@ void floorplan_init (char *filename)
 
 void compute_floorplan (void)
 {
-  coor footprint;
+  int footprint[COOR];
   /* footprint of initial board is zero */
   footprint[0] = 0;
   footprint[1] = 0;

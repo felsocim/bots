@@ -35,92 +35,22 @@ long long fib_seq (int n)
 	return x + y;
 }
 
-#if defined(IF_CUTOFF)
-
-long long fib (int n,int d)
-{
-	long long x, y;
-	if (n < 2) return n;
-
-	#pragma omp task untied shared(x) firstprivate(n) if(d < bots_cutoff_value)
-	x = fib(n - 1,d+1);
-
-	#pragma omp task untied shared(y) firstprivate(n) if(d < bots_cutoff_value)
-	y = fib(n - 2,d+1);
-
-	#pragma omp taskwait
-	return x + y;
-}
-
-#elif defined(FINAL_CUTOFF)
-
-long long fib (int n,int d)
-{
-	long long x, y;
-	if (n < 2) return n;
-
-	#pragma omp task untied shared(x) firstprivate(n) final(d+1 >= bots_cutoff_value) mergeable
-	x = fib(n - 1,d+1);
-
-	#pragma omp task untied shared(y) firstprivate(n) final(d+1 >= bots_cutoff_value) mergeable
-	y = fib(n - 2,d+1);
-
-	#pragma omp taskwait
-	return x + y;
-}
-
-#elif defined(MANUAL_CUTOFF)
-
-long long fib (int n, int d)
-{
-	long long x, y;
-	if (n < 2) return n;
-
-	if ( d < bots_cutoff_value ) {
-		#pragma omp task untied shared(x) firstprivate(n)
-		x = fib(n - 1,d+1);
-
-		#pragma omp task untied shared(y) firstprivate(n)
-		y = fib(n - 2,d+1);
-
-		#pragma omp taskwait
-	} else {
-		x = fib_seq(n-1);
-		y = fib_seq(n-2);
-	}
-
-	return x + y;
-}
-
-#else
-
 long long fib (int n)
 {
 	long long x, y;
 	if (n < 2) return n;
 
-	#pragma omp task untied shared(x) firstprivate(n)
 	x = fib(n - 1);
-	#pragma omp task untied shared(y) firstprivate(n)
 	y = fib(n - 2);
 
-	#pragma omp taskwait
 	return x + y;
 }
-
-#endif
 
 static long long par_res, seq_res;
 
 void fib0 (int n)
 {
-	#pragma omp parallel
-	#pragma omp single
-#if defined(MANUAL_CUTOFF) || defined(IF_CUTOFF) || defined(FINAL_CUTOFF)
-	par_res = fib(n,0);
-#else
 	par_res = fib(n);
-#endif
 	bots_message("Fibonacci result for %d is %lld\n",n,par_res);
 }
 

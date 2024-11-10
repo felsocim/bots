@@ -18,7 +18,7 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA            #
 ##############################################################################################
 
-BASE_DIR = ../../../
+BASE_DIR = ../../
 LIBS= -lm
 TIED_VERSIONS=yes
 PROGRAM_OBJS=alignment.o sequence.o
@@ -27,7 +27,7 @@ PROGRAM_OBJS=alignment.o sequence.o
 # Don't change below here 
 #
 
-include ../../Makefile.version
+include ../Makefile.version
 include $(BASE_DIR)/common/Makefile.common
 
 

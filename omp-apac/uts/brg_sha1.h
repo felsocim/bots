@@ -54,7 +54,7 @@ extern "C"
 #define POS_MASK    0x7fffffff
 #define HIGH_BITS   0x80000000
 
-#define sha1_context sha1_ctx_s
+#define sha1_context sha1_ctx
 typedef u_int8_t RNG_state;
 typedef u_int32_t  uint32;
 //typedef char *   caddr_t;
@@ -80,13 +80,11 @@ void   rng_showtype( void );
 /** END: UTS RNG Harness **/
 /* type to hold the SHA256 context  */
 
-struct sha1_ctx_s
+typedef struct
 {   uint_32t count[2];
     uint_32t hash[5];
     uint_32t wbuf[16];
-};
-
-typedef struct sha1_ctx_s sha1_ctx;
+} sha1_ctx;
 
 /* Note that these prototypes are the same for both bit and */
 /* byte oriented implementations. However the length fields */

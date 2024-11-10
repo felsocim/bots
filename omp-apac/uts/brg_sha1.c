@@ -54,7 +54,7 @@ extern "C"
 
 void rng_init(RNG_state *newstate, int seed)
 {
-  struct sha1_context ctx;
+  sha1_context ctx;
   struct state_t gen;
   int i;
 
@@ -72,7 +72,7 @@ void rng_init(RNG_state *newstate, int seed)
 
 void rng_spawn(RNG_state *mystate, RNG_state *newstate, int spawnnumber)
 {
-	struct sha1_context ctx;
+	sha1_context ctx;
 	u_int8_t  bytes[4];
 	
 	bytes[0] = (u_int8_t) (0xFF & (spawnnumber >> 24));
@@ -98,7 +98,7 @@ int rng_rand(RNG_state *mystate){
 }
 
 int rng_nextrand(RNG_state *mystate){
-	struct sha1_context ctx;
+	sha1_context ctx;
 	int r;
 	uint32 b;
 

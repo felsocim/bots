@@ -3,3 +3,8 @@ bin/*
 config/make.config
 bots-*.tar.gz
 .vscode
+*.log
+*none*.c
+*counters*.c
+*model*.c
+*both*.c

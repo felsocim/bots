@@ -25,15 +25,13 @@
 
 #define MAXNUMCHILDREN    100  // cap on children (BIN root is exempt)
 
-struct node_t {
+typedef struct {
   int height;        // depth of this node in the tree
   int numChildren;   // number of children, -1 => not yet determined
   
   /* for RNG state associated with this node */
   struct state_t state;
-};
-
-typedef struct node_t Node;
+} Node;
 
 /* Tree type
  *   Trees are generated using a Galton-Watson process, in 
@@ -46,15 +44,15 @@ typedef struct node_t Node;
  *   root and binomial distributions towards the leaves.
  */
 /* Tree  parameters */
-extern double     b_0;
-extern int        rootId;
-extern int        nonLeafBF;
-extern double     nonLeafProb;
+//extern double     b_0;
+//extern int        rootId;
+//extern int        nonLeafBF;
+//extern double     nonLeafProb;
 
 /* Benchmark parameters */
-extern int    computeGranularity;
-extern int    debug;
-extern int    verbose;
+//extern int    computeGranularity;
+//extern int    debug;
+//extern int    verbose;
 
 /* Utility Functions */
 #define max(a,b) (((a) > (b)) ? (a) : (b))

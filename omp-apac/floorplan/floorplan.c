@@ -138,16 +138,17 @@ static int lay_down(int id, char board[ROWS][COLS], cell *cells) {
 }
 
 
-#define read_integer(file,var) \
-  if ( fscanf(file, "%d", &var) == EOF ) {\
-	bots_message(" Bogus input file\n");\
-	exit(-1);\
+static void read_integer(FILE *file, int * var) {
+  if ( fscanf(file, "%d", var) == EOF ) {
+	bots_message(" Bogus input file\n");
+	exit(-1);
   }
+}
 
 static void read_inputs() {
   int i, j, n;
 
-  read_integer(inputFile,n);
+  read_integer(inputFile,&n);
   N = n;
   
   gcells = (cell *) malloc((n + 1) * sizeof(cell));
@@ -164,22 +165,22 @@ static void read_inputs() {
 
   for (i = 1; i < n + 1; i++) {
 
-      read_integer(inputFile, gcells[i].n);
+      read_integer(inputFile, &gcells[i].n);
       gcells[i].alt = (int **) malloc(gcells[i].n * sizeof(int *));
 
       for (j = 0; j < gcells[i].n; j++) {
           gcells[i].alt[j] = (int *) malloc(COOR * sizeof(int));
-          read_integer(inputFile, gcells[i].alt[j][0]);
-          read_integer(inputFile, gcells[i].alt[j][1]);
+          read_integer(inputFile, &gcells[i].alt[j][0]);
+          read_integer(inputFile, &gcells[i].alt[j][1]);
       }
 
-      read_integer(inputFile, gcells[i].left);
-      read_integer(inputFile, gcells[i].above);
-      read_integer(inputFile, gcells[i].next);
+      read_integer(inputFile, &gcells[i].left);
+      read_integer(inputFile, &gcells[i].above);
+      read_integer(inputFile, &gcells[i].next);
       }
 
   if (!feof(inputFile)) {
-      read_integer(inputFile, solution);
+      read_integer(inputFile, &solution);
   }
 }
 

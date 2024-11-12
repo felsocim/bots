@@ -22,6 +22,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <sys/time.h>
+
+#include <stdatomic.h>
+
 #include "app-desc.h"
 #include "bots.h"
 
@@ -90,19 +93,21 @@ void write_outputs(int n, int cc) {
 void CC_par (int i, int cc)
 {
    int j, n;
-   /* if node has not been visited */
-   if (visited[i] == 0) {
-      /* add node to current component */
+
+   /* Use compare-and-swap to check and mark the node as visited */
+   int expected = 0; // The expected value if the node has not been visited
+   if (atomic_compare_exchange_strong(&visited[i], &expected, 1)) {
+      /* Successfully marked as visited, proceed */
       if (bots_verbose_mode) printf("Adding node %d to component %d\n", i, cc);
-      visited[i] = 1;
-      components[cc]++;
-      /* add each neighbor's subtree to the current component */
+      atomic_fetch_add(&components[cc], 1);
+
+      /* Add each neighbor's subtree to the current component */
       for (j = 0; j < nodes[i].n; j++)
       {
          n = nodes[i].neighbor[j];
          CC_par(n, cc);
       }
-   }  
+   }
 }
 void CC_seq (int i, int cc)
 {

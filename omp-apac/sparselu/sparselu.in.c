@@ -279,25 +279,25 @@ void sparselu_seq(float **BENCH)
 {
    int ii, jj, kk;
 
-   for (kk=0; kk<bots_arg_size; kk++)
+   for (kk=0; kk<bots_arg_size; kk++) 
    {
       lu0(BENCH[kk*bots_arg_size+kk]);
       for (jj=kk+1; jj<bots_arg_size; jj++)
-         if (BENCH[kk*bots_arg_size+jj] != NULL)
+         if (BENCH[kk*bots_arg_size+jj] != NULL && timestamp[kk*bots_arg_size+jj] < kk)
          {
             fwd(BENCH[kk*bots_arg_size+kk], BENCH[kk*bots_arg_size+jj]);
          }
-      for (ii=kk+1; ii<bots_arg_size; ii++)
-         if (BENCH[ii*bots_arg_size+kk] != NULL)
+      for (ii=kk+1; ii<bots_arg_size; ii++) 
+         if (BENCH[ii*bots_arg_size+kk] != NULL && timestamp[ii*bots_arg_size+kk] < kk)
          {
             bdiv (BENCH[kk*bots_arg_size+kk], BENCH[ii*bots_arg_size+kk]);
          }
+
       for (ii=kk+1; ii<bots_arg_size; ii++)
-         if (BENCH[ii*bots_arg_size+kk] != NULL)
+         if (BENCH[ii*bots_arg_size+kk] != NULL && timestamp[ii*bots_arg_size+kk] < kk)
             for (jj=kk+1; jj<bots_arg_size; jj++)
-               if (BENCH[kk*bots_arg_size+jj] != NULL)
+               if (BENCH[kk*bots_arg_size+jj] != NULL && timestamp[kk*bots_arg_size+jj] < kk)
                {
-                     if (BENCH[ii*bots_arg_size+jj]==NULL) BENCH[ii*bots_arg_size+jj] = allocate_clean_block();
                      bmod(BENCH[ii*bots_arg_size+kk], BENCH[kk*bots_arg_size+jj], BENCH[ii*bots_arg_size+jj]);
                }
 

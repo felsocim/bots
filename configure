@@ -30,6 +30,7 @@ while [ "$#" -gt 0  ]; do
    shift
 done
 
+APAC=`apac -V &>/dev/null && echo "yes"`
 GCC=`gcc -x c -c -fopenmp /dev/null -o /dev/null &>/dev/null  && echo "yes"`
 CLANG=`clang -x c -c -fopenmp /dev/null -o /dev/null &>/dev/null  && echo "yes"`
 MCC=`mcc --v &> /dev/null && echo "yes"`
@@ -38,6 +39,14 @@ XLC=`xlc -qversion &> /dev/null && echo "yes"`
 PGI=`pgcc &> /dev/null && echo "yes"`
 SUN=`cc -xopenmp &> /dev/null && echo "yes"`
 CLANG=`clang -v &> /dev/null && echo "yes"`
+
+if [ "$APAC" != "yes" ]; then
+   echo "Automatic Parallelizer for C (= APAC) is not in the environment."
+   echo "You won't be able to build the 'omp-apac' version!"
+else
+   APAC="apac"
+   APAC_FLAGS="--constify --constify-quietly --omit='.*_seq\$$' --wrap-at 1024"
+fi
 
 nc=0
 
@@ -276,6 +285,7 @@ LABEL=$LABEL
 ENABLE_OMPSS=$ENABLE_OMPSS
 
 #compilers
+APAC=$APAC
 OMPSSC=$OMPSSC
 OMPC=$OMPC
 CC=$CC
@@ -287,6 +297,7 @@ CLINK=$CLINK
 
 OPT_FLAGS=$OPT_FLAGS
 
+APAC_FLAGS=$APAC_FLAGS
 CC_FLAGS=$CC_FLAGS
 OMPC_FLAGS=$OMPC_FLAGS
 OMPSSC_FLAGS=$OMPSSC_FLAGS

@@ -19,17 +19,17 @@
 ##############################################################################################
 
 DIRS  =
-DIRS += alignment
+#DIRS += alignment
 DIRS += concom
-DIRS += fft
+#DIRS += fft
 DIRS += fib
-DIRS += floorplan
-DIRS += knapsack
-DIRS += nqueens
-DIRS += sort
+#DIRS += floorplan
+#DIRS += knapsack
+#DIRS += nqueens
+#DIRS += sort
 DIRS += sparselu
-DIRS += strassen
-DIRS += uts
+#DIRS += strassen
+#DIRS += uts
 
 RECURSIVE=all-recursive clean-recursive dist-clean-recursive
 

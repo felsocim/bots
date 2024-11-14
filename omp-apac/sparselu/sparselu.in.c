@@ -240,7 +240,7 @@ void sparselu_init (float ***pBENCH, char *pass)
    genmat(*pBENCH);
    print_structure(pass, *pBENCH);
 
-   timestamp = (int*)calloc(bots_arg_size*bots_arg_size*sizeof(int));
+   timestamp = (int*)calloc(bots_arg_size*bots_arg_size,sizeof(int));
    prealloc_sparselu_par_call(*pBENCH, timestamp);
 }
 

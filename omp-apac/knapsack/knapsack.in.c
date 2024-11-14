@@ -36,8 +36,10 @@
 int best_so_far;
 int number_of_tasks;
 
-int compare(struct item *a, struct item *b)
+static int compare(const void *p1, const void *p2)
 {
+     item_t *a = (item_t *) p1;
+     item_t *b = (item_t *) p2;
      double c = ((double) a->value / a->weight) -
      ((double) b->value / b->weight);
 
@@ -46,7 +48,7 @@ int compare(struct item *a, struct item *b)
      return 0;
 }
 
-int read_input(const char *filename, struct item *items, int *capacity, int *n)
+int read_input(const char *filename, item_t *items, int *capacity, int *n)
 {
      int i;
      FILE *f;
@@ -54,7 +56,7 @@ int read_input(const char *filename, struct item *items, int *capacity, int *n)
      if (filename == NULL) filename = "\0";
      f = fopen(filename, "r");
      if (f == NULL) {
-	  fprintf(stderr, "open_input(\"%s\") failed\n", filename);
+	  fprintf(stderr, "open_input('%s') failed\n", filename);
 	  return -1;
      }
      /* format of the input: #items capacity value1 weight1 ... */
@@ -68,7 +70,7 @@ int read_input(const char *filename, struct item *items, int *capacity, int *n)
 
      /* sort the items on decreasing order of value/weight */
      /* cilk2c is fascist in dealing with pointers, whence the ugly cast */
-     qsort(items, *n, sizeof(struct item), (int (*)(const void *, const void *)) compare);
+     qsort(items, *n, sizeof(item_t), &compare);
 
      return 0;
 }
@@ -77,7 +79,7 @@ int read_input(const char *filename, struct item *items, int *capacity, int *n)
  * return the optimal solution for n items (first is e) and
  * capacity c. Value so far is v.
  */
-void knapsack_par(struct item *e, int c, int n, int v, int *sol, int l)
+void knapsack_par(item_t *e, int c, int n, int v, int *sol, int l)
 {
      int with, without, best;
      double ub;
@@ -126,7 +128,7 @@ void knapsack_par(struct item *e, int c, int n, int v, int *sol, int l)
      *sol = best;
 }
 
-void knapsack_seq(struct item *e, int c, int n, int v, int *sol)
+void knapsack_seq(item_t *e, int c, int n, int v, int *sol)
 {
      int with, without, best;
      double ub;
@@ -174,7 +176,7 @@ void knapsack_seq(struct item *e, int c, int n, int v, int *sol)
 
      *sol = best;
 }
-void knapsack_main_par (struct item *e, int c, int n, int *sol)
+void knapsack_main_par (item_t *e, int c, int n, int *sol)
 {
      best_so_far = INT_MIN;
      number_of_tasks = 0;
@@ -185,7 +187,7 @@ void knapsack_main_par (struct item *e, int c, int n, int *sol)
      
      if (bots_verbose_mode) printf("Best value for parallel execution is %d\n\n", *sol);
 }
-void knapsack_main_seq (struct item *e, int c, int n, int *sol)
+void knapsack_main_seq (item_t *e, int c, int n, int *sol)
 {
      best_so_far = INT_MIN;
      number_of_tasks = 0;

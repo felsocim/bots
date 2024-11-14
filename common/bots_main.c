@@ -219,28 +219,28 @@ void bots_print_usage()
    fprintf(stderr, "  -r <value> : Set the number of repetitions (default = 1).\n");
 #endif
 #ifdef BOTS_APP_USES_ARG_SIZE
-   fprintf(stderr, "  -n <size>  : "BOTS_APP_DESC_ARG_SIZE"\n");
+   fprintf(stderr, "  -n <size>  : " BOTS_APP_DESC_ARG_SIZE "\n");
 #endif
 #ifdef BOTS_APP_USES_ARG_SIZE_1
-   fprintf(stderr, "  -m <size>  : "BOTS_APP_DESC_ARG_SIZE_1"\n");
+   fprintf(stderr, "  -m <size>  : " BOTS_APP_DESC_ARG_SIZE_1 "\n");
 #endif
 #ifdef BOTS_APP_USES_ARG_SIZE_2
-   fprintf(stderr, "  -l <size>  : "BOTS_APP_DESC_ARG_SIZE_2"\n");
+   fprintf(stderr, "  -l <size>  : " BOTS_APP_DESC_ARG_SIZE_2 "\n");
 #endif
 #ifdef BOTS_APP_USES_ARG_FILE
-   fprintf(stderr, "  -f <file>  : "BOTS_APP_DESC_ARG_FILE"\n");
+   fprintf(stderr, "  -f <file>  : " BOTS_APP_DESC_ARG_FILE "\n");
 #endif
 #if defined(MANUAL_CUTOFF) || defined(IF_CUTOFF) || defined(FINAL_CUTOFF)
    fprintf(stderr, "  -x <value> : OpenMP tasks cut-off value (default=%d)\n",BOTS_CUTOFF_DEF_VALUE);
 #endif
 #ifdef BOTS_APP_USES_ARG_CUTOFF
-   fprintf(stderr, "  -y <value> : "BOTS_APP_DESC_ARG_CUTOFF"(default=%d)\n", BOTS_APP_DEF_ARG_CUTOFF);
+   fprintf(stderr, "  -y <value> : " BOTS_APP_DESC_ARG_CUTOFF "(default=%d)\n", BOTS_APP_DEF_ARG_CUTOFF);
 #endif
 #ifdef BOTS_APP_USES_ARG_CUTOFF_1
-   fprintf(stderr, "  -a <value> : "BOTS_APP_DESC_ARG_CUTOFF_1"(default=%d)\n", BOTS_APP_DEF_ARG_CUTOFF_1);
+   fprintf(stderr, "  -a <value> : " BOTS_APP_DESC_ARG_CUTOFF_1 "(default=%d)\n", BOTS_APP_DEF_ARG_CUTOFF_1);
 #endif
 #ifdef BOTS_APP_USES_ARG_CUTOFF_2
-   fprintf(stderr, "  -b <value> : "BOTS_APP_DESC_ARG_CUTOFF_2"(default=%d)\n", BOTS_APP_DEF_ARG_CUTOFF_2);
+   fprintf(stderr, "  -b <value> : " BOTS_APP_DESC_ARG_CUTOFF_2 "(default=%d)\n", BOTS_APP_DEF_ARG_CUTOFF_2);
 #endif
 
    fprintf(stderr, "\n");

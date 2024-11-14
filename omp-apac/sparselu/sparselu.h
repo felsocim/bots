@@ -1,6 +1,7 @@
 #ifndef SPARSELU_H
 #define SPARSELU_H
 
+#define NULL (float*)0
 #define EPSILON 1.0E-6
 
 int checkmat (float *M, float *N);

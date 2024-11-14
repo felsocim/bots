@@ -186,9 +186,11 @@ unsigned long long parallel_uts ( Node *root )
 
 unsigned long long parTreeSearch(int depth, Node *parent, int numChildren) 
 {
-  Node n[numChildren], *nodePtr;
+  Node n[numChildren];
+  Node *nodePtr;
   int i, j;
-  unsigned long long subtreesize = 1, partialCount[numChildren];
+  unsigned long long subtreesize = 1;
+  long long unsigned int partialCount[numChildren];
 
   // Recurse on the children
   for (i = 0; i < numChildren; i++) {

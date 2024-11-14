@@ -20,7 +20,7 @@
 
 DIRS  =
 #DIRS += alignment
-DIRS += concom
+#DIRS += concom
 #DIRS += fft
 DIRS += fib
 #DIRS += floorplan
@@ -29,7 +29,7 @@ DIRS += fib
 #DIRS += sort
 DIRS += sparselu
 #DIRS += strassen
-#DIRS += uts
+DIRS += uts
 
 RECURSIVE=all-recursive clean-recursive dist-clean-recursive
 

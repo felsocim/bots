@@ -167,6 +167,7 @@ void bots_print_results()
    char str_comp_date[BOTS_TMP_STR_SZ];
    char str_comp_message[BOTS_TMP_STR_SZ];
    char str_cc[BOTS_TMP_STR_SZ];
+   char str_apacflags[BOTS_TMP_STR_SZ];
    char str_cflags[BOTS_TMP_STR_SZ];
    char str_ld[BOTS_TMP_STR_SZ];
    char str_ldflags[BOTS_TMP_STR_SZ];
@@ -213,6 +214,7 @@ void bots_print_results()
    sprintf(str_comp_date, "%s", bots_comp_date);
    sprintf(str_comp_message, "%s", bots_comp_message);
    sprintf(str_cc, "%s", bots_cc);
+   sprintf(str_apacflags, "%s", bots_apacflags);
    sprintf(str_cflags, "%s", bots_cflags);
    sprintf(str_ld, "%s", bots_ld);
    sprintf(str_ldflags, "%s", bots_ldflags);
@@ -282,6 +284,7 @@ Nodes;Nodes/Sec;\n");
          fprintf(stdout, "Compilation Message = %s\n", str_comp_message);
 
          fprintf(stdout, "Compiler            = %s\n", str_cc);
+         fprintf(stdout, "APAC Flags          = %s\n", str_apacflags);
          fprintf(stdout, "Compiler Flags      = %s\n", str_cflags);
          fprintf(stdout, "Linker              = %s\n", str_ld);
          fprintf(stdout, "Linker Flags        = %s\n", str_ldflags);
@@ -317,8 +320,9 @@ Nodes;Nodes/Sec;\n");
               str_comp_date,
               str_comp_message
          );
-         fprintf(stdout,"%s;%s;%s;%s;",
+         fprintf(stdout,"%s;%s;%s;%s;%s;",
               str_cc,
+              str_apacflags,
               str_cflags,
               str_ld,
               str_ldflags

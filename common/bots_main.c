@@ -56,6 +56,7 @@ char bots_exec_message[BOTS_TMP_STR_SZ];
 char bots_comp_date[BOTS_TMP_STR_SZ];
 char bots_comp_message[BOTS_TMP_STR_SZ];
 char bots_cc[BOTS_TMP_STR_SZ];
+char bots_apacflags[BOTS_TMP_STR_SZ];
 char bots_cflags[BOTS_TMP_STR_SZ];
 char bots_ld[BOTS_TMP_STR_SZ];
 char bots_ldflags[BOTS_TMP_STR_SZ];
@@ -455,6 +456,7 @@ void bots_set_info ()
    snprintf(bots_comp_date, BOTS_TMP_STR_SZ, CDATE);
    snprintf(bots_comp_message, BOTS_TMP_STR_SZ, CMESSAGE);
    snprintf(bots_cc, BOTS_TMP_STR_SZ, CC);
+   snprintf(bots_apacflags, BOTS_TMP_STR_SZ, APACFLAGS);
    snprintf(bots_cflags, BOTS_TMP_STR_SZ, CFLAGS);
    snprintf(bots_ld, BOTS_TMP_STR_SZ, LD);
    snprintf(bots_ldflags, BOTS_TMP_STR_SZ, LDFLAGS);

@@ -41,6 +41,7 @@ extern char bots_exec_message[];
 extern char bots_comp_date[];
 extern char bots_comp_message[];
 extern char bots_cc[];
+extern char bots_apacflags[];
 extern char bots_cflags[];
 extern char bots_ld[];
 extern char bots_ldflags[];

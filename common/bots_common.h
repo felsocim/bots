@@ -27,6 +27,9 @@
 #ifndef CFLAGS
 #define CFLAGS ""
 #endif
+#ifndef APACFLAGS
+#define APACFLAGS ""
+#endif
 #ifndef LD
 #define LD ""
 #endif

@@ -99,7 +99,7 @@ int calc_score(int iat, int jat, int v1, int v2, int seq1, int seq2) {
   return matrix[i][j];
 }
 
-int get_matrix(const int* matptr, const int* xref, int scale) {
+int get_matrix(int* matptr, int* xref, int scale) {
   int __apac_result;
 #pragma omp taskgroup
   {
@@ -196,8 +196,7 @@ int get_matrix(const int* matptr, const int* xref, int scale) {
   return __apac_result;
 }
 
-void forward_pass(const char* ia, const char* ib, int n, int m, int* se1,
-                  int* se2, int* maxscore, int g, int gh) {
+void forward_pass(char* ia, char* ib, int n, int m, int* se1, int* se2, int* maxscore, int g, int gh) {
 #pragma omp taskgroup
   {
     int i, j, f, p, t, hh;
@@ -247,8 +246,7 @@ void forward_pass(const char* ia, const char* ib, int n, int m, int* se1,
   }
 }
 
-void reverse_pass(const char* ia, const char* ib, int se1, int se2, int* sb1,
-                  int* sb2, int maxscore, int g, int gh) {
+void reverse_pass(char* ia, char* ib, int se1, int se2, int* sb1, int* sb2, int maxscore, int g, int gh) {
 #pragma omp taskgroup
   {
     int i, j, f, p, t, hh, cost;
@@ -305,8 +303,7 @@ void reverse_pass(const char* ia, const char* ib, int se1, int se2, int* sb1,
   }
 }
 
-int diff(int A, int B, int M, int N, int tb, int te, int* print_ptr,
-         int* last_print, int* displ, int seq1, int seq2, int g, int gh) {
+int diff(int A, int B, int M, int N, int tb, int te, int* print_ptr, int* last_print, int* displ, int seq1, int seq2, int g, int gh) {
   int __apac_result;
 #pragma omp taskgroup
   {
@@ -318,11 +315,7 @@ int diff(int A, int B, int M, int N, int tb, int te, int* print_ptr,
     int SS[5000];
     if (N <= 0) {
       if (M > 0) {
-#pragma omp task default(shared) depend(in                                 \
-                                        : M, displ, last_print, print_ptr) \
-    depend(inout                                                           \
-           : (
-          *displ )[0], last_print[0], print_ptr[0])
+#pragma omp task default(shared) depend(in : M, displ, last_print, print_ptr) depend(inout : (*displ)[0], last_print[0], print_ptr[0])
         del(M, print_ptr, last_print, displ);
       }
 #pragma omp taskwait
@@ -331,15 +324,11 @@ int diff(int A, int B, int M, int N, int tb, int te, int* print_ptr,
     }
     if (M <= 1) {
       if (M <= 0) {
-#pragma omp task default(shared) depend(in                                 \
-                                        : N, displ, last_print, print_ptr) \
-    depend(inout                                                           \
-           : (
-          *displ )[0], last_print[0], print_ptr[0])
+#pragma omp task default(shared) depend(in : N, displ, last_print, print_ptr) depend(inout : (*displ)[0], last_print[0], print_ptr[0])
         add(N, print_ptr, last_print, displ);
 #pragma omp taskwait
-          __apac_result = -((int)((N <= 0 ? 0 : tb + gh * N)));
-          goto __apac_exit;
+        __apac_result = -((int)((N <= 0 ? 0 : tb + gh * N)));
+        goto __apac_exit;
       }
       midh = -(tb + gh) - ((N <= 0 ? 0 : te + gh * N));
       hh = -(te + gh) - ((N <= 0 ? 0 : tb + gh * N));
@@ -348,13 +337,8 @@ int diff(int A, int B, int M, int N, int tb, int te, int* print_ptr,
       }
       midj = 0;
       for (j = 1; j <= N; j++) {
-#pragma omp task default(shared) depend(in                                 \
-                                        : A, B, N, gh, seq1, seq2, tb, te) \
-    depend(inout                                                           \
-           : hh) firstprivate(j)
-        hh = calc_score(1, j, A, B, seq1, seq2) -
-             ((N - j <= 0 ? 0 : te + gh * (N - j))) -
-             ((j - 1 <= 0 ? 0 : tb + gh * (j - 1)));
+#pragma omp task default(shared) depend(in : A, B, N, gh, seq1, seq2, tb, te) depend(inout : hh) firstprivate(j)
+        hh = calc_score(1, j, A, B, seq1, seq2) - ((N - j <= 0 ? 0 : te + gh * (N - j))) - ((j - 1 <= 0 ? 0 : tb + gh * (j - 1)));
 #pragma omp taskwait depend(in : hh) depend(inout : midh)
         if (hh > midh) {
 #pragma omp taskwait depend(in : hh) depend(inout : midh)
@@ -363,35 +347,22 @@ int diff(int A, int B, int M, int N, int tb, int te, int* print_ptr,
         }
       }
       if (midj == 0) {
-#pragma omp task default(shared) depend(in                                 \
-                                        : N, displ, last_print, print_ptr) \
-    depend(inout                                                           \
-           : (
-          *displ )[0], last_print[0], print_ptr[0])
+#pragma omp task default(shared) depend(in : N, displ, last_print, print_ptr) depend(inout : (*displ)[0], last_print[0], print_ptr[0])
         {
-            del(1, print_ptr, last_print, displ);
-            add(N, print_ptr, last_print, displ);
-          }
+          del(1, print_ptr, last_print, displ);
+          add(N, print_ptr, last_print, displ);
+        }
       } else {
         if (midj > 1) {
-#pragma omp task default(shared) depend(in                                    \
-                                        : displ, last_print, midj, print_ptr) \
-    depend(inout                                                              \
-           : (
-            *displ )[0], last_print[0], print_ptr[0])
+#pragma omp task default(shared) depend(in : displ, last_print, midj, print_ptr) depend(inout : (*displ)[0], last_print[0], print_ptr[0])
           add(midj - 1, print_ptr, last_print, displ);
         }
-#pragma omp taskwait depend(in : displ, last_print) depend(inout : displ[(
-          *print_ptr )++], last_print[0], print_ptr)
-        displ[( *print_ptr )++] = *last_print = 0;
-          if (midj < N) {
-#pragma omp task default(shared)                                 \
-    depend(in                                                    \
-           : N, displ, last_print, midj, print_ptr) depend(inout \
-                                                           : (
-            *displ )[0], last_print[0], print_ptr[0])
+#pragma omp taskwait depend(in : displ, last_print) depend(inout : displ[(*print_ptr)++], last_print[0], print_ptr)
+        displ[(*print_ptr)++] = *last_print = 0;
+        if (midj < N) {
+#pragma omp task default(shared) depend(in : N, displ, last_print, midj, print_ptr) depend(inout : (*displ)[0], last_print[0], print_ptr[0])
           add(N - midj, print_ptr, last_print, displ);
-          }
+        }
       }
 #pragma omp taskwait
       __apac_result = midh;
@@ -417,17 +388,12 @@ int diff(int A, int B, int M, int N, int tb, int te, int* print_ptr,
 #pragma omp taskwait depend(in : hh) depend(inout : f)
           f = hh;
         }
-#pragma omp taskwait depend(in                                          \
-                            : DD[j], HH[j], DD, HH, g, gh) depend(inout \
-                                                                  : e, hh)
+#pragma omp taskwait depend(in : DD[j], HH[j], DD, HH, g, gh) depend(inout : e, hh)
         if ((hh = HH[j] - g - gh) > (e = DD[j] - gh)) {
 #pragma omp taskwait depend(in : hh) depend(inout : e)
           e = hh;
         }
-#pragma omp task default(shared) depend(in                                  \
-                                        : A, B, s, seq1, seq2) depend(inout \
-                                                                      : hh) \
-    firstprivate(j, i)
+#pragma omp task default(shared) depend(in : A, B, s, seq1, seq2) depend(inout : hh) firstprivate(j, i)
         hh = s + calc_score(i, j, A, B, seq1, seq2);
 #pragma omp taskwait depend(in : f) depend(inout : hh)
         if (f > hh) {
@@ -467,17 +433,12 @@ int diff(int A, int B, int M, int N, int tb, int te, int* print_ptr,
 #pragma omp taskwait depend(in : hh) depend(inout : f)
           f = hh;
         }
-#pragma omp taskwait depend(in                                          \
-                            : RR[j], SS[j], RR, SS, g, gh) depend(inout \
-                                                                  : e, hh)
+#pragma omp taskwait depend(in : RR[j], SS[j], RR, SS, g, gh) depend(inout : e, hh)
         if ((hh = RR[j] - g - gh) > (e = SS[j] - gh)) {
 #pragma omp taskwait depend(in : hh) depend(inout : e)
           e = hh;
         }
-#pragma omp task default(shared) depend(in                                  \
-                                        : A, B, s, seq1, seq2) depend(inout \
-                                                                      : hh) \
-    firstprivate(j, i)
+#pragma omp task default(shared) depend(in : A, B, s, seq1, seq2) depend(inout : hh) firstprivate(j, i)
         hh = s + calc_score(i + 1, j + 1, A, B, seq1, seq2);
 #pragma omp taskwait depend(in : f) depend(inout : hh)
         if (f > hh) {
@@ -507,10 +468,7 @@ int diff(int A, int B, int M, int N, int tb, int te, int* print_ptr,
       hh = HH[j] + RR[j];
 #pragma omp taskwait depend(in : hh) depend(inout : midh)
       if (hh >= midh) {
-#pragma omp taskwait depend(in                                                \
-                            : DD[j], HH[j], RR[j], SS[j], DD, HH, RR, SS, hh) \
-    depend(inout                                                              \
-           : midh)
+#pragma omp taskwait depend(in : DD[j], HH[j], RR[j], SS[j], DD, HH, RR, SS, hh) depend(inout : midh)
         if (hh > midh || HH[j] != DD[j] && RR[j] == SS[j]) {
 #pragma omp taskwait depend(in : hh) depend(inout : midh)
           midh = hh;
@@ -533,32 +491,18 @@ int diff(int A, int B, int M, int N, int tb, int te, int* print_ptr,
       }
     }
     if (type == 1) {
-#pragma omp task default(shared)                                          \
-    depend(in                                                             \
-           : A, B, M, N, displ, g, gh, last_print, midi, midj, print_ptr, \
-             seq1, seq2, tb, te) depend(inout                             \
-                                        : (
-        *displ )[0], last_print[0], print_ptr[0])
+#pragma omp task default(shared) depend(in : A, B, M, N, displ, g, gh, last_print, midi, midj, print_ptr, seq1, seq2, tb, te) depend(inout : (*displ)[0], last_print[0], print_ptr[0])
       {
-          diff(A, B, midi, midj, tb, g, print_ptr, last_print, displ, seq1,
-               seq2, g, gh);
-          diff(A + midi, B + midj, M - midi, N - midj, g, te, print_ptr,
-               last_print, displ, seq1, seq2, g, gh);
-        }
+        diff(A, B, midi, midj, tb, g, print_ptr, last_print, displ, seq1, seq2, g, gh);
+        diff(A + midi, B + midj, M - midi, N - midj, g, te, print_ptr, last_print, displ, seq1, seq2, g, gh);
+      }
     } else {
-#pragma omp task default(shared)                                          \
-    depend(in                                                             \
-           : A, B, M, N, displ, g, gh, last_print, midi, midj, print_ptr, \
-             seq1, seq2, tb, te) depend(inout                             \
-                                        : (
-        *displ )[0], last_print[0], print_ptr[0])
+#pragma omp task default(shared) depend(in : A, B, M, N, displ, g, gh, last_print, midi, midj, print_ptr, seq1, seq2, tb, te) depend(inout : (*displ)[0], last_print[0], print_ptr[0])
       {
-          diff(A, B, midi - 1, midj, tb, 0., print_ptr, last_print, displ, seq1,
-               seq2, g, gh);
-          del(2, print_ptr, last_print, displ);
-          diff(A + midi + 1, B + midj, M - midi - 1, N - midj, 0., te,
-               print_ptr, last_print, displ, seq1, seq2, g, gh);
-        }
+        diff(A, B, midi - 1, midj, tb, 0., print_ptr, last_print, displ, seq1, seq2, g, gh);
+        del(2, print_ptr, last_print, displ);
+        diff(A + midi + 1, B + midj, M - midi - 1, N - midj, 0., te, print_ptr, last_print, displ, seq1, seq2, g, gh);
+      }
     }
     __apac_result = midh;
     goto __apac_exit;
@@ -567,8 +511,7 @@ int diff(int A, int B, int M, int N, int tb, int te, int* print_ptr,
   return __apac_result;
 }
 
-int diff_seq(int A, int B, int M, int N, int tb, int te, int* print_ptr,
-             int* last_print, int* displ, int seq1, int seq2, int g, int gh) {
+int diff_seq(int A, int B, int M, int N, int tb, int te, int* print_ptr, int* last_print, int* displ, int seq1, int seq2, int g, int gh) {
   int i, j, f, e, s, t, hh;
   int midi, midj, midh, type;
   int HH[5000];
@@ -589,9 +532,7 @@ int diff_seq(int A, int B, int M, int N, int tb, int te, int* print_ptr,
     if (hh > midh) midh = hh;
     midj = 0;
     for (j = 1; j <= N; j++) {
-      hh = calc_score(1, j, A, B, seq1, seq2) -
-           ((N - j <= 0 ? 0 : te + gh * (N - j))) -
-           ((j - 1 <= 0 ? 0 : tb + gh * (j - 1)));
+      hh = calc_score(1, j, A, B, seq1, seq2) - ((N - j <= 0 ? 0 : te + gh * (N - j))) - ((j - 1 <= 0 ? 0 : tb + gh * (j - 1)));
       if (hh > midh) {
         midh = hh;
         midj = j;
@@ -674,22 +615,17 @@ int diff_seq(int A, int B, int M, int N, int tb, int te, int* print_ptr,
     }
   }
   if (type == 1) {
-    diff_seq(A, B, midi, midj, tb, g, print_ptr, last_print, displ, seq1, seq2,
-             g, gh);
-    diff_seq(A + midi, B + midj, M - midi, N - midj, g, te, print_ptr,
-             last_print, displ, seq1, seq2, g, gh);
+    diff_seq(A, B, midi, midj, tb, g, print_ptr, last_print, displ, seq1, seq2, g, gh);
+    diff_seq(A + midi, B + midj, M - midi, N - midj, g, te, print_ptr, last_print, displ, seq1, seq2, g, gh);
   } else {
-    diff_seq(A, B, midi - 1, midj, tb, 0., print_ptr, last_print, displ, seq1,
-             seq2, g, gh);
+    diff_seq(A, B, midi - 1, midj, tb, 0., print_ptr, last_print, displ, seq1, seq2, g, gh);
     del(2, print_ptr, last_print, displ);
-    diff_seq(A + midi + 1, B + midj, M - midi - 1, N - midj, 0., te, print_ptr,
-             last_print, displ, seq1, seq2, g, gh);
+    diff_seq(A + midi + 1, B + midj, M - midi - 1, N - midj, 0., te, print_ptr, last_print, displ, seq1, seq2, g, gh);
   }
   return midh;
 }
 
-double tracepath(int tsb1, int tsb2, const int* print_ptr, const int* displ,
-                 int seq1, int seq2) {
+double tracepath(int tsb1, int tsb2, int* print_ptr, int* displ, int seq1, int seq2) {
   int i, k;
   int i1 = tsb1;
   int i2 = tsb2;
@@ -734,10 +670,7 @@ int pairalign() {
     }
     bots_message("Start aligning ");
     for (si = 0; si < nseqs; si++) {
-#pragma omp taskwait depend(in                                        \
-                            : seqlen_array[si + 1], seqlen_array, si) \
-    depend(inout                                                      \
-           : n)
+#pragma omp taskwait depend(in : seqlen_array[si + 1], seqlen_array, si) depend(inout : n)
       n = seqlen_array[si + 1];
       len1 = 0;
       for (i = 1; i <= n; i++) {
@@ -747,20 +680,14 @@ int pairalign() {
         }
       }
       for (sj = si + 1; sj < nseqs; sj++) {
-#pragma omp taskwait depend(in                                        \
-                            : seqlen_array[sj + 1], seqlen_array, sj) \
-    depend(inout                                                      \
-           : m)
+#pragma omp taskwait depend(in : seqlen_array[sj + 1], seqlen_array, sj) depend(inout : m)
         m = seqlen_array[sj + 1];
         if (n == 0 || m == 0) {
 #pragma omp critical
           bench_output[si * nseqs + sj] = (int)1.;
         } else {
-#pragma omp taskwait depend(inout \
-                            : g, gh, maxscore, sb1, sb2, se1, se2, seq1, seq2)
-          int *se1 = new int(), *se2 = new int(), *sb1 = new int(),
-              *sb2 = new int(), *maxscore = new int(), *seq1 = new int(),
-              *seq2 = new int(), *g = new int(), *gh = new int();
+#pragma omp taskwait depend(inout : g, gh, maxscore, sb1, sb2, se1, se2, seq1, seq2)
+          int *se1 = new int(), *se2 = new int(), *sb1 = new int(), *sb2 = new int(), *maxscore = new int(), *seq1 = new int(), *seq2 = new int(), *g = new int(), *gh = new int();
 #pragma omp taskwait depend(inout : displ)
           int* displ = new int[2 * 5000 + 1]();
 #pragma omp taskwait depend(inout : last_print, print_ptr)
@@ -773,20 +700,14 @@ int pairalign() {
             }
           }
           if (dnaFlag == 1) {
-#pragma omp taskwait depend(in                                            \
-                            : gap_open_scale, pw_go_penalty) depend(inout \
-                                                                    : g)
+#pragma omp taskwait depend(in : gap_open_scale, pw_go_penalty) depend(inout : g)
             *g = (int)(2 * 100 * pw_go_penalty * gap_open_scale);
-#pragma omp taskwait depend(in                                              \
-                            : gap_extend_scale, pw_ge_penalty) depend(inout \
-                                                                      : gh)
+#pragma omp taskwait depend(in : gap_extend_scale, pw_ge_penalty) depend(inout : gh)
             *gh = (int)(100 * pw_ge_penalty * gap_extend_scale);
           } else {
             gg = pw_go_penalty + log((double)((n < m ? n : m)));
 #pragma omp critical
-            *g = (int)((mat_avscore <= 0
-                            ? 2 * 100 * gg
-                            : 2 * mat_avscore * gg * gap_open_scale));
+            *g = (int)((mat_avscore <= 0 ? 2 * 100 * gg : 2 * mat_avscore * gg * gap_open_scale));
 #pragma omp taskwait depend(in : pw_ge_penalty) depend(inout : gh)
             *gh = (int)(100 * pw_ge_penalty);
           }
@@ -794,31 +715,18 @@ int pairalign() {
           *seq1 = si + 1;
 #pragma omp taskwait depend(in : sj, seq2) depend(inout : seq2[0])
           *seq2 = sj + 1;
-#pragma omp task default(shared)                                            \
-    depend(in                                                               \
-           : g[0], gh[0], m, n, seq1[0], seq2[0], seq_array, se1, se2, sb1, \
-             sb2, maxscore, seq1, seq2, g, gh)                              \
-        depend(inout                                                        \
-               : maxscore[0], sb1[0], sb2[0], se1[0], se2[0])
+#pragma omp task default(shared) depend(in : g[0], gh[0], m, n, seq1[0], seq2[0], seq_array, se1, se2, sb1, sb2, maxscore, seq1, seq2, g, gh) depend(inout : maxscore[0], sb1[0], sb2[0], se1[0], se2[0])
           {
-            forward_pass(&seq_array[*seq1][0], &seq_array[*seq2][0], n, m, se1,
-                         se2, maxscore, *g, *gh);
-            reverse_pass(&seq_array[*seq1][0], &seq_array[*seq2][0], *se1, *se2,
-                         sb1, sb2, *maxscore, *g, *gh);
+            forward_pass(&seq_array[*seq1][0], &seq_array[*seq2][0], n, m, se1, se2, maxscore, *g, *gh);
+            reverse_pass(&seq_array[*seq1][0], &seq_array[*seq2][0], *se1, *se2, sb1, sb2, *maxscore, *g, *gh);
           }
 #pragma omp taskwait depend(inout : print_ptr[0])
           *print_ptr = 1;
 #pragma omp taskwait depend(inout : last_print[0])
           *last_print = 0;
-#pragma omp task default(shared) depend(                                    \
-    in                                                                      \
-    : displ, g[0], gh[0], sb1[0], sb2[0], se1[0], se2[0], seq1[0], seq2[0], \
-      se1, se2, sb1, sb2, seq1, seq2, g, gh, print_ptr, last_print)         \
-    depend(inout                                                            \
-           : displ[0], last_print[0], mm_score, print_ptr[0])
+#pragma omp task default(shared) depend(in : displ, g[0], gh[0], sb1[0], sb2[0], se1[0], se2[0], seq1[0], seq2[0], se1, se2, sb1, sb2, seq1, seq2, g, gh, print_ptr, last_print) depend(inout : displ[0], last_print[0], mm_score, print_ptr[0])
           {
-            diff(*sb1 - 1, *sb2 - 1, *se1 - *sb1 + 1, *se2 - *sb2 + 1, 0, 0,
-                 print_ptr, last_print, displ, *seq1, *seq2, *g, *gh);
+            diff(*sb1 - 1, *sb2 - 1, *se1 - *sb1 + 1, *se2 - *sb2 + 1, 0, 0, print_ptr, last_print, displ, *seq1, *seq2, *g, *gh);
             mm_score = tracepath(*sb1, *sb2, print_ptr, displ, *seq1, *seq2);
           }
           if (len1 == 0 || len2 == 0) {
@@ -828,10 +736,7 @@ int pairalign() {
 #pragma omp taskwait depend(in : len1, len2) depend(inout : mm_score)
             mm_score /= (double)((len1 < len2 ? len1 : len2));
           }
-#pragma omp taskwait depend(in                                       \
-                            : bench_output, mm_score, nseqs, si, sj) \
-    depend(inout                                                     \
-           : bench_output[si * nseqs + sj])
+#pragma omp taskwait depend(in : bench_output, mm_score, nseqs, si, sj) depend(inout : bench_output[si * nseqs + sj])
 #pragma omp critical
           bench_output[si * nseqs + sj] = (int)mm_score;
 #pragma omp task default(shared) depend(inout : se1)
@@ -904,20 +809,16 @@ int pairalign_seq() {
         } else {
           gg = pw_go_penalty + log((double)((n < m ? n : m)));
 #pragma omp critical
-          g = (int)((mat_avscore <= 0 ? 2 * 100 * gg
-                                      : 2 * mat_avscore * gg * gap_open_scale));
+          g = (int)((mat_avscore <= 0 ? 2 * 100 * gg : 2 * mat_avscore * gg * gap_open_scale));
           gh = (int)(100 * pw_ge_penalty);
         }
         seq1 = si + 1;
         seq2 = sj + 1;
-        forward_pass(&seq_array[seq1][0], &seq_array[seq2][0], n, m, &se1, &se2,
-                     &maxscore, g, gh);
-        reverse_pass(&seq_array[seq1][0], &seq_array[seq2][0], se1, se2, &sb1,
-                     &sb2, maxscore, g, gh);
+        forward_pass(&seq_array[seq1][0], &seq_array[seq2][0], n, m, &se1, &se2, &maxscore, g, gh);
+        reverse_pass(&seq_array[seq1][0], &seq_array[seq2][0], se1, se2, &sb1, &sb2, maxscore, g, gh);
         print_ptr = 1;
         last_print = 0;
-        diff_seq(sb1 - 1, sb2 - 1, se1 - sb1 + 1, se2 - sb2 + 1, 0, 0,
-                 &print_ptr, &last_print, displ, seq1, seq2, g, gh);
+        diff_seq(sb1 - 1, sb2 - 1, se1 - sb1 + 1, se2 - sb2 + 1, 0, 0, &print_ptr, &last_print, displ, seq1, seq2, g, gh);
         mm_score = tracepath(sb1, sb2, &print_ptr, displ, seq1, seq2);
         if (len1 == 0 || len2 == 0)
           mm_score = 0.;
@@ -953,8 +854,7 @@ void pairalign_init(char* filename) {
   init_matrix();
   nseqs = readseqs(filename);
   bots_message("Multiple Pairwise Alignment (%d sequences)\n", nseqs);
-  for (i = 1; i <= nseqs; i++)
-    bots_debug("Sequence %d: %s %6.d aa\n", i, names[i], seqlen_array[i]);
+  for (i = 1; i <= nseqs; i++) bots_debug("Sequence %d: %s %6.d aa\n", i, names[i], seqlen_array[i]);
   if (clustalw == 1) {
     gap_open_scale = 0.6667;
     gap_extend_scale = 0.751;
@@ -1015,9 +915,7 @@ void align_end() {
   int i, j;
   for (i = 0; i < nseqs; i++)
     for (j = 0; j < nseqs; j++)
-      if (bench_output[i * nseqs + j] != 0)
-        bots_debug("Benchmark sequences (%d:%d) Aligned. Score: %d\n", i + 1,
-                   j + 1, (int)bench_output[i * nseqs + j]);
+      if (bench_output[i * nseqs + j] != 0) bots_debug("Benchmark sequences (%d:%d) Aligned. Score: %d\n", i + 1, j + 1, (int)bench_output[i * nseqs + j]);
 }
 
 int align_verify() {
@@ -1027,11 +925,7 @@ int align_verify() {
     for (j = 0; j < nseqs; j++) {
 #pragma omp critical
       if (bench_output[i * nseqs + j] != seq_output[i * nseqs + j]) {
-        bots_message(
-            "Error: Optimized prot. (%3d:%3d)=%5d Sequential prot. "
-            "(%3d:%3d)=%5d\n",
-            i + 1, j + 1, (int)bench_output[i * nseqs + j], i + 1, j + 1,
-            (int)seq_output[i * nseqs + j]);
+        bots_message("Error: Optimized prot. (%3d:%3d)=%5d Sequential prot. (%3d:%3d)=%5d\n", i + 1, j + 1, (int)bench_output[i * nseqs + j], i + 1, j + 1, (int)seq_output[i * nseqs + j]);
         result = 2;
       }
     }

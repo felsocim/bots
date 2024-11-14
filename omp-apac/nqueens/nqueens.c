@@ -7,12 +7,11 @@
 #include "app-desc.h"
 #include "bots.h"
 
-int solutions[] = {1,  0,   0,   2,    10,    4,     40,
-                   92, 352, 724, 2680, 14200, 73712, 365596};
+int solutions[] = {1, 0, 0, 2, 10, 4, 40, 92, 352, 724, 2680, 14200, 73712, 365596};
 
 int total_count;
 
-int ok(int n, const char* a) {
+int ok(int n, char* a) {
   int i, j;
   char p, q;
   for (i = 0; i < n; i++) {
@@ -40,12 +39,11 @@ void nqueens_ser(int n, int j, char* a, int* solutions) {
       a[j] = (char)i;
 #pragma omp taskwait depend(in : a, j) depend(inout : (*a)[0])
       if (ok(j + 1, a)) {
-#pragma omp task default(shared) depend(in : a, j, n) depend(inout : (
-          *a )[0], res, solutions)
+#pragma omp task default(shared) depend(in : a, j, n) depend(inout : (*a)[0], res, solutions)
         {
-            nqueens_ser(n, j + 1, a, &res);
-            *solutions += res;
-          }
+          nqueens_ser(n, j + 1, a, &res);
+          *solutions += res;
+        }
       }
     }
   __apac_exit:;
@@ -72,10 +70,7 @@ void nqueens(int n, int j, char* a, int* solutions, int depth) {
       b[j] = (char)i;
 #pragma omp taskwait depend(in : b, j) depend(inout : b[0])
       if (ok(j + 1, b)) {
-#pragma omp task default(shared) depend(in                       \
-                                        : csols, b, depth, j, n) \
-    depend(inout                                                 \
-           : csols[i], b[0]) firstprivate(i)
+#pragma omp task default(shared) depend(in : csols, b, depth, j, n) depend(inout : csols[i], b[0]) firstprivate(i)
         nqueens(n, j + 1, b, &csols[i], depth);
       }
     }
@@ -97,9 +92,7 @@ void find_queens(int size) {
     bots_message("Computing N-Queens algorithm (n=%d) ", size);
     char* a;
     a = (char*)__builtin_alloca(size * sizeof(char));
-#pragma omp task default(shared) depend(in                      \
-                                        : a, size) depend(inout \
-                                                          : a[0], total_count)
+#pragma omp task default(shared) depend(in : a, size) depend(inout : a[0], total_count)
     {
 #pragma omp critical
       nqueens(size, 0, a, &total_count, 0);

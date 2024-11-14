@@ -43,8 +43,7 @@ int starts(int id, int shape, int** NWS, cell* cells) {
     lhs = cells[left].rhs + 1;
     bot = top + rows;
     rhs = lhs + cols;
-    if (top <= cells[left].bot && bot >= cells[left].top &&
-        lhs <= cells[above].rhs && rhs >= cells[above].lhs) {
+    if (top <= cells[left].bot && bot >= cells[left].top && lhs <= cells[above].rhs && rhs >= cells[above].lhs) {
       n = 1;
       NWS[0][0] = top;
       NWS[0][1] = lhs;
@@ -163,10 +162,7 @@ int add_cell(int id, int FOOTPRINT[2], char BOARD[64][64], cell* CELLS) {
     }
     nnc = nnl = 0;
     for (i = 0; i < CELLS[id].n; i++) {
-#pragma omp task default(shared) depend(in                          \
-                                        : CELLS, CELLS[0], NWS, id) \
-    depend(inout                                                    \
-           : NWS[0], NWS[0][0], nn) firstprivate(i)
+#pragma omp task default(shared) depend(in : CELLS, CELLS[0], NWS, id) depend(inout : NWS[0], NWS[0][0], nn) firstprivate(i)
       nn = starts(id, i, NWS, CELLS);
 #pragma omp taskwait depend(in : nn) depend(inout : nnl)
       nnl += nn;
@@ -179,57 +175,40 @@ int add_cell(int id, int FOOTPRINT[2], char BOARD[64][64], cell* CELLS) {
         cells[id].bot = cells[id].top + cells[id].alt[i][0] - 1;
         cells[id].lhs = NWS[j][1];
         cells[id].rhs = cells[id].lhs + cells[id].alt[i][1] - 1;
-#pragma omp taskwait depend(in                           \
-                            : BOARD, board) depend(inout \
-                                                   : BOARD[0], BOARD[0][0], (
-          *board )[0], ( *board )[0][0])
-        memcpy(board, BOARD, ( size_t ) 64 * 64 * sizeof(char));
-#pragma omp taskwait depend(in : board, cells, cells[0]) depend(inout : (
-          *board )[0], ( *board )[0][0], id)
-        if ( !lay_down(id, board, cells) ) {
+#pragma omp taskwait depend(in : BOARD, board) depend(inout : BOARD[0], BOARD[0][0], (*board)[0], (*board)[0][0])
+        memcpy(board, BOARD, (size_t)64 * 64 * sizeof(char));
+#pragma omp taskwait depend(in : board, cells, cells[0]) depend(inout : (*board)[0], (*board)[0][0], id)
+        if (!lay_down(id, board, cells)) {
 #pragma omp taskwait depend(inout : i, id)
-            bots_debug("Chip %d, shape %d does not fit\n", id, i);
-            goto _end;
-          }
-#pragma omp taskwait depend(in                                               \
-                            : footprint, FOOTPRINT, FOOTPRINT[0], cells, id) \
-    depend(inout                                                             \
-           : footprint[0])
-          footprint[0] = (FOOTPRINT[0] > cells[id].bot + 1 ? FOOTPRINT[0]
-                                                           : cells[id].bot + 1);
-#pragma omp taskwait depend(in                                               \
-                            : footprint, FOOTPRINT, FOOTPRINT[1], cells, id) \
-    depend(inout                                                             \
-           : footprint[1])
-          footprint[1] = (FOOTPRINT[1] > cells[id].rhs + 1 ? FOOTPRINT[1]
-                                                           : cells[id].rhs + 1);
-          area = footprint[0] * footprint[1];
-          if (cells[id].next == 0) {
+          bots_debug("Chip %d, shape %d does not fit\n", id, i);
+          goto _end;
+        }
+#pragma omp taskwait depend(in : footprint, FOOTPRINT, FOOTPRINT[0], cells, id) depend(inout : footprint[0])
+        footprint[0] = (FOOTPRINT[0] > cells[id].bot + 1 ? FOOTPRINT[0] : cells[id].bot + 1);
+#pragma omp taskwait depend(in : footprint, FOOTPRINT, FOOTPRINT[1], cells, id) depend(inout : footprint[1])
+        footprint[1] = (FOOTPRINT[1] > cells[id].rhs + 1 ? FOOTPRINT[1] : cells[id].rhs + 1);
+        area = footprint[0] * footprint[1];
+        if (cells[id].next == 0) {
 #pragma omp critical
+          if (area < MIN_AREA) {
             if (area < MIN_AREA) {
-              if (area < MIN_AREA) {
-                MIN_AREA = area;
-                bots_debug("N  %d\n", MIN_AREA);
-                MIN_FOOTPRINT[0] = footprint[0];
-                MIN_FOOTPRINT[1] = footprint[1];
-#pragma omp taskwait depend(in                   \
-                            : BEST_BOARD, board) \
-    depend(inout                                 \
-           : BEST_BOARD[0], BEST_BOARD[0][0], (
-                *board )[0], ( *board )[0][0])
-              memcpy(BEST_BOARD, board, ( size_t ) 64 * 64 * sizeof(char));
-              }
+              MIN_AREA = area;
+              bots_debug("N  %d\n", MIN_AREA);
+              MIN_FOOTPRINT[0] = footprint[0];
+              MIN_FOOTPRINT[1] = footprint[1];
+#pragma omp taskwait depend(in : BEST_BOARD, board) depend(inout : BEST_BOARD[0], BEST_BOARD[0][0], (*board)[0], (*board)[0][0])
+              memcpy(BEST_BOARD, board, (size_t)64 * 64 * sizeof(char));
             }
-          } else {
+          }
+        } else {
 #pragma omp critical
-            if (area < MIN_AREA) {
-#pragma omp task default(shared) depend(in : board, cells, footprint, (
-              *footprint )[0], id)  depend (inout: ( *board )[0], ( *board )[0][0], cells[0], nnc)
+          if (area < MIN_AREA) {
+#pragma omp task default(shared) depend(in : board, cells, footprint, (*footprint)[0], id) depend(inout : (*board)[0], (*board)[0][0], cells[0], nnc)
             nnc += add_cell(cells[id].next, footprint, board, cells);
-            } else {
-              bots_debug("T  %d, %d\n", area, MIN_AREA);
-            }
+          } else {
+            bots_debug("T  %d, %d\n", area, MIN_AREA);
           }
+        }
       _end:;
 #pragma omp task default(shared) depend(inout : cells)
         delete[] cells;
@@ -272,11 +251,7 @@ void compute_floorplan() {
     footprint[0] = 0;
     footprint[1] = 0;
     bots_message("Computing floorplan ");
-#pragma omp task default(shared)                     \
-    depend(in                                        \
-           : board, footprint, footprint[0], gcells) \
-        depend(inout                                 \
-               : board[0], board[0][0], gcells[0])
+#pragma omp task default(shared) depend(in : board, footprint, footprint[0], gcells) depend(inout : board[0], board[0][0], gcells[0])
     {
 #pragma omp critical
       bots_number_of_tasks = add_cell(1, footprint, board, gcells);

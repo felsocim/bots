@@ -18,7 +18,7 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA            #
 ##############################################################################################
 
-DIRS=fib alignment nqueens sort strassen sparselu fft floorplan uts concom knapsack
+DIRS=fib sparselu concom
 
 RECURSIVE=all-recursive clean-recursive dist-clean-recursive
 

@@ -33,7 +33,7 @@
 #include "bots.h"
 
 void 
-bots_message(char *message, ...) {
+bots_message(const char *message, ...) {
    if (bots_verbose_mode >= BOTS_VERBOSE_DEFAULT) {
       va_list args;
       va_start(args, message);
@@ -44,7 +44,7 @@ bots_message(char *message, ...) {
 
 #ifdef BOTS_DEBUG
 void 
-bots_debug(char *message, ...) {
+bots_debug(const char *message, ...) {
    if (bots_verbose_mode >= BOTS_VERBOSE_DEBUG) {
       va_list args;
       va_start(args, message);
@@ -54,7 +54,7 @@ bots_debug(char *message, ...) {
 }
 
 void 
-bots_debug_with_location_info(char *message, ...) {
+bots_debug_with_location_info(const char *message, ...) {
    if (bots_verbose_mode >= BOTS_VERBOSE_DEBUG) {
       va_list args;
       va_start(args, message);
@@ -63,12 +63,12 @@ bots_debug_with_location_info(char *message, ...) {
    }
 }
 #else
-void bots_debug(char *message, ...) { }
-void bots_debug_with_location_info(char *message, ...) { }
+void bots_debug(const char *message, ...) { }
+void bots_debug_with_location_info(const char *message, ...) { }
 #endif
 
 void
-bots_error(int error, char *message)
+bots_error(int error, const char *message)
 {
    if (message == NULL)
    {
@@ -94,7 +94,7 @@ bots_error(int error, char *message)
 }
 
 void
-bots_warning(int warning, char *message)
+bots_warning(int warning, const char *message)
 {
    if (message == NULL)
    {

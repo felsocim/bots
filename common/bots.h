@@ -65,11 +65,11 @@ extern int bots_arg_size_2;
 
 /* function could be used in app. code but are implemented in bots_common.c */
 long bots_usecs();
-void bots_message(char *message, ...);
-void bots_debug(char *message, ...);
-void bots_debug_with_location_info(char *message, ...);
-void bots_error(int error, char *message);
-void bots_warning(int warning, char *message);
+void bots_message(const char *message, ...);
+void bots_debug(const char *message, ...);
+void bots_debug_with_location_info(const char *message, ...);
+void bots_error(int error, const char *message);
+void bots_warning(int warning, const char *message);
 
 #define BOTS_RESULT_NA 0
 #define BOTS_RESULT_SUCCESSFUL 1

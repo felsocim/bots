@@ -438,7 +438,7 @@ endif
 endif
 
 clean:
-	rm -fr *.o
+	rm -fr *.o *.log
 
 dist-clean: clean
 

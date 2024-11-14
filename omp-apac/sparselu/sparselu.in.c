@@ -211,6 +211,8 @@ void prealloc_sparselu_par_call(float **BENCH, int* timestamp)
 {
    int ii, jj, kk;
 
+   bots_message("Pre-allocating factorized matrix");
+
    for (ii=kk+1; ii<bots_arg_size; ii++)
          for (jj=kk+1; jj<bots_arg_size; jj++)
             if(BENCH[ii*bots_arg_size+jj]) timestamp[ii*bots_arg_size+jj] = -1;
@@ -229,7 +231,7 @@ void prealloc_sparselu_par_call(float **BENCH, int* timestamp)
                }
 
    }
-   bots_message(" prealloc completed!\n");
+   bots_message(" completed!\n");
 }
 
 void sparselu_init (float ***pBENCH, char *pass)

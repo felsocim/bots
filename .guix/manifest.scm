@@ -1,0 +1,10 @@
+(specifications->manifest
+ (list
+  "bash"
+  "coreutils"
+  "diffutils"
+  "grep"
+  "sed"
+  "make"
+  "clang-toolchain@13"
+  "ocaml-apac"))

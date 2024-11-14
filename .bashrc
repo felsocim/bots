@@ -1,0 +1,4 @@
+LIBCLANG=$(clang --version | head -n 1 | cut -d ' ' -f 3)
+LIBCLANG=$LIBRARY_PATH/clang/$LIBCLANG/include
+export C_INCLUDE_PATH=$C_INCLUDE_PATH:$LIBCLANG
+export CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH:$LIBCLANG

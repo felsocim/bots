@@ -87,11 +87,6 @@ if [ -z "$COMPILER" ]; then
       COMPILERS[nc]="sunstudio"
    fi
 
-   if [ "$CLANG" = "yes" ]; then
-      let nc=nc+1
-      COMPILERS[nc]="clang"
-   fi
-
    if [ "$nc" -gt "0" ]; then
       echo "The following compilers are recognized: "
       n=1

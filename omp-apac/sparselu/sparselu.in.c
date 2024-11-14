@@ -204,15 +204,47 @@ void fwd(float *diag, float *col)
             col[i*bots_arg_size_1+j] = col[i*bots_arg_size_1+j] - diag[i*bots_arg_size_1+k]*col[k*bots_arg_size_1+j];
 }
 
+int* timestamp = NULL;
+
+
+void prealloc_sparselu_par_call(float **BENCH, int* timestamp)
+{
+   int ii, jj, kk;
+
+   bots_message("Pre-allocating factorized matrix");
+
+   for (ii=kk+1; ii<bots_arg_size; ii++)
+         for (jj=kk+1; jj<bots_arg_size; jj++)
+            if(BENCH[ii*bots_arg_size+jj]) timestamp[ii*bots_arg_size+jj] = -1;
+
+   for (kk=0; kk<bots_arg_size; kk++) 
+   {
+      for (ii=kk+1; ii<bots_arg_size; ii++)
+         if (BENCH[ii*bots_arg_size+kk] != NULL)
+            for (jj=kk+1; jj<bots_arg_size; jj++)
+               if (BENCH[kk*bots_arg_size+jj] != NULL)
+               {
+                     if (BENCH[ii*bots_arg_size+jj]==NULL){
+                        timestamp[ii*bots_arg_size+jj] = kk;
+                        BENCH[ii*bots_arg_size+jj] = allocate_clean_block();
+                     }
+               }
+
+   }
+   bots_message(" completed!\n");
+}
 
 void sparselu_init (float ***pBENCH, char *pass)
 {
    *pBENCH = (float **) malloc(bots_arg_size*bots_arg_size*sizeof(float *));
    genmat(*pBENCH);
    print_structure(pass, *pBENCH);
+
+   timestamp = (int*)calloc(bots_arg_size*bots_arg_size,sizeof(int));
+   prealloc_sparselu_par_call(*pBENCH, timestamp);
 }
 
-void sparselu_par_call(float **BENCH)
+void sparselu_par_call(float **BENCH, int* timestamp)
 {
    int ii, jj, kk;
 
@@ -222,22 +254,21 @@ void sparselu_par_call(float **BENCH)
    {
       lu0(BENCH[kk*bots_arg_size+kk]);
       for (jj=kk+1; jj<bots_arg_size; jj++)
-         if (BENCH[kk*bots_arg_size+jj] != NULL)
+         if (BENCH[kk*bots_arg_size+jj] != NULL && timestamp[kk*bots_arg_size+jj] < kk)
          {
             fwd(BENCH[kk*bots_arg_size+kk], BENCH[kk*bots_arg_size+jj]);
          }
       for (ii=kk+1; ii<bots_arg_size; ii++) 
-         if (BENCH[ii*bots_arg_size+kk] != NULL)
+         if (BENCH[ii*bots_arg_size+kk] != NULL && timestamp[ii*bots_arg_size+kk] < kk)
          {
             bdiv (BENCH[kk*bots_arg_size+kk], BENCH[ii*bots_arg_size+kk]);
          }
 
       for (ii=kk+1; ii<bots_arg_size; ii++)
-         if (BENCH[ii*bots_arg_size+kk] != NULL)
+         if (BENCH[ii*bots_arg_size+kk] != NULL && timestamp[ii*bots_arg_size+kk] < kk)
             for (jj=kk+1; jj<bots_arg_size; jj++)
-               if (BENCH[kk*bots_arg_size+jj] != NULL)
+               if (BENCH[kk*bots_arg_size+jj] != NULL && timestamp[kk*bots_arg_size+jj] < kk)
                {
-                     if (BENCH[ii*bots_arg_size+jj]==NULL) BENCH[ii*bots_arg_size+jj] = allocate_clean_block();
                      bmod(BENCH[ii*bots_arg_size+kk], BENCH[kk*bots_arg_size+jj], BENCH[ii*bots_arg_size+jj]);
                }
 
@@ -250,25 +281,25 @@ void sparselu_seq(float **BENCH)
 {
    int ii, jj, kk;
 
-   for (kk=0; kk<bots_arg_size; kk++)
+   for (kk=0; kk<bots_arg_size; kk++) 
    {
       lu0(BENCH[kk*bots_arg_size+kk]);
       for (jj=kk+1; jj<bots_arg_size; jj++)
-         if (BENCH[kk*bots_arg_size+jj] != NULL)
+         if (BENCH[kk*bots_arg_size+jj] != NULL && timestamp[kk*bots_arg_size+jj] < kk)
          {
             fwd(BENCH[kk*bots_arg_size+kk], BENCH[kk*bots_arg_size+jj]);
          }
-      for (ii=kk+1; ii<bots_arg_size; ii++)
-         if (BENCH[ii*bots_arg_size+kk] != NULL)
+      for (ii=kk+1; ii<bots_arg_size; ii++) 
+         if (BENCH[ii*bots_arg_size+kk] != NULL && timestamp[ii*bots_arg_size+kk] < kk)
          {
             bdiv (BENCH[kk*bots_arg_size+kk], BENCH[ii*bots_arg_size+kk]);
          }
+
       for (ii=kk+1; ii<bots_arg_size; ii++)
-         if (BENCH[ii*bots_arg_size+kk] != NULL)
+         if (BENCH[ii*bots_arg_size+kk] != NULL && timestamp[ii*bots_arg_size+kk] < kk)
             for (jj=kk+1; jj<bots_arg_size; jj++)
-               if (BENCH[kk*bots_arg_size+jj] != NULL)
+               if (BENCH[kk*bots_arg_size+jj] != NULL && timestamp[kk*bots_arg_size+jj] < kk)
                {
-                     if (BENCH[ii*bots_arg_size+jj]==NULL) BENCH[ii*bots_arg_size+jj] = allocate_clean_block();
                      bmod(BENCH[ii*bots_arg_size+kk], BENCH[kk*bots_arg_size+jj], BENCH[ii*bots_arg_size+jj]);
                }
 
@@ -278,6 +309,8 @@ void sparselu_seq(float **BENCH)
 void sparselu_fini (float **BENCH, char *pass)
 {
    print_structure(pass, BENCH);
+   free(timestamp);
+   timestamp = NULL;
 }
 
 int sparselu_check(float **SEQ, float **BENCH)

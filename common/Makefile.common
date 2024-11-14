@@ -79,13 +79,100 @@ all: $(TARGETS)
 	$(CC) $(CC_ALL_FLAGS) -o $@ $<
 
 INFO_FLAGS=-DCDATE="\"$(TODAY)\"" -DCC="\"$(CC)\"" -DLD="\"$(CLINK)\"" -DCMESSAGE="\"$(CMESSAGE)\"" \
-	  -DLDFLAGS="\"$(CLINK_ALL_FLAGS) $(LIBS)\""
+	  -DLDFLAGS="\"$(CLINK_ALL_FLAGS) $(LIBS)\"" -DAPACFLAGS="\"$(APAC_ALL_FLAGS)\""
 
 main.o: $(COMMON_DIR)/bots_main.c app-desc.h Makefile $(COMMON_DIR)/Makefile.common
 	$(CC) $(CC_ALL_FLAGS) -I. -o $@ $< $(INFO_FLAGS) -DCFLAGS="\"$(CC_ALL_FLAGS) -I.\""
 
 $(BIN_DIR)/$(PROGRAM).$(LABEL).$(VERSION): main.o $(PROGRAM_OBJS) Makefile $(COMMON_DIR)/Makefile.common $(COMMON_OBJS)
 	$(CLINK) $(CLINK_ALL_FLAGS) -o $@ main.o $(PROGRAM_OBJS) $(LIBS) $(COMMON_OBJS)
+
+endif
+
+ifeq ($(VERSION),omp-apac)
+
+APAC_ALL_FLAGS  = $(APAC_FLAGS) -I $(COMMON_DIR) --skip=$(SKIP) --main=$(MAIN)
+
+TARGETS = $(BIN_DIR)/$(PROGRAM).$(LABEL).$(SUB)$(VERSION)
+
+SOURCES  = $(PROGRAM:%=%.c)
+SOURCES += $(PROGRAM:%=%-counters.c)
+SOURCES += $(PROGRAM:%=%-model.c)
+SOURCES += $(PROGRAM:%=%-both.c)
+
+PROFILING_PROGRAM_OBJS := $(PROGRAM_OBJS:%.o=%.in_profiling.o)
+
+ifdef CUTOFF_VERSIONS
+	TARGETS += $(CUTOFF_VERSIONS:%=$(BIN_DIR)/$(PROGRAM).$(LABEL).$(SUB)$(VERSION)-%)
+	
+	COUNTERS_PROGRAM_OBJS := $(PROGRAM_OBJS:%.o=%-counters.o)
+	MODEL_PROGRAM_OBJS := $(PROGRAM_OBJS:%.o=%-model.o)
+	BOTH_PROGRAM_OBJS := $(PROGRAM_OBJS:%.o=%-both.o)
+endif
+
+all: $(TARGETS)
+
+profiling: $(BIN_DIR)/$(PROGRAM).$(LABEL).$(SUB)$(VERSION)_profiling
+
+.c.o: Makefile $(COMMON_DIR)/Makefile.common
+	test "$<" != "$(PROGRAM).in.c" && $(OMPC) $(OMPC_ALL_FLAGS) -o $@ $<
+
+%.in_profiling.o: %.in_profiling.c Makefile $(COMMON_DIR)/Makefile.common
+	$(CC) $(CC_ALL_FLAGS) -o $@ $<
+
+%-counters.o: %-counters.c Makefile $(COMMON_DIR)/Makefile.common
+	$(OMPC) $(OMPC_ALL_FLAGS) -o $@ $<
+
+%-model.o: %-model.c Makefile $(COMMON_DIR)/Makefile.common
+	$(OMPC) $(OMPC_ALL_FLAGS) -o $@ $<
+
+%-both.o: %-both.c Makefile $(COMMON_DIR)/Makefile.common
+	$(OMPC) $(OMPC_ALL_FLAGS) -o $@ $<
+
+%.c: %.in.c $(COMMON_DIR)/Makefile.common 
+	$(APAC) $(APAC_ALL_FLAGS) -o $@ $<
+
+%-counters.c: %.in.c Makefile $(COMMON_DIR)/Makefile.common 
+	$(APAC) $(APAC_ALL_FLAGS) --cutoff -o $@ $<
+
+%-model.c: %.in.c Makefile $(COMMON_DIR)/Makefile.common 
+	$(APAC) $(APAC_ALL_FLAGS) --profile --profile-with="custom,$(BASE_DIR)/run/run-$(PROGRAM).sh -c 1 -l $(CC) -v omp-apac_profiling" -o $@ $<
+
+%-both.c: %.in.c Makefile $(COMMON_DIR)/Makefile.common 
+	$(APAC) $(APAC_ALL_FLAGS) --cutoff --profile --profile-with="custom,$(BASE_DIR)/run/run-$(PROGRAM).sh -c 1 -l $(CC) -v omp-apac_profiling" -o $@ $<
+
+INFO_FLAGS_OMP=-DCDATE="\"$(TODAY)\"" -DCC="\"$(OMPC)\"" -DLD="\"$(OMPLINK)\"" -DCMESSAGE="\"$(CMESSAGE)\"" \
+               -DLDFLAGS="\"$(OMPLINK_ALL_FLAGS) $(LIBS)\"" -DCFLAGS="\"$(OMPC_ALL_FLAGS) -I.\"" -DAPACFLAGS="\"$(APAC_ALL_FLAGS)\""
+
+main.o: $(COMMON_DIR)/bots_main.c app-desc.h Makefile $(COMMON_DIR)/Makefile.common
+	$(OMPC) $(OMPC_ALL_FLAGS) -I. -o $@ $< $(INFO_FLAGS_OMP) 
+
+main_profiling.o: $(COMMON_DIR)/bots_main.c app-desc.h Makefile $(COMMON_DIR)/Makefile.common
+	$(CC) $(CC_ALL_FLAGS) -I. -o $@ $<
+
+main-counters.o: $(COMMON_DIR)/bots_main.c app-desc.h Makefile $(COMMON_DIR)/Makefile.common
+	$(OMPC) $(OMPC_ALL_FLAGS) -I. -o $@ $< $(INFO_FLAGS_OMP)
+
+main-model.o: $(COMMON_DIR)/bots_main.c app-desc.h Makefile $(COMMON_DIR)/Makefile.common
+	$(OMPC) $(OMPC_ALL_FLAGS) -I. -o $@ $< $(INFO_FLAGS_OMP)
+
+main-both.o: $(COMMON_DIR)/bots_main.c app-desc.h Makefile $(COMMON_DIR)/Makefile.common
+	$(OMPC) $(OMPC_ALL_FLAGS) -I. -o $@ $< $(INFO_FLAGS_OMP)
+
+$(BIN_DIR)/$(PROGRAM).$(LABEL).$(SUB)$(VERSION): main.o $(PROGRAM_OBJS) Makefile $(COMMON_DIR)/Makefile.common $(OTHER_OBJS) $(COMMON_OBJS)
+	$(OMPLINK) $(OMPLINK_ALL_FLAGS) -o $@ main.o $(PROGRAM_OBJS) $(LIBS) $(OTHER_OBJS) $(COMMON_OBJS)
+
+$(BIN_DIR)/$(PROGRAM).$(LABEL).$(SUB)$(VERSION)_profiling: main_profiling.o $(PROFILING_PROGRAM_OBJS) Makefile $(COMMON_DIR)/Makefile.common $(OTHER_OBJS) $(COMMON_OBJS)
+	$(CLINK) -v $(CLINK_ALL_FLAGS) -o $@ main_profiling.o $(PROFILING_PROGRAM_OBJS) $(LIBS) $(OTHER_OBJS) $(COMMON_OBJS)
+
+$(BIN_DIR)/$(PROGRAM).$(LABEL).$(SUB)$(VERSION)-counters: main-counters.o $(COUNTERS_PROGRAM_OBJS) Makefile $(COMMON_DIR)/Makefile.common $(OTHER_OBJS) $(COMMON_OBJS) 
+	$(OMPLINK) $(OMPLINK_ALL_FLAGS) -o $@ main-counters.o $(COUNTERS_PROGRAM_OBJS) $(LIBS) $(OTHER_OBJS) $(COMMON_OBJS)
+
+$(BIN_DIR)/$(PROGRAM).$(LABEL).$(SUB)$(VERSION)-model: main-model.o $(MODEL_PROGRAM_OBJS) Makefile $(COMMON_DIR)/Makefile.common $(OTHER_OBJS) $(COMMON_OBJS)
+	$(OMPLINK) $(OMPLINK_ALL_FLAGS) -o $@ main-model.o $(MODEL_PROGRAM_OBJS) $(LIBS) $(OTHER_OBJS) $(COMMON_OBJS)
+
+$(BIN_DIR)/$(PROGRAM).$(LABEL).$(SUB)$(VERSION)-both: main-both.o $(BOTH_PROGRAM_OBJS) Makefile $(COMMON_DIR)/Makefile.common $(OTHER_OBJS) $(COMMON_OBJS)
+	$(OMPLINK) $(OMPLINK_ALL_FLAGS) -o $@ main-both.o $(BOTH_PROGRAM_OBJS) $(LIBS) $(OTHER_OBJS) $(COMMON_OBJS)
 
 endif
 
@@ -157,7 +244,7 @@ all: $(TARGETS)
 	rm tied-$<
 
 INFO_FLAGS_OMP=-DCDATE="\"$(TODAY)\"" -DCC="\"$(OMPC)\"" -DLD="\"$(OMPLINK)\"" -DCMESSAGE="\"$(CMESSAGE)\"" \
-               -DLDFLAGS="\"$(OMPLINK_ALL_FLAGS) $(LIBS)\""
+               -DLDFLAGS="\"$(OMPLINK_ALL_FLAGS) $(LIBS)\"" -DAPACFLAGS="\"$(APAC_ALL_FLAGS)\""
 
 main.o: $(COMMON_DIR)/bots_main.c app-desc.h Makefile $(COMMON_DIR)/Makefile.common
 	$(OMPC) $(OMPC_ALL_FLAGS) -I. -o $@ $< $(INFO_FLAGS_OMP) -DCFLAGS="\"$(OMPC_ALL_FLAGS) -I.\""
@@ -288,7 +375,7 @@ all: $(TARGETS)
 	rm tied-$<
 
 INFO_FLAGS_OMPSS=-DCDATE="\"$(TODAY)\"" -DCC="\"$(OMPSSC)\"" -DLD="\"$(OMPSSLINK)\"" -DCMESSAGE="\"$(CMESSAGE)\"" \
-               -DLDFLAGS="\"$(OMPSSLINK_ALL_FLAGS) $(LIBS)\""
+               -DLDFLAGS="\"$(OMPSSLINK_ALL_FLAGS) $(LIBS)\"" -DAPACFLAGS="\"$(APAC_ALL_FLAGS)\""
 
 main.o: $(COMMON_DIR)/bots_main.c app-desc.h Makefile $(COMMON_DIR)/Makefile.common
 	$(OMPSSC) $(OMPSSC_ALL_FLAGS) -I. -o $@ $< $(INFO_FLAGS_OMPSS) -DCFLAGS="\"$(OMPSSC_ALL_FLAGS) -I.\""

@@ -20,8 +20,10 @@
 
 BASE_DIR = ../../
 LIBS= -lm
-TIED_VERSIONS=yes
-PROGRAM_OBJS=alignment.o sequence.o
+CUTOFF_VERSIONS = counters model both
+OTHER_OBJS=sequence.o
+SKIP = init_matrix,pairalign_init,align_init,align_end,align_verify
+MAIN = align
 
 #
 # Don't change below here 

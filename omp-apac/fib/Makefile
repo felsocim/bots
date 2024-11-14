@@ -21,8 +21,9 @@
 #LIBS = 
 #PROGRAM_OBJS=
 
-CUTOFF_VERSIONS = manual if_clause final 
-TIED_VERSIONS = yes
+CUTOFF_VERSIONS = counters model both
+SKIP = fib_verify_value,fib_verify
+MAIN = fib0
 
 BASE_DIR = ../../
 

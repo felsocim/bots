@@ -21,7 +21,9 @@
 #LIBS = 
 #PROGRAM_OBJS=
 
-TIED_VERSIONS = yes
+CUTOFF_VERSIONS = counters model both
+SKIP = sort_init,sort_verify
+MAIN = sort_par
 
 BASE_DIR = ../../
 

@@ -21,7 +21,9 @@
 LIBS = -lm
 #PROGRAM_OBJS=
 
-TIED_VERSIONS = yes
+CUTOFF_VERSIONS = counters model both
+SKIP = test_correctness
+MAIN = fft
 
 BASE_DIR = ../../
 

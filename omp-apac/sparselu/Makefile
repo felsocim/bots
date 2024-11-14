@@ -21,7 +21,9 @@
 #LIBS = 
 #PROGRAM_OBJS=
 
-TIED_VERSIONS = yes
+CUTOFF_VERSIONS = counters model both
+SKIP = checkmat,genmat,print_structure,allocate_clean_block,sparselu_init,sparselu_fini,sparselu_check
+MAIN = sparselu_par_call
 
 BASE_DIR = ../../
 

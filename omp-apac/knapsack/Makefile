@@ -21,8 +21,9 @@
 #LIBS = 
 #PROGRAM_OBJS=
 
-CUTOFF_VERSIONS = manual if_clause
-TIED_VERSIONS = yes
+CUTOFF_VERSIONS = counters model both
+SKIP = read_input,knapsack_check
+MAIN = knapsack_main_par
 
 BASE_DIR = ../../
 

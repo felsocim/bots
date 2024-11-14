@@ -31,7 +31,7 @@ int* MIN_FOOTPRINT;
 
 int N;
 
-int starts(int id, int shape, int** NWS, const cell* cells) {
+int starts(int id, int shape, int** NWS, cell* cells) {
   int i, n, top, bot, lhs, rhs;
   int rows, cols, left, above;
   rows = cells[id].alt[shape][0];
@@ -71,7 +71,7 @@ int starts(int id, int shape, int** NWS, const cell* cells) {
   return n;
 }
 
-int lay_down(int id, char board[64][64], const cell* cells) {
+int lay_down(int id, char board[64][64], cell* cells) {
   int i, j, top, bot, lhs, rhs;
   top = cells[id].top;
   bot = cells[id].bot;
@@ -149,7 +149,7 @@ void write_outputs() {
   }
 }
 
-int add_cell(int id, const int FOOTPRINT[2], char BOARD[64][64], cell* CELLS) {
+int add_cell(int id, int FOOTPRINT[2], char BOARD[64][64], cell* CELLS) {
   int __apac_result;
 #pragma omp taskgroup
   {

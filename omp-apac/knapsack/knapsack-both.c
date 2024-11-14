@@ -30,9 +30,10 @@ int read_input(const char* filename, item_t* items, int* capacity, int* n) {
   }
   fscanf(f, "%d", n);
   fscanf(f, "%d", capacity);
-  for (i = 0; i < *n; ++i) fscanf(f, "%d %d", &items[i].value, &items[i].weight);
+  for (i = 0; i < *n; ++i)
+    fscanf(f, "%d %d", &items[i].value, &items[i].weight);
   fclose(f);
-  qsort(items, *n, sizeof(item_t), &compare);
+  qsort(items, *n, sizeof(item_t), compare);
   return 0;
 }
 
@@ -57,9 +58,14 @@ void knapsack_par(item_t* e, int c, int n, int v, int* sol, int l) {
       *sol = -2147483647 - 1;
       goto __apac_exit;
     }
-#pragma omp task default(shared) depend(in : c, e, e[0], l, n, v) depend(inout : without)
+#pragma omp task default(shared) depend(in                     \
+                                        : c, e, e[0], l, n, v) \
+    depend(inout                                               \
+           : without)
     knapsack_par(e + 1, c, n - 1, v, &without, l + 1);
-#pragma omp task default(shared) depend(in : c, e, e[0], l, n, v) depend(inout : with)
+#pragma omp task default(shared) depend(in                                  \
+                                        : c, e, e[0], l, n, v) depend(inout \
+                                                                      : with)
     knapsack_par(e + 1, c - e->weight, n - 1, v + e->value, &with, l + 1);
 #pragma omp taskwait
     best = (with > without ? with : without);
@@ -110,7 +116,9 @@ void knapsack_main_par(item_t* e, int c, int n, int* sol) {
       number_of_tasks = 0;
       bots_number_of_tasks += number_of_tasks;
     }
-#pragma omp task default(shared) depend(in : c, e, e[0], n, sol) depend(inout : sol[0])
+#pragma omp task default(shared) depend(in                                 \
+                                        : c, e, e[0], n, sol) depend(inout \
+                                                                     : sol[0])
     knapsack_par(e, c, n, 0, sol, 0);
 #pragma omp taskwait
     if (bots_verbose_mode) {
@@ -127,7 +135,8 @@ void knapsack_main_seq(item_t* e, int c, int n, int* sol) {
     number_of_tasks = 0;
   }
   knapsack_seq(e, c, n, 0, sol);
-  if (bots_verbose_mode) printf("Best value for sequential execution is %d\n\n", *sol);
+  if (bots_verbose_mode)
+    printf("Best value for sequential execution is %d\n\n", *sol);
 }
 
 int knapsack_check(int sol_seq, int sol_par) {

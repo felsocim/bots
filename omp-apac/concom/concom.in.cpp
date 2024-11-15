@@ -25,7 +25,7 @@
 
 #include <stdatomic.h>
 
-#include "app-desc.h"
+#include "app-desc.hpp"
 #include "bots.h"
 
 // bots_arg_size == Number of nodes

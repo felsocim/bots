@@ -2,9 +2,9 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-#include "molecular_dyn.h"
+#include "molecular_dyn.hpp"
 #include "bots.h"
-#include "tools.h"
+#include "tools.hpp"
 
 Cell cell_create(int capacity) {
   Cell new_cell;

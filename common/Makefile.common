@@ -104,7 +104,8 @@ COMMON_OBJS = $(COMMON_DIR)/bots_common_cxx.o
 APAC_ALL_FLAGS  = $(APAC_FLAGS) -I $(COMMON_DIR) --skip=$(SKIP) --main=$(MAIN)
 PROFILING_PROGRAM_OBJS := $(PROGRAM_OBJS:%.o=%.in_profiling.o)
 
-TARGETS = $(BIN_DIR)/$(PROGRAM).$(LABEL).$(SUB)$(VERSION)
+TARGETS  = $(BIN_DIR)/$(PROGRAM).$(LABEL).$(SUB)$(VERSION) 
+TARGETS += $(BIN_DIR)/$(PROGRAM).$(LABEL).$(SUB)$(VERSION)_seq
 
 ifdef CUTOFF_VERSIONS
 	TARGETS += $(CUTOFF_VERSIONS:%=$(BIN_DIR)/$(PROGRAM).$(LABEL).$(SUB)$(VERSION)-%)
@@ -119,7 +120,10 @@ all: $(TARGETS)
 profiling: $(BIN_DIR)/$(PROGRAM).$(LABEL).$(SUB)$(VERSION)_profiling
 
 .cpp.o: Makefile $(COMMON_DIR)/Makefile.common
-	test "$<" != "$(PROGRAM).in.cpp" && $(OMPCXX) $(OMPCXX_ALL_FLAGS) -o $@ $<
+	$(OMPCXX) $(OMPCXX_ALL_FLAGS) -o $@ $<
+
+$(PROGRAM).in.o: $(PROGRAM).in.cpp Makefile $(COMMON_DIR)/Makefile.common
+	$(CXX) $(CXX_ALL_FLAGS) -o $@ $<
 
 $(PROGRAM).in_profiling.o: $(PROGRAM).in_profiling.cpp Makefile $(COMMON_DIR)/Makefile.common
 	$(CXX) $(CXX_ALL_FLAGS) -o $@ $<
@@ -148,11 +152,17 @@ $(PROGRAM)-both.cpp: $(PROGRAM).in.cpp Makefile $(COMMON_DIR)/Makefile.common
 INFO_FLAGS_OMP=-DCDATE="\"$(TODAY)\"" -DCC="\"$(OMPCXX)\"" -DLD="\"$(OMPCXXLINK)\"" -DCMESSAGE="\"$(CMESSAGE)\"" \
                -DLDFLAGS="\"$(OMPCXXLINK_ALL_FLAGS) $(LIBS)\"" -DCFLAGS="\"$(OMPCXX_ALL_FLAGS) -I.\"" -DAPACFLAGS="\"$(APAC_ALL_FLAGS)\""
 
+INFO_FLAGS_CXX=-DCDATE="\"$(TODAY)\"" -DCC="\"$(CXX)\"" -DLD="\"$(CXXLINK)\"" -DCMESSAGE="\"$(CMESSAGE)\"" \
+               -DLDFLAGS="\"$(CXXLINK_ALL_FLAGS) $(LIBS)\"" -DCFLAGS="\"$(CXX_ALL_FLAGS) -I.\""
+
 main.o: $(COMMON_DIR)/bots_main_cxx.cpp app-desc.hpp Makefile $(COMMON_DIR)/Makefile.common
-	$(OMPCXX) $(OMPCXX_ALL_FLAGS) -I. -o $@ $< $(INFO_FLAGS_OMP) 
+	$(OMPCXX) $(OMPCXX_ALL_FLAGS) -I. -o $@ $< $(INFO_FLAGS_OMP)
+
+main_seq.o: $(COMMON_DIR)/bots_main_cxx.cpp app-desc.hpp Makefile $(COMMON_DIR)/Makefile.common
+	$(CXX) $(CXX_ALL_FLAGS) -I. -o $@ $< $(INFO_FLAGS_CXX)
 
 main_profiling.o: $(COMMON_DIR)/bots_main_cxx.cpp app-desc.hpp Makefile $(COMMON_DIR)/Makefile.common
-	$(CXX) $(CXX_ALL_FLAGS) -I. -o $@ $<
+	$(CXX) $(CXX_ALL_FLAGS) -I. -o $@ $< $(INFO_FLAGS_CXX) -DAPACFLAGS="\"$(APAC_ALL_FLAGS)\""
 
 main-counters.o: $(COMMON_DIR)/bots_main_cxx.cpp app-desc.hpp Makefile $(COMMON_DIR)/Makefile.common
 	$(OMPCXX) $(OMPCXX_ALL_FLAGS) -I. -o $@ $< $(INFO_FLAGS_OMP)
@@ -165,6 +175,9 @@ main-both.o: $(COMMON_DIR)/bots_main_cxx.cpp app-desc.hpp Makefile $(COMMON_DIR)
 
 $(BIN_DIR)/$(PROGRAM).$(LABEL).$(SUB)$(VERSION): main.o $(PROGRAM_OBJS) Makefile $(COMMON_DIR)/Makefile.common $(OTHER_OBJS) $(COMMON_OBJS)
 	$(OMPCXXLINK) $(OMPCXXLINK_ALL_FLAGS) -o $@ main.o $(PROGRAM_OBJS) $(LIBS) $(OTHER_OBJS) $(COMMON_OBJS)
+
+$(BIN_DIR)/$(PROGRAM).$(LABEL).$(SUB)$(VERSION)_seq: main_seq.o $(PROGRAM).in.o Makefile $(COMMON_DIR)/Makefile.common $(OTHER_OBJS) $(COMMON_OBJS)
+	$(CXXLINK) $(CXXLINK_ALL_FLAGS) -o $@ main_seq.o $(PROGRAM).in.o $(LIBS) $(OTHER_OBJS) $(COMMON_OBJS)
 
 $(BIN_DIR)/$(PROGRAM).$(LABEL).$(SUB)$(VERSION)_profiling: main_profiling.o $(PROFILING_PROGRAM_OBJS) Makefile $(COMMON_DIR)/Makefile.common $(OTHER_OBJS) $(COMMON_OBJS)
 	$(CXXLINK) $(CXXLINK_ALL_FLAGS) -o $@ main_profiling.o $(PROFILING_PROGRAM_OBJS) $(LIBS) $(OTHER_OBJS) $(COMMON_OBJS)

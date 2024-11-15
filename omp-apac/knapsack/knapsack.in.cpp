@@ -30,7 +30,7 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <string.h>
-#include "app-desc.h"
+#include "app-desc.hpp"
 #include "bots.h"
 
 int best_so_far;

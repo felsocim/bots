@@ -39,13 +39,17 @@ TODAY := $(shell date "+%Y/%m/%d;%H:%M")
 
 OMPSSC_ALL_FLAGS=-c -I$(COMMON_DIR) $(OPT_FLAGS) $(OMPSSC_FLAGS) $(APP_FLAGS)
 OMPC_ALL_FLAGS=-c -I$(COMMON_DIR) $(OPT_FLAGS) $(OMPC_FLAGS) $(APP_FLAGS)
-CC_ALL_FLAGS=-c -I$(COMMON_DIR) $(OPT_FLAGS) $(CC_FLAGS) $(APP_FLAGS) 
+OMPCXX_ALL_FLAGS=-c -I$(COMMON_DIR) $(OPT_FLAGS) $(OMPCXX_FLAGS) $(APP_FLAGS)
+CC_ALL_FLAGS=-c -I$(COMMON_DIR) $(OPT_FLAGS) $(CC_FLAGS) $(APP_FLAGS)
+CXX_ALL_FLAGS=-c -I$(COMMON_DIR) $(OPT_FLAGS) $(CXX_FLAGS) $(APP_FLAGS)
 
 # Link commands
 
 OMPSSLINK_ALL_FLAGS=$(OPT_FLAGS) $(OMPSSLINK_FLAGS) $(APP_FLAGS)
 OMPLINK_ALL_FLAGS=$(OPT_FLAGS) $(OMPLINK_FLAGS) $(APP_FLAGS)
+OMPCXXLINK_ALL_FLAGS=$(OPT_FLAGS) $(OMPCXXLINK_FLAGS) $(APP_FLAGS)
 CLINK_ALL_FLAGS=$(OPT_FLAGS) $(CC_FLAGS) $(APP_FLAGS)
+CXXLINK_ALL_FLAGS=$(OPT_FLAGS) $(CXX_FLAGS) $(APP_FLAGS)
 
 # generic rules
 
@@ -67,6 +71,10 @@ COMMON_OBJS = $(COMMON_DIR)/bots_common.o
 ifeq ($(VERSION),common)
 .c.o: Makefile $(COMMON_DIR)/Makefile.common
 	$(CC) $(CC_ALL_FLAGS) -o $@ $<
+ifeq ($(APAC),apac)
+.cpp.o: Makefile $(COMMON_DIR)/Makefile.common
+	$(CXX) $(CXX_ALL_FLAGS) -o $@ $<
+endif
 endif
 
 ifeq ($(VERSION),serial)
@@ -91,7 +99,10 @@ endif
 
 ifeq ($(VERSION),omp-apac)
 
+COMMON_OBJS = $(COMMON_DIR)/bots_common_cxx.o
+
 APAC_ALL_FLAGS  = $(APAC_FLAGS) -I $(COMMON_DIR) --skip=$(SKIP) --main=$(MAIN)
+PROFILING_PROGRAM_OBJS := $(PROGRAM_OBJS:%.o=%.in_profiling.o)
 
 TARGETS = $(BIN_DIR)/$(PROGRAM).$(LABEL).$(SUB)$(VERSION)
 
@@ -107,65 +118,65 @@ all: $(TARGETS)
 
 profiling: $(BIN_DIR)/$(PROGRAM).$(LABEL).$(SUB)$(VERSION)_profiling
 
-.c.o: Makefile $(COMMON_DIR)/Makefile.common
-	test "$<" != "$(PROGRAM).in.c" && $(OMPC) $(OMPC_ALL_FLAGS) -o $@ $<
+.cpp.o: Makefile $(COMMON_DIR)/Makefile.common
+	test "$<" != "$(PROGRAM).in.cpp" && $(OMPCXX) $(OMPCXX_ALL_FLAGS) -o $@ $<
 
-%.in_profiling.o: %.in_profiling.c Makefile $(COMMON_DIR)/Makefile.common
-	$(CC) $(CC_ALL_FLAGS) -o $@ $<
+$(PROGRAM).in_profiling.o: $(PROGRAM).in_profiling.cpp Makefile $(COMMON_DIR)/Makefile.common
+	$(CXX) $(CXX_ALL_FLAGS) -o $@ $<
 
-%-counters.o: %-counters.c Makefile $(COMMON_DIR)/Makefile.common
-	$(OMPC) $(OMPC_ALL_FLAGS) -o $@ $<
+$(PROGRAM)-counters.o: $(PROGRAM)-counters.cpp Makefile $(COMMON_DIR)/Makefile.common
+	$(OMPCXX) $(OMPCXX_ALL_FLAGS) -o $@ $<
 
-%-model.o: %-model.c Makefile $(COMMON_DIR)/Makefile.common
-	$(OMPC) $(OMPC_ALL_FLAGS) -o $@ $<
+$(PROGRAM)-model.o: $(PROGRAM)-model.cpp Makefile $(COMMON_DIR)/Makefile.common
+	$(OMPCXX) $(OMPCXX_ALL_FLAGS) -o $@ $<
 
-%-both.o: %-both.c Makefile $(COMMON_DIR)/Makefile.common
-	$(OMPC) $(OMPC_ALL_FLAGS) -o $@ $<
+$(PROGRAM)-both.o: $(PROGRAM)-both.cpp Makefile $(COMMON_DIR)/Makefile.common
+	$(OMPCXX) $(OMPCXX_ALL_FLAGS) -o $@ $<
 
-%.c: %.in.c $(COMMON_DIR)/Makefile.common 
+$(PROGRAM).cpp: $(PROGRAM).in.cpp $(COMMON_DIR)/Makefile.common 
 	$(APAC) $(APAC_ALL_FLAGS) -o $@ $<
 
-%-counters.c: %.in.c Makefile $(COMMON_DIR)/Makefile.common 
+$(PROGRAM)-counters.cpp: $(PROGRAM).in.cpp Makefile $(COMMON_DIR)/Makefile.common 
 	$(APAC) $(APAC_ALL_FLAGS) --cutoff -o $@ $<
 
-%-model.c: %.in.c Makefile $(COMMON_DIR)/Makefile.common 
+$(PROGRAM)-model.cpp: $(PROGRAM).in.cpp Makefile $(COMMON_DIR)/Makefile.common 
 	$(APAC) $(APAC_ALL_FLAGS) --profile --run-with-custom="bash $(BASE_DIR)/run/run-$(PROGRAM).sh -c 1 -l $(CC) -v omp-apac_profiling" -o $@ $<
 
-%-both.c: %.in.c Makefile $(COMMON_DIR)/Makefile.common 
+$(PROGRAM)-both.cpp: $(PROGRAM).in.cpp Makefile $(COMMON_DIR)/Makefile.common 
 	$(APAC) $(APAC_ALL_FLAGS) --cutoff --profile --run-with-custom="bash $(BASE_DIR)/run/run-$(PROGRAM).sh -c 1 -l $(CC) -v omp-apac_profiling" -o $@ $<
 
-INFO_FLAGS_OMP=-DCDATE="\"$(TODAY)\"" -DCC="\"$(OMPC)\"" -DLD="\"$(OMPLINK)\"" -DCMESSAGE="\"$(CMESSAGE)\"" \
-               -DLDFLAGS="\"$(OMPLINK_ALL_FLAGS) $(LIBS)\"" -DCFLAGS="\"$(OMPC_ALL_FLAGS) -I.\"" -DAPACFLAGS="\"$(APAC_ALL_FLAGS)\""
+INFO_FLAGS_OMP=-DCDATE="\"$(TODAY)\"" -DCC="\"$(OMPCXX)\"" -DLD="\"$(OMPCXXLINK)\"" -DCMESSAGE="\"$(CMESSAGE)\"" \
+               -DLDFLAGS="\"$(OMPCXXLINK_ALL_FLAGS) $(LIBS)\"" -DCFLAGS="\"$(OMPCXX_ALL_FLAGS) -I.\"" -DAPACFLAGS="\"$(APAC_ALL_FLAGS)\""
 
-main.o: $(COMMON_DIR)/bots_main.c app-desc.h Makefile $(COMMON_DIR)/Makefile.common
-	$(OMPC) $(OMPC_ALL_FLAGS) -I. -o $@ $< $(INFO_FLAGS_OMP) 
+main.o: $(COMMON_DIR)/bots_main_cxx.cpp app-desc.hpp Makefile $(COMMON_DIR)/Makefile.common
+	$(OMPCXX) $(OMPCXX_ALL_FLAGS) -I. -o $@ $< $(INFO_FLAGS_OMP) 
 
-main_profiling.o: $(COMMON_DIR)/bots_main.c app-desc.h Makefile $(COMMON_DIR)/Makefile.common
-	$(CC) $(CC_ALL_FLAGS) -I. -o $@ $<
+main_profiling.o: $(COMMON_DIR)/bots_main_cxx.cpp app-desc.hpp Makefile $(COMMON_DIR)/Makefile.common
+	$(CXX) $(CXX_ALL_FLAGS) -I. -o $@ $<
 
-main-counters.o: $(COMMON_DIR)/bots_main.c app-desc.h Makefile $(COMMON_DIR)/Makefile.common
-	$(OMPC) $(OMPC_ALL_FLAGS) -I. -o $@ $< $(INFO_FLAGS_OMP)
+main-counters.o: $(COMMON_DIR)/bots_main_cxx.cpp app-desc.hpp Makefile $(COMMON_DIR)/Makefile.common
+	$(OMPCXX) $(OMPCXX_ALL_FLAGS) -I. -o $@ $< $(INFO_FLAGS_OMP)
 
-main-model.o: $(COMMON_DIR)/bots_main.c app-desc.h Makefile $(COMMON_DIR)/Makefile.common
-	$(OMPC) $(OMPC_ALL_FLAGS) -I. -o $@ $< $(INFO_FLAGS_OMP)
+main-model.o: $(COMMON_DIR)/bots_main_cxx.cpp app-desc.hpp Makefile $(COMMON_DIR)/Makefile.common
+	$(OMPCXX) $(OMPCXX_ALL_FLAGS) -I. -o $@ $< $(INFO_FLAGS_OMP)
 
-main-both.o: $(COMMON_DIR)/bots_main.c app-desc.h Makefile $(COMMON_DIR)/Makefile.common
-	$(OMPC) $(OMPC_ALL_FLAGS) -I. -o $@ $< $(INFO_FLAGS_OMP)
+main-both.o: $(COMMON_DIR)/bots_main_cxx.cpp app-desc.hpp Makefile $(COMMON_DIR)/Makefile.common
+	$(OMPCXX) $(OMPCXX_ALL_FLAGS) -I. -o $@ $< $(INFO_FLAGS_OMP)
 
 $(BIN_DIR)/$(PROGRAM).$(LABEL).$(SUB)$(VERSION): main.o $(PROGRAM_OBJS) Makefile $(COMMON_DIR)/Makefile.common $(OTHER_OBJS) $(COMMON_OBJS)
-	$(OMPLINK) $(OMPLINK_ALL_FLAGS) -o $@ main.o $(PROGRAM_OBJS) $(LIBS) $(OTHER_OBJS) $(COMMON_OBJS)
+	$(OMPCXXLINK) $(OMPCXXLINK_ALL_FLAGS) -o $@ main.o $(PROGRAM_OBJS) $(LIBS) $(OTHER_OBJS) $(COMMON_OBJS)
 
 $(BIN_DIR)/$(PROGRAM).$(LABEL).$(SUB)$(VERSION)_profiling: main_profiling.o $(PROFILING_PROGRAM_OBJS) Makefile $(COMMON_DIR)/Makefile.common $(OTHER_OBJS) $(COMMON_OBJS)
-	$(CLINK) -v $(CLINK_ALL_FLAGS) -o $@ main_profiling.o $(PROFILING_PROGRAM_OBJS) $(LIBS) $(OTHER_OBJS) $(COMMON_OBJS)
+	$(CXXLINK) $(CXXLINK_ALL_FLAGS) -o $@ main_profiling.o $(PROFILING_PROGRAM_OBJS) $(LIBS) $(OTHER_OBJS) $(COMMON_OBJS)
 
 $(BIN_DIR)/$(PROGRAM).$(LABEL).$(SUB)$(VERSION)-counters: main-counters.o $(COUNTERS_PROGRAM_OBJS) Makefile $(COMMON_DIR)/Makefile.common $(OTHER_OBJS) $(COMMON_OBJS) 
-	$(OMPLINK) $(OMPLINK_ALL_FLAGS) -o $@ main-counters.o $(COUNTERS_PROGRAM_OBJS) $(LIBS) $(OTHER_OBJS) $(COMMON_OBJS)
+	$(OMPCXXLINK) $(OMPCXXLINK_ALL_FLAGS) -o $@ main-counters.o $(COUNTERS_PROGRAM_OBJS) $(LIBS) $(OTHER_OBJS) $(COMMON_OBJS)
 
 $(BIN_DIR)/$(PROGRAM).$(LABEL).$(SUB)$(VERSION)-model: main-model.o $(MODEL_PROGRAM_OBJS) Makefile $(COMMON_DIR)/Makefile.common $(OTHER_OBJS) $(COMMON_OBJS)
-	$(OMPLINK) $(OMPLINK_ALL_FLAGS) -o $@ main-model.o $(MODEL_PROGRAM_OBJS) $(LIBS) $(OTHER_OBJS) $(COMMON_OBJS)
+	$(OMPCXXLINK) $(OMPCXXLINK_ALL_FLAGS) -o $@ main-model.o $(MODEL_PROGRAM_OBJS) $(LIBS) $(OTHER_OBJS) $(COMMON_OBJS)
 
 $(BIN_DIR)/$(PROGRAM).$(LABEL).$(SUB)$(VERSION)-both: main-both.o $(BOTH_PROGRAM_OBJS) Makefile $(COMMON_DIR)/Makefile.common $(OTHER_OBJS) $(COMMON_OBJS)
-	$(OMPLINK) $(OMPLINK_ALL_FLAGS) -o $@ main-both.o $(BOTH_PROGRAM_OBJS) $(LIBS) $(OTHER_OBJS) $(COMMON_OBJS)
+	$(OMPCXXLINK) $(OMPCXXLINK_ALL_FLAGS) -o $@ main-both.o $(BOTH_PROGRAM_OBJS) $(LIBS) $(OTHER_OBJS) $(COMMON_OBJS)
 
 endif
 

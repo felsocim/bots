@@ -21,7 +21,7 @@
 BASE_DIR=../
 VERSION=common
 
-all: bots_common.o
+all: bots_common.o bots_common_cxx.o
 
 include $(BASE_DIR)/common/Makefile.common
 

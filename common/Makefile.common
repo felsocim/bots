@@ -95,13 +95,6 @@ APAC_ALL_FLAGS  = $(APAC_FLAGS) -I $(COMMON_DIR) --skip=$(SKIP) --main=$(MAIN)
 
 TARGETS = $(BIN_DIR)/$(PROGRAM).$(LABEL).$(SUB)$(VERSION)
 
-SOURCES  = $(PROGRAM:%=%.c)
-SOURCES += $(PROGRAM:%=%-counters.c)
-SOURCES += $(PROGRAM:%=%-model.c)
-SOURCES += $(PROGRAM:%=%-both.c)
-
-PROFILING_PROGRAM_OBJS := $(PROGRAM_OBJS:%.o=%.in_profiling.o)
-
 ifdef CUTOFF_VERSIONS
 	TARGETS += $(CUTOFF_VERSIONS:%=$(BIN_DIR)/$(PROGRAM).$(LABEL).$(SUB)$(VERSION)-%)
 	

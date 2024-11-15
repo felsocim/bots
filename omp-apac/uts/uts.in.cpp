@@ -64,9 +64,9 @@
 #include <omp.h>
 #include <sys/time.h>
 
-#include "app-desc.h"
+#include "app-desc.hpp"
 #include "bots.h"
-#include "uts.h"
+#include "uts.hpp"
 
 /***********************************************************
  *  Global state                                           *

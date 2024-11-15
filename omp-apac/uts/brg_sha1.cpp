@@ -41,14 +41,9 @@
 #include <string.h>     /* for memcpy() etc.        */
 #include <stdio.h>
 
-#include "brg_sha1.h"
-#include "brg_endian.h"
+#include "brg_sha1.hpp"
+#include "brg_endian.hpp"
 #include "bots.h"
-
-#if defined(__cplusplus)
-extern "C"
-{
-#endif
 
 /** BEGIN: UTS RNG Harness **/
 
@@ -335,7 +330,3 @@ VOID_RETURN sha1(unsigned char hval[], const unsigned char data[], unsigned long
 
     sha1_begin(cx); sha1_hash(data, len, cx); sha1_end(hval, cx);
 }
-
-#if defined(__cplusplus)
-}
-#endif

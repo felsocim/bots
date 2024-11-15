@@ -35,11 +35,11 @@
  Issue Date: 01/08/2005
 */
 
-#ifndef _SHA1_H
-#define _SHA1_H
+#ifndef _SHA1_HPP
+#define _SHA1_HPP
 
 #include <stdlib.h>
-#include "brg_types.h"
+#include "brg_types.hpp"
 
 #define SHA1_BLOCK_SIZE  64
 #define SHA1_DIGEST_SIZE 20

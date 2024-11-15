@@ -44,8 +44,8 @@
  can be used to convert the types used here to the C99 standard types.
 */
 
-#ifndef BRG_TYPES_H
-#define BRG_TYPES_H
+#ifndef BRG_TYPES_HPP
+#define BRG_TYPES_HPP
 
 #include <sys/types.h>
 

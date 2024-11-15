@@ -35,8 +35,8 @@
  Issue 20/10/2006
 */
 
-#ifndef BRG_ENDIAN_H
-#define BRG_ENDIAN_H
+#ifndef BRG_ENDIAN_HPP
+#define BRG_ENDIAN_HPP
 
 #define IS_BIG_ENDIAN      4321 /* byte 0 is most significant (mc68k) */
 #define IS_LITTLE_ENDIAN   1234 /* byte 0 is least significant (i386) */

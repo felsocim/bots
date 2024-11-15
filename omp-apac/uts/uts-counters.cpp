@@ -1,5 +1,3 @@
-#include "uts.h"
-
 #include <math.h>
 #include <omp.h>
 #include <stdio.h>
@@ -7,8 +5,23 @@
 #include <string.h>
 #include <sys/time.h>
 
-#include "app-desc.h"
+#include "app-desc.hpp"
 #include "bots.h"
+#include "uts.hpp"
+
+const static int __apac_count_infinite = getenv("APAC_TASK_COUNT_INFINITE") ? 1 : 0;
+
+const static int __apac_depth_infinite = getenv("APAC_TASK_DEPTH_INFINITE") ? 1 : 0;
+
+const static int __apac_count_max = getenv("APAC_TASK_COUNT_MAX") ? atoi(getenv("APAC_TASK_COUNT_MAX")) : omp_get_max_threads() * 10;
+
+const static int __apac_depth_max = getenv("APAC_TASK_DEPTH_MAX") ? atoi(getenv("APAC_TASK_DEPTH_MAX")) : 5;
+
+int __apac_count = 0;
+
+int __apac_depth = 0;
+
+#pragma omp threadprivate(__apac_depth)
 
 long long unsigned int nLeaves = 0;
 
@@ -77,12 +90,41 @@ long long unsigned int parallel_uts(Node* root) {
 #pragma omp master
 #pragma omp taskgroup
   {
+    int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
+    int __apac_depth_local = __apac_depth;
+    int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
     long long unsigned int num_nodes = 0;
-#pragma omp task default(shared) depend(inout : root, root[0])
-    root->numChildren = uts_numChildren(root);
+    if (__apac_count_ok) {
+#pragma omp atomic
+      __apac_count++;
+    }
+#pragma omp task default(shared) depend(inout : root, root[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+    {
+      if (__apac_count_ok || __apac_depth_ok) {
+        __apac_depth = __apac_depth_local + 1;
+      }
+      root->numChildren = uts_numChildren(root);
+      if (__apac_count_ok) {
+#pragma omp atomic
+        __apac_count--;
+      }
+    }
     bots_message("Computing Unbalance Tree Search algorithm ");
-#pragma omp task default(shared) depend(in : root) depend(inout : num_nodes, root[0])
-    num_nodes = parTreeSearch(0, root, root->numChildren);
+    if (__apac_count_ok) {
+#pragma omp atomic
+      __apac_count++;
+    }
+#pragma omp task default(shared) depend(in : root) depend(inout : num_nodes, root[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+    {
+      if (__apac_count_ok || __apac_depth_ok) {
+        __apac_depth = __apac_depth_local + 1;
+      }
+      num_nodes = parTreeSearch(0, root, root->numChildren);
+      if (__apac_count_ok) {
+#pragma omp atomic
+        __apac_count--;
+      }
+    }
 #pragma omp taskwait
     bots_message(" completed!");
     __apac_result = num_nodes;
@@ -96,6 +138,9 @@ long long unsigned int parTreeSearch(int depth, Node* parent, int numChildren) {
   long long unsigned int __apac_result;
 #pragma omp taskgroup
   {
+    int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
+    int __apac_depth_local = __apac_depth;
+    int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
     Node n[numChildren];
     Node* nodePtr;
     int i, j;
@@ -108,10 +153,21 @@ long long unsigned int parTreeSearch(int depth, Node* parent, int numChildren) {
 #pragma omp taskwait depend(inout : i, n, parent)
         rng_spawn(parent->state.state, nodePtr->state.state, i);
       }
-#pragma omp task default(shared) depend(in : partialCount, depth) depend(inout : partialCount[i], n) firstprivate(i)
+      if (__apac_count_ok) {
+#pragma omp atomic
+        __apac_count++;
+      }
+#pragma omp task default(shared) depend(in : partialCount, depth) depend(inout : partialCount[i], n) firstprivate(__apac_depth_local, i) if (__apac_count_ok || __apac_depth_ok)
       {
+        if (__apac_count_ok || __apac_depth_ok) {
+          __apac_depth = __apac_depth_local + 1;
+        }
         nodePtr->numChildren = uts_numChildren(nodePtr);
         partialCount[i] = parTreeSearch(depth + 1, nodePtr, nodePtr->numChildren);
+        if (__apac_count_ok) {
+#pragma omp atomic
+          __apac_count--;
+        }
       }
     }
 #pragma omp taskwait
@@ -127,7 +183,7 @@ long long unsigned int parTreeSearch(int depth, Node* parent, int numChildren) {
 
 void uts_read_file(char* filename) {
   FILE* fin;
-  if ((fin = fopen(filename, "r")) == (void*)0) {
+  if ((fin = fopen(filename, "r")) == NULL) {
     bots_message("Could not open input file (%s)\n", filename);
     exit(-1);
   }

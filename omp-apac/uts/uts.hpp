@@ -12,10 +12,10 @@
  *  ** THIS IS A PRE-RELEASE VERSION OF UTS. **
  */
 
-#ifndef _UTS_H
-#define _UTS_H
+#ifndef _UTS_HPP
+#define _UTS_HPP
 
-#include "brg_sha1.h"
+#include "brg_sha1.hpp"
 
 #define UTS_VERSION "2.1"
 

@@ -18,7 +18,7 @@
 /*  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA            */
 /**********************************************************************************************/
 #include "omp-tasks-app.h"
-#include "uts.h"
+#include "uts.hpp"
 
 #define BOTS_APP_NAME "Unbalance Tree Search"
 #define BOTS_APP_PARAMETERS_DESC "%s"

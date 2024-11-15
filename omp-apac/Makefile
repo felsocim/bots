@@ -26,6 +26,7 @@ DIRS += fib
 #DIRS += floorplan
 #DIRS += knapsack
 #DIRS += nqueens
+DIRS += quicksort
 #DIRS += sort
 DIRS += sparselu
 #DIRS += strassen

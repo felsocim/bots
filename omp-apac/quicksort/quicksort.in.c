@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 #include <time.h>
+#include "quicksort.h"
+#include "bots.h"
 
 void partition(int * out_pivot, int * arr, int right_limit) {
   int pivot = arr[right_limit - 1];
@@ -56,36 +59,28 @@ void sort(int * in_out_data, int in_size) {
   sort_core(in_out_data, in_size);
 }
 
-int main(int argc, char ** argv){
-  int size = 1000000;
-  if(argc > 1) {
-    size = atoi(argv[1]);
-  }
-  
-  int * data = (int *) malloc(size * sizeof(int));
+int * init(int in_size) {
+  int * data = (int *) malloc((size_t) in_size * sizeof(int));
 
   if(!data) {
-    perror("Array allocation failure");
-    return 1;
+    bots_error(errno, "unable to allocate the array of items to sort");
   }
   
   srand(time(NULL));
   
-  for(int idx = 0; idx < size; idx++) {
+  for(int idx = 0; idx < in_size; idx++) {
     data[idx] = rand();
   }
 
-  sort(data, size);
-  
-  int idx;
-  for(idx = 1; idx < size; idx++) {
-    if(data[idx - 1] > data[idx]){
-      fprintf(stderr, "Error: array is not sorted\n");
-      free(data);
-      return 1;
+  return data;
+}
+
+int check(int * in_out_data, int in_size) {
+  for(int idx = 1; idx < in_size; idx++) {
+    if(in_out_data[idx - 1] > in_out_data[idx]){
+      return BOTS_RESULT_UNSUCCESSFUL;
     }
   }
 
-  free(data);
-  return 0;
+  return BOTS_RESULT_SUCCESSFUL;
 }

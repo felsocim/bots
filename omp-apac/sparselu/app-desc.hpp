@@ -34,8 +34,8 @@
 
 #define BOTS_APP_INIT float **SEQ,**BENCH; int* timestamp = (int*)0;
 
-void sparselu_init(float ***pM, char *pass, int **timestamp);
-void sparselu_fini(float **M, char *pass, int **timestamp);
+void sparselu_init(float ***pM, const char *pass, int **timestamp);
+void sparselu_fini(float **M, const char *pass, int **timestamp);
 void sparselu_seq(float **SEQ, int *timestamp);
 void sparselu_par_call(float **BENCH, int *timestamp);
 int sparselu_check(float **SEQ, float **BENCH);

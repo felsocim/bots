@@ -287,22 +287,6 @@ if [ "$COMPILER" = "sunstudio" -a "$SUN" = "yes" ]; then
    OMPLINK_FLAGS=$DEBUG
 fi
 
-if [ "$COMPILER" = "clang" -a "$CLANG" = "yes" ]; then
-   CC=clang
-   CLINK=$CC
-   OMPC="$CC -fopenmp"
-   OMPLINK="$CC -fopenmp"
-   LABEL=clang
-   [ "$debug" = "yes" ] && DEBUG=$DEBUG -g
-   [ "$warnings" = "yes" ] && WARNINGS="$WARNINGS -Wall -Werror"
-
-   OPT_FLAGS=-O3
-   CC_FLAGS="$DEBUG $WARNINGS"
-   OMPC_FLAGS="$DEBUG $WARNINGS"
-   CLINK_FLAGS=$DEBUG
-   OMPLINK_FLAGS=$DEBUG
-fi
-
 if [ -z "$CC" ]; then
    echo "Wrong compiler configuration"
    exit 1

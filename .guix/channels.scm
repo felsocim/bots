@@ -10,4 +10,4 @@
  (channel
   (name 'apac)
   (url "https://gitlab.inria.fr/apac/channel.git")
-  (commit "4d5f537119d7839a008b490e56692151617804b2")))
+  (commit "9cd981cbd38e5b808b9d3b86b1186ecd97792856")))

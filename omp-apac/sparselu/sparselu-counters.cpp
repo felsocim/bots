@@ -79,12 +79,12 @@ void genmat(float* M[]) {
   }
 }
 
-void print_structure(char* name, float* M[]) {
+void print_structure(const char* name, float* M[]) {
   int ii, jj;
   bots_message("Structure for matrix %s @ 0x%p\n", name, M);
   for (ii = 0; ii < bots_arg_size; ii++) {
     for (jj = 0; jj < bots_arg_size; jj++) {
-      if (M[ii * bots_arg_size + jj] != (float*)0) {
+      if (M[ii * bots_arg_size + jj]) {
         bots_message("x");
       } else
         bots_message(" ");
@@ -99,7 +99,7 @@ float* allocate_clean_block() {
   float *p, *q;
   p = (float*)malloc(bots_arg_size_1 * bots_arg_size_1 * sizeof(float));
   q = p;
-  if (p != (float*)0) {
+  if (p) {
     for (i = 0; i < bots_arg_size_1; i++)
       for (j = 0; j < bots_arg_size_1; j++) {
         *p = 0.f;
@@ -145,16 +145,15 @@ void fwd(float* diag, float* col) {
 }
 
 void prealloc_sparselu_par_call(float** BENCH, int* timestamp) {
-  int ii, jj, kk;
   bots_message("Pre-allocating factorized matrix");
-  for (ii = kk + 1; ii < bots_arg_size; ii++)
-    for (jj = kk + 1; jj < bots_arg_size; jj++)
+  for (int ii = 0; ii < bots_arg_size; ii++)
+    for (int jj = 0; jj < bots_arg_size; jj++)
       if (BENCH[ii * bots_arg_size + jj]) timestamp[ii * bots_arg_size + jj] = -1;
-  for (kk = 0; kk < bots_arg_size; kk++) {
-    for (ii = kk + 1; ii < bots_arg_size; ii++)
-      if (BENCH[ii * bots_arg_size + kk] != (float*)0)
-        for (jj = kk + 1; jj < bots_arg_size; jj++)
-          if (BENCH[kk * bots_arg_size + jj] != (float*)0) {
+  for (int kk = 0; kk < bots_arg_size; kk++) {
+    for (int ii = kk + 1; ii < bots_arg_size; ii++)
+      if (BENCH[ii * bots_arg_size + kk])
+        for (int jj = kk + 1; jj < bots_arg_size; jj++)
+          if (BENCH[kk * bots_arg_size + jj]) {
             if (BENCH[ii * bots_arg_size + jj] == (float*)0) {
               timestamp[ii * bots_arg_size + jj] = kk;
               BENCH[ii * bots_arg_size + jj] = allocate_clean_block();
@@ -164,7 +163,7 @@ void prealloc_sparselu_par_call(float** BENCH, int* timestamp) {
   bots_message(" completed!\n");
 }
 
-void sparselu_init(float*** pBENCH, char* pass, int** timestamp) {
+void sparselu_init(float*** pBENCH, const char* pass, int** timestamp) {
   *pBENCH = (float**)malloc(bots_arg_size * bots_arg_size * sizeof(float*));
   genmat(*pBENCH);
   print_structure(pass, *pBENCH);
@@ -180,9 +179,8 @@ void sparselu_par_call(float** BENCH, int* timestamp) {
     int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
     int __apac_depth_local = __apac_depth;
     int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
-    int ii, jj, kk;
     bots_message("Computing SparseLU Factorization (%dx%d matrix with %dx%d blocks) ", bots_arg_size, bots_arg_size, bots_arg_size_1, bots_arg_size_1);
-    for (kk = 0; kk < bots_arg_size; kk++) {
+    for (int kk = 0; kk < bots_arg_size; kk++) {
       if (__apac_count_ok) {
 #pragma omp atomic
         __apac_count++;
@@ -198,9 +196,8 @@ void sparselu_par_call(float** BENCH, int* timestamp) {
           __apac_count--;
         }
       }
-#pragma omp taskwait depend(inout : jj)
-      for (jj = kk + 1; jj < bots_arg_size; jj++) {
-        if (BENCH[kk * bots_arg_size + jj] != (float*)0 && timestamp[kk * bots_arg_size + jj] < kk) {
+      for (int jj = kk + 1; jj < bots_arg_size; jj++) {
+        if (BENCH[kk * bots_arg_size + jj] && timestamp[kk * bots_arg_size + jj] < kk) {
           if (__apac_count_ok) {
 #pragma omp atomic
             __apac_count++;
@@ -218,9 +215,8 @@ void sparselu_par_call(float** BENCH, int* timestamp) {
           }
         }
       }
-#pragma omp taskwait depend(inout : ii)
-      for (ii = kk + 1; ii < bots_arg_size; ii++) {
-        if (BENCH[ii * bots_arg_size + kk] != (float*)0 && timestamp[ii * bots_arg_size + kk] < kk) {
+      for (int ii = kk + 1; ii < bots_arg_size; ii++) {
+        if (BENCH[ii * bots_arg_size + kk] && timestamp[ii * bots_arg_size + kk] < kk) {
           if (__apac_count_ok) {
 #pragma omp atomic
             __apac_count++;
@@ -238,12 +234,10 @@ void sparselu_par_call(float** BENCH, int* timestamp) {
           }
         }
       }
-#pragma omp taskwait depend(inout : ii)
-      for (ii = kk + 1; ii < bots_arg_size; ii++) {
-        if (BENCH[ii * bots_arg_size + kk] != (float*)0 && timestamp[ii * bots_arg_size + kk] < kk) {
-#pragma omp taskwait depend(inout : jj)
-          for (jj = kk + 1; jj < bots_arg_size; jj++) {
-            if (BENCH[kk * bots_arg_size + jj] != (float*)0 && timestamp[kk * bots_arg_size + jj] < kk) {
+      for (int ii = kk + 1; ii < bots_arg_size; ii++) {
+        if (BENCH[ii * bots_arg_size + kk] && timestamp[ii * bots_arg_size + kk] < kk) {
+          for (int jj = kk + 1; jj < bots_arg_size; jj++) {
+            if (BENCH[kk * bots_arg_size + jj] && timestamp[kk * bots_arg_size + jj] < kk) {
               if (__apac_count_ok) {
 #pragma omp atomic
                 __apac_count++;
@@ -270,27 +264,26 @@ void sparselu_par_call(float** BENCH, int* timestamp) {
 }
 
 void sparselu_seq(float** BENCH, int* timestamp) {
-  int ii, jj, kk;
-  for (kk = 0; kk < bots_arg_size; kk++) {
+  for (int kk = 0; kk < bots_arg_size; kk++) {
     lu0(BENCH[kk * bots_arg_size + kk]);
-    for (jj = kk + 1; jj < bots_arg_size; jj++)
-      if (BENCH[kk * bots_arg_size + jj] != (float*)0 && timestamp[kk * bots_arg_size + jj] < kk) {
+    for (int jj = kk + 1; jj < bots_arg_size; jj++)
+      if (BENCH[kk * bots_arg_size + jj] && timestamp[kk * bots_arg_size + jj] < kk) {
         fwd(BENCH[kk * bots_arg_size + kk], BENCH[kk * bots_arg_size + jj]);
       }
-    for (ii = kk + 1; ii < bots_arg_size; ii++)
-      if (BENCH[ii * bots_arg_size + kk] != (float*)0 && timestamp[ii * bots_arg_size + kk] < kk) {
+    for (int ii = kk + 1; ii < bots_arg_size; ii++)
+      if (BENCH[ii * bots_arg_size + kk] && timestamp[ii * bots_arg_size + kk] < kk) {
         bdiv(BENCH[kk * bots_arg_size + kk], BENCH[ii * bots_arg_size + kk]);
       }
-    for (ii = kk + 1; ii < bots_arg_size; ii++)
-      if (BENCH[ii * bots_arg_size + kk] != (float*)0 && timestamp[ii * bots_arg_size + kk] < kk)
-        for (jj = kk + 1; jj < bots_arg_size; jj++)
-          if (BENCH[kk * bots_arg_size + jj] != (float*)0 && timestamp[kk * bots_arg_size + jj] < kk) {
+    for (int ii = kk + 1; ii < bots_arg_size; ii++)
+      if (BENCH[ii * bots_arg_size + kk] && timestamp[ii * bots_arg_size + kk] < kk)
+        for (int jj = kk + 1; jj < bots_arg_size; jj++)
+          if (BENCH[kk * bots_arg_size + jj] && timestamp[kk * bots_arg_size + jj] < kk) {
             bmod(BENCH[ii * bots_arg_size + kk], BENCH[kk * bots_arg_size + jj], BENCH[ii * bots_arg_size + jj]);
           }
   }
 }
 
-void sparselu_fini(float** BENCH, char* pass, int** timestamp) {
+void sparselu_fini(float** BENCH, const char* pass, int** timestamp) {
   print_structure(pass, BENCH);
   free(*timestamp);
   *timestamp = (int*)0;
@@ -300,9 +293,9 @@ int sparselu_check(float** SEQ, float** BENCH) {
   int ii, jj, ok = 1;
   for (ii = 0; ii < bots_arg_size && ok; ii++) {
     for (jj = 0; jj < bots_arg_size && ok; jj++) {
-      if (SEQ[ii * bots_arg_size + jj] == (float*)0 && BENCH[ii * bots_arg_size + jj] != (float*)0) ok = 0;
-      if (SEQ[ii * bots_arg_size + jj] != (float*)0 && BENCH[ii * bots_arg_size + jj] == (float*)0) ok = 0;
-      if (SEQ[ii * bots_arg_size + jj] != (float*)0 && BENCH[ii * bots_arg_size + jj] != (float*)0) ok = checkmat(SEQ[ii * bots_arg_size + jj], BENCH[ii * bots_arg_size + jj]);
+      if (SEQ[ii * bots_arg_size + jj] == (float*)0 && BENCH[ii * bots_arg_size + jj]) ok = 0;
+      if (SEQ[ii * bots_arg_size + jj] && BENCH[ii * bots_arg_size + jj] == (float*)0) ok = 0;
+      if (SEQ[ii * bots_arg_size + jj] && BENCH[ii * bots_arg_size + jj]) ok = checkmat(SEQ[ii * bots_arg_size + jj], BENCH[ii * bots_arg_size + jj]);
     }
   }
   if (ok)

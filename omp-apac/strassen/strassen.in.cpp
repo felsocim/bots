@@ -37,9 +37,9 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "app-desc.h"
+#include "app-desc.hpp"
 #include "bots.h"
-#include "strassen.h"
+#include "strassen.hpp"
 
 /***********************************************************************
  * Naive sequential algorithm, for comparison purposes

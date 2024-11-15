@@ -17,8 +17,8 @@
 /*  along with this program; if not, write to the Free Software                               */
 /*  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA            */
 /**********************************************************************************************/
-#ifndef _STRASSEN_H
-#define _STRASSEN_H
+#ifndef _STRASSEN_HPP
+#define _STRASSEN_HPP
 /* ******************************************************************* */
 /* STRASSEN APPLICATION CUT OFF's                                      */
 /* ******************************************************************* */

@@ -32,21 +32,21 @@
 #define BOTS_APP_DEF_ARG_SIZE_1 100
 #define BOTS_APP_DESC_ARG_SIZE_1 "Submatrix Size"
 
-#define BOTS_APP_INIT float **SEQ,**BENCH;
+#define BOTS_APP_INIT float **SEQ,**BENCH; int* timestamp = (int*)0;
 
-void sparselu_init(float ***pM, char *pass);
-void sparselu_fini(float **M, char *pass);
-void sparselu_seq(float **SEQ);
-void sparselu_par_call(float **BENCH);
+void sparselu_init(float ***pM, char *pass, int **timestamp);
+void sparselu_fini(float **M, char *pass, int **timestamp);
+void sparselu_seq(float **SEQ, int *timestamp);
+void sparselu_par_call(float **BENCH, int *timestamp);
 int sparselu_check(float **SEQ, float **BENCH);
 
-#define KERNEL_INIT sparselu_init(&BENCH,"benchmark");
-#define KERNEL_CALL sparselu_par_call(BENCH);
-#define KERNEL_FINI sparselu_fini(BENCH,"benchmark");
+#define KERNEL_INIT sparselu_init(&BENCH,"benchmark",&timestamp);
+#define KERNEL_CALL sparselu_par_call(BENCH,timestamp);
+#define KERNEL_FINI sparselu_fini(BENCH,"benchmark",&timestamp);
 
-#define KERNEL_SEQ_INIT sparselu_init(&SEQ,"serial");
-#define KERNEL_SEQ_CALL sparselu_seq(SEQ);
-#define KERNEL_SEQ_FINI sparselu_fini(SEQ,"serial");
+#define KERNEL_SEQ_INIT sparselu_init(&SEQ,"serial",&timestamp);
+#define KERNEL_SEQ_CALL sparselu_seq(SEQ,timestamp);
+#define KERNEL_SEQ_FINI sparselu_fini(SEQ,"serial",&timestamp);
 
 #define BOTS_APP_CHECK_USES_SEQ_RESULT
 #define KERNEL_CHECK sparselu_check(SEQ,BENCH);

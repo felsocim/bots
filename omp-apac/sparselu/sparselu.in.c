@@ -204,9 +204,6 @@ void fwd(float *diag, float *col)
             col[i*bots_arg_size_1+j] = col[i*bots_arg_size_1+j] - diag[i*bots_arg_size_1+k]*col[k*bots_arg_size_1+j];
 }
 
-int* timestamp = NULL;
-
-
 void prealloc_sparselu_par_call(float **BENCH, int* timestamp)
 {
    int ii, jj, kk;
@@ -234,14 +231,14 @@ void prealloc_sparselu_par_call(float **BENCH, int* timestamp)
    bots_message(" completed!\n");
 }
 
-void sparselu_init (float ***pBENCH, char *pass)
+void sparselu_init (float ***pBENCH, char *pass, int **timestamp)
 {
    *pBENCH = (float **) malloc(bots_arg_size*bots_arg_size*sizeof(float *));
    genmat(*pBENCH);
    print_structure(pass, *pBENCH);
 
-   timestamp = (int*)calloc(bots_arg_size*bots_arg_size,sizeof(int));
-   prealloc_sparselu_par_call(*pBENCH, timestamp);
+   (*timestamp) = (int*)calloc(bots_arg_size*bots_arg_size,sizeof(int));
+   prealloc_sparselu_par_call(*pBENCH, *timestamp);
 }
 
 void sparselu_par_call(float **BENCH, int* timestamp)
@@ -277,7 +274,7 @@ void sparselu_par_call(float **BENCH, int* timestamp)
 }
 
 
-void sparselu_seq(float **BENCH)
+void sparselu_seq(float **BENCH, int* timestamp)
 {
    int ii, jj, kk;
 
@@ -306,11 +303,11 @@ void sparselu_seq(float **BENCH)
    }
 }
 
-void sparselu_fini (float **BENCH, char *pass)
+void sparselu_fini (float **BENCH, char *pass, int **timestamp)
 {
    print_structure(pass, BENCH);
-   free(timestamp);
-   timestamp = NULL;
+   free(*timestamp);
+   (*timestamp) = (int*)0;
 }
 
 int sparselu_check(float **SEQ, float **BENCH)

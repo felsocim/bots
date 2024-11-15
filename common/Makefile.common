@@ -442,7 +442,7 @@ endif
 endif
 
 clean:
-	rm -fr *.o *.log apac_profiling.hpp *.in_profiling.c *.profile *.model
+	rm -fr *.o *.log apac_profiling.hpp *.in_profiling.cpp *.profile *.model
 
 dist-clean: clean
 

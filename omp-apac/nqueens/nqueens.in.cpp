@@ -30,7 +30,7 @@
 #include <memory.h>
 #include <alloca.h>
 #include "bots.h"
-#include "app-desc.h"
+#include "app-desc.hpp"
 #include <omp.h>
 
 

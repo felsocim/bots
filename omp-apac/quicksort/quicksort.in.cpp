@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <time.h>
-#include "quicksort.h"
+#include "quicksort.hpp"
 #include "bots.h"
 
 void partition(int * out_pivot, int * arr, int right_limit) {

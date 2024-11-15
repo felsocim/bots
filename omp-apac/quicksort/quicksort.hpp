@@ -18,8 +18,8 @@
 /*  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA            */
 /**********************************************************************************************/
 
-#ifndef QUICKSORT_H
-#define QUICKSORT_H
+#ifndef QUICKSORT_HPP
+#define QUICKSORT_HPP
 void partition(int *, int *, int);
 void insertion_sort(int *, int);
 void sort_core(int *, int);

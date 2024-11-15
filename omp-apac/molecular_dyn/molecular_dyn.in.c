@@ -2,23 +2,9 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-#include "tools.hpp"
-
-typedef struct {
-  double x, y, z;
-  double weight;
-  double vx, vy, vz;
-} Particle_symb;
-
-typedef struct {
-  double fx, fy, fz;
-} Particle_forces;
-
-typedef struct {
-  Particle_symb * particles_symb;
-  Particle_forces * particles_forces;
-  int size, capacity;
-} Cell;
+#include "molecular_dyn.h"
+#include "bots.h"
+#include "tools.h"
 
 Cell cell_create(int capacity) {
   Cell new_cell;
@@ -138,12 +124,6 @@ void cell_update(Particle_symb* particles_symb, Particle_forces* particles_force
     particles_symb[idxPart].z += particles_symb[idxPart].vz * time_step;
   }
 }
-
-typedef struct {
-  double box_width, cell_width;
-  int nb_cells_per_dim, capacity;
-  Cell* cells;
-} Grid;
 
 int grid_cell_idx_from_position(const double cell_width, const int nb_cells_per_dim, Particle_symb particle) {  
   int x = (int) (particle.x / cell_width),
@@ -363,29 +343,42 @@ void fill_cell_with_rand_particles(Cell* inCell, double box_width, int size){
   }
 }
 
-int main() {
-  const double box_width = 1;
-  const double cell_width = 0.20;
-  const int steps = 5;
-  const double time_step = 0.001;
-  const int size = 20000;
+static int check_symb(Particle_symb p1, Particle_symb p2) {
+  return (p1.x == p2.x) && (p1.y == p2.y) && (p1.z == p2.z) && 
+    (p1.weight == p2.weight) && (p1.vx == p2.vx) && (p1.vy == p2.vy) && 
+    (p1.vz == p2.vz);
+}
 
-  Cell cell = cell_create(size);
-  fill_cell_with_rand_particles(&cell, box_width, size);
-  
-  int* sizes = NULL;
-  Particle_symb** particles_symb = NULL;
-  Particle_forces** particles_forces = NULL;
-  const int nb_cells_per_dim = grid_create(box_width, cell_width,
-                                            cell.particles_symb, cell.particles_forces, cell.size,
-                                           &sizes, &particles_symb, &particles_forces);
-  cell_destroy(&cell);
+static int check_force(Particle_forces p1, Particle_forces p2) {
+  return (p1.fx == p2.fx) && (p1.fy == p2.fy) && (p1.fz == p2.fz);
+}
 
-  for(int idx = 0 ; idx < steps ; idx++){
-    grid_compute(nb_cells_per_dim, sizes, particles_symb, particles_forces);
-    grid_update(size, nb_cells_per_dim, box_width, cell_width, time_step, &sizes, &particles_symb, &particles_forces);
+int check(
+  const int nb_cells_per_dim, int* sizes, 
+  Particle_symb** particles_symb_seq, Particle_forces** particles_forces_seq, 
+  Particle_symb** particles_symb_par, Particle_forces** particles_forces_par
+) {
+  for(int idx_x = 0; idx_x < nb_cells_per_dim; idx_x++) {
+    for(int idx_y = 0; idx_y < nb_cells_per_dim; idx_y++) {
+      for(int idx_z = 0; idx_z < nb_cells_per_dim; idx_z++) {
+        const int me = (idx_x * nb_cells_per_dim + idx_y)
+              * nb_cells_per_dim + idx_z;
+        Particle_symb * particle_sym_seq = particles_symb_seq[me];
+        Particle_symb * particle_sym_par = particles_symb_par[me];
+        Particle_forces * particle_forces_seq = particles_forces_seq[me];
+        Particle_forces * particle_forces_par = particles_forces_par[me];
+        const int size = sizes[me];
+        for(int idx = 0; idx < size; idx++) {
+          if(!check_symb(particle_sym_par[idx], particle_sym_seq[idx])) {
+            return BOTS_RESULT_UNSUCCESSFUL;
+          }
+          if(!check_force(particle_forces_par[idx], particle_forces_seq[idx])) {
+            return BOTS_RESULT_UNSUCCESSFUL;
+          }
+        }
+      }
+    }
   }
 
-  grid_destroy(nb_cells_per_dim, &sizes, &particles_symb, &particles_forces);
-  return 0;
+  return BOTS_RESULT_SUCCESSFUL;
 }

@@ -21,10 +21,10 @@
 /* Original code from the Application Kernel Matrix by Cray */
 /* that was based on the ClustalW application */
 
-#ifndef SEQUENCE_H
-#define SEQUENCE_H
+#ifndef SEQUENCE_HPP
+#define SEQUENCE_HPP
 
-size_t strlcpy(char *dst, const char *src, size_t size);
+size_t c_strlcpy(char *dst, const char *src, size_t size);
 void fill_chartab(char *chartab);
 void encode(char *seq, char *naseq, int l);
 void alloc_aln(int nseqs);

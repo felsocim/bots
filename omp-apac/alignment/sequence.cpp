@@ -25,15 +25,15 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
-#include "sequence.h"
-#include "sequence_extern.h"
-#include "alignment.h"
+#include "sequence.hpp"
+#include "sequence_extern.hpp"
+#include "alignment.hpp"
 #include "bots.h"
 
 /***********************************************************************
  * :
  **********************************************************************/
-size_t strlcpy(char *dst, const char *src, size_t siz)
+size_t c_strlcpy(char *dst, const char *src, size_t siz)
 {
    char *d = dst;
    const char *s = src;
@@ -129,7 +129,7 @@ char * get_seq(char *sname, int *len, char *chartab, FILE *fin)
    for (i = 1; i <= strlen(line); i++) if (line[i] != ' ') break;
    for (j = i; j <= strlen(line); j++) if (line[j] == ' ') break;
 
-   strlcpy(sname, line + i, j - i + 1);;
+   c_strlcpy(sname, line + i, j - i + 1);;
    sname[j - i] = EOS;
 
    while (fgets(line, MAXLINE+1, fin) != NULL) {

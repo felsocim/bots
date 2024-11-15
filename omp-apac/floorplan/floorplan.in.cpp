@@ -23,7 +23,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "app-desc.h"
+#include "app-desc.hpp"
 #include "bots.h"
 
 #define ROWS 64

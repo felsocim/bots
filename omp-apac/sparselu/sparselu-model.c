@@ -147,13 +147,46 @@ void fwd(float* diag, float* col) {
       for (i = k + 1; i < bots_arg_size_1; i++) col[i * bots_arg_size_1 + j] = col[i * bots_arg_size_1 + j] - diag[i * bots_arg_size_1 + k] * col[k * bots_arg_size_1 + j];
 }
 
-void sparselu_init(float*** pBENCH, char* pass) {
+void prealloc_sparselu_par_call(float** BENCH, int* timestamp) {
+#pragma omp taskgroup
+  {
+    int ii, jj, kk;
+    bots_message("Pre-allocating factorized matrix");
+    for (ii = kk + 1; ii < bots_arg_size; ii++) {
+      for (jj = kk + 1; jj < bots_arg_size; jj++) {
+        if (BENCH[ii * bots_arg_size + jj]) {
+          timestamp[ii * bots_arg_size + jj] = -1;
+        }
+      }
+    }
+    for (kk = 0; kk < bots_arg_size; kk++) {
+      for (ii = kk + 1; ii < bots_arg_size; ii++) {
+        if (BENCH[ii * bots_arg_size + kk] != (float*)0) {
+          for (jj = kk + 1; jj < bots_arg_size; jj++) {
+            if (BENCH[kk * bots_arg_size + jj] != (float*)0) {
+              if (BENCH[ii * bots_arg_size + jj] == (float*)0) {
+                timestamp[ii * bots_arg_size + jj] = kk;
+                BENCH[ii * bots_arg_size + jj] = allocate_clean_block();
+              }
+            }
+          }
+        }
+      }
+    }
+    bots_message(" completed!\n");
+  __apac_exit:;
+  }
+}
+
+void sparselu_init(float*** pBENCH, char* pass, int** timestamp) {
   *pBENCH = (float**)malloc(bots_arg_size * bots_arg_size * sizeof(float*));
   genmat(*pBENCH);
   print_structure(pass, *pBENCH);
+  *timestamp = (int*)calloc(bots_arg_size * bots_arg_size, sizeof(int));
+  prealloc_sparselu_par_call(*pBENCH, *timestamp);
 }
 
-void sparselu_par_call(float** BENCH) {
+void sparselu_par_call(float** BENCH, int* timestamp) {
 #pragma omp parallel
 #pragma omp master
 #pragma omp taskgroup
@@ -165,33 +198,24 @@ void sparselu_par_call(float** BENCH) {
       lu0(BENCH[kk * bots_arg_size + kk]);
 #pragma omp taskwait depend(inout : jj)
       for (jj = kk + 1; jj < bots_arg_size; jj++) {
-#pragma omp taskwait depend(in : BENCH, BENCH[kk * bots_arg_size + jj])
-        if (BENCH[kk * bots_arg_size + jj] != (float*)0) {
+        if (BENCH[kk * bots_arg_size + jj] != (float*)0 && timestamp[kk * bots_arg_size + jj] < kk) {
 #pragma omp task default(shared) depend(in : BENCH, BENCH[kk * bots_arg_size + jj], BENCH[kk * bots_arg_size + kk], BENCH[kk * bots_arg_size + kk][0]) depend(inout : BENCH[kk * bots_arg_size + jj][0]) firstprivate(kk, jj)
           fwd(BENCH[kk * bots_arg_size + kk], BENCH[kk * bots_arg_size + jj]);
         }
       }
 #pragma omp taskwait depend(inout : ii)
       for (ii = kk + 1; ii < bots_arg_size; ii++) {
-#pragma omp taskwait depend(in : BENCH, BENCH[ii * bots_arg_size + kk])
-        if (BENCH[ii * bots_arg_size + kk] != (float*)0) {
+        if (BENCH[ii * bots_arg_size + kk] != (float*)0 && timestamp[ii * bots_arg_size + kk] < kk) {
 #pragma omp task default(shared) depend(in : BENCH, BENCH[ii * bots_arg_size + kk], BENCH[kk * bots_arg_size + kk], BENCH[kk * bots_arg_size + kk][0]) depend(inout : BENCH[ii * bots_arg_size + kk][0]) firstprivate(kk, ii)
           bdiv(BENCH[kk * bots_arg_size + kk], BENCH[ii * bots_arg_size + kk]);
         }
       }
 #pragma omp taskwait depend(inout : ii)
       for (ii = kk + 1; ii < bots_arg_size; ii++) {
-#pragma omp taskwait depend(in : BENCH, BENCH[ii * bots_arg_size + kk])
-        if (BENCH[ii * bots_arg_size + kk] != (float*)0) {
+        if (BENCH[ii * bots_arg_size + kk] != (float*)0 && timestamp[ii * bots_arg_size + kk] < kk) {
 #pragma omp taskwait depend(inout : jj)
           for (jj = kk + 1; jj < bots_arg_size; jj++) {
-#pragma omp taskwait depend(in : BENCH, BENCH[kk * bots_arg_size + jj])
-            if (BENCH[kk * bots_arg_size + jj] != (float*)0) {
-#pragma omp taskwait depend(in : BENCH) depend(inout : BENCH[ii * bots_arg_size + jj])
-              if (BENCH[ii * bots_arg_size + jj] == (float*)0) {
-#pragma omp task default(shared) depend(in : BENCH) depend(inout : BENCH[ii * bots_arg_size + jj]) firstprivate(jj, ii)
-                BENCH[ii * bots_arg_size + jj] = allocate_clean_block();
-              }
+            if (BENCH[kk * bots_arg_size + jj] != (float*)0 && timestamp[kk * bots_arg_size + jj] < kk) {
 #pragma omp task default(shared) depend(in : BENCH, BENCH[ii * bots_arg_size + jj], BENCH[ii * bots_arg_size + kk], BENCH[ii * bots_arg_size + kk][0], BENCH[kk * bots_arg_size + jj], BENCH[kk * bots_arg_size + jj][0]) depend(inout : BENCH[ii * bots_arg_size + jj][0]) firstprivate(kk, jj, ii)
               bmod(BENCH[ii * bots_arg_size + kk], BENCH[kk * bots_arg_size + jj], BENCH[ii * bots_arg_size + jj]);
             }
@@ -204,29 +228,32 @@ void sparselu_par_call(float** BENCH) {
   }
 }
 
-void sparselu_seq(float** BENCH) {
+void sparselu_seq(float** BENCH, int* timestamp) {
   int ii, jj, kk;
   for (kk = 0; kk < bots_arg_size; kk++) {
     lu0(BENCH[kk * bots_arg_size + kk]);
     for (jj = kk + 1; jj < bots_arg_size; jj++)
-      if (BENCH[kk * bots_arg_size + jj] != (float*)0) {
+      if (BENCH[kk * bots_arg_size + jj] != (float*)0 && timestamp[kk * bots_arg_size + jj] < kk) {
         fwd(BENCH[kk * bots_arg_size + kk], BENCH[kk * bots_arg_size + jj]);
       }
     for (ii = kk + 1; ii < bots_arg_size; ii++)
-      if (BENCH[ii * bots_arg_size + kk] != (float*)0) {
+      if (BENCH[ii * bots_arg_size + kk] != (float*)0 && timestamp[ii * bots_arg_size + kk] < kk) {
         bdiv(BENCH[kk * bots_arg_size + kk], BENCH[ii * bots_arg_size + kk]);
       }
     for (ii = kk + 1; ii < bots_arg_size; ii++)
-      if (BENCH[ii * bots_arg_size + kk] != (float*)0)
+      if (BENCH[ii * bots_arg_size + kk] != (float*)0 && timestamp[ii * bots_arg_size + kk] < kk)
         for (jj = kk + 1; jj < bots_arg_size; jj++)
-          if (BENCH[kk * bots_arg_size + jj] != (float*)0) {
-            if (BENCH[ii * bots_arg_size + jj] == (float*)0) BENCH[ii * bots_arg_size + jj] = allocate_clean_block();
+          if (BENCH[kk * bots_arg_size + jj] != (float*)0 && timestamp[kk * bots_arg_size + jj] < kk) {
             bmod(BENCH[ii * bots_arg_size + kk], BENCH[kk * bots_arg_size + jj], BENCH[ii * bots_arg_size + jj]);
           }
   }
 }
 
-void sparselu_fini(float** BENCH, char* pass) { print_structure(pass, BENCH); }
+void sparselu_fini(float** BENCH, char* pass, int** timestamp) {
+  print_structure(pass, BENCH);
+  free(*timestamp);
+  *timestamp = (int*)0;
+}
 
 int sparselu_check(float** SEQ, float** BENCH) {
   int ii, jj, ok = 1;

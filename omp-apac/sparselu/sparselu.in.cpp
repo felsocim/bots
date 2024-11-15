@@ -25,7 +25,7 @@
 #include <math.h>
 #include <libgen.h>
 #include "bots.h"
-#include "sparselu.h"
+#include "sparselu.hpp"
 
 /***********************************************************************
  * checkmat: 

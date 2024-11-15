@@ -7,24 +7,7 @@
 #include <string.h>
 
 #include "bots.h"
-#include "sparselu.h"
-const double __apac_cutoff = getenv("APAC_EXECUTION_TIME_CUTOFF") ? atof(getenv("APAC_EXECUTION_TIME_CUTOFF")) : 2.22100e-6;
-
-template <class T>
-T apac_fpow(int exp, const T& base) {
-  T result = T(1);
-  T pow = base;
-  int i = exp;
-  while (i) {
-    if (i & 1) {
-      result *= pow;
-    }
-    pow *= pow;
-    i /= 2;
-  }
-  return result;
-}
-
+#include "sparselu.hpp"
 const static int __apac_count_infinite = getenv("APAC_TASK_COUNT_INFINITE") ? 1 : 0;
 
 const static int __apac_depth_infinite = getenv("APAC_TASK_DEPTH_INFINITE") ? 1 : 0;
@@ -162,56 +145,23 @@ void fwd(float* diag, float* col) {
 }
 
 void prealloc_sparselu_par_call(float** BENCH, int* timestamp) {
-#pragma omp taskgroup
-  {
-    int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
-    int __apac_depth_local = __apac_depth;
-    int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
-    int ii, jj, kk;
-    bots_message("Pre-allocating factorized matrix");
-    for (ii = kk + 1; ii < bots_arg_size; ii++) {
-      for (jj = kk + 1; jj < bots_arg_size; jj++) {
-        if (BENCH[ii * bots_arg_size + jj]) {
-          timestamp[ii * bots_arg_size + jj] = -1;
-        }
-      }
-    }
-    for (kk = 0; kk < bots_arg_size; kk++) {
-#pragma omp taskwait depend(inout : ii)
-      for (ii = kk + 1; ii < bots_arg_size; ii++) {
-#pragma omp taskwait depend(in : BENCH, BENCH[ii * bots_arg_size + kk])
-        if (BENCH[ii * bots_arg_size + kk] != (float*)0) {
-#pragma omp taskwait depend(inout : jj)
-          for (jj = kk + 1; jj < bots_arg_size; jj++) {
-#pragma omp taskwait depend(in : BENCH, BENCH[kk * bots_arg_size + jj])
-            if (BENCH[kk * bots_arg_size + jj] != (float*)0) {
-#pragma omp taskwait depend(in : BENCH) depend(inout : BENCH[ii * bots_arg_size + jj])
-              if (BENCH[ii * bots_arg_size + jj] == (float*)0) {
-                timestamp[ii * bots_arg_size + jj] = kk;
-                if (__apac_count_ok) {
-#pragma omp atomic
-                  __apac_count++;
-                }
-#pragma omp task default(shared) depend(in : BENCH) depend(inout : BENCH[ii * bots_arg_size + jj]) firstprivate(__apac_depth_local, jj, ii) if (__apac_count_ok || __apac_depth_ok)
-                {
-                  if (__apac_count_ok || __apac_depth_ok) {
-                    __apac_depth = __apac_depth_local + 1;
-                  }
-                  BENCH[ii * bots_arg_size + jj] = allocate_clean_block();
-                  if (__apac_count_ok) {
-#pragma omp atomic
-                    __apac_count--;
-                  }
-                }
-              }
+  int ii, jj, kk;
+  bots_message("Pre-allocating factorized matrix");
+  for (ii = kk + 1; ii < bots_arg_size; ii++)
+    for (jj = kk + 1; jj < bots_arg_size; jj++)
+      if (BENCH[ii * bots_arg_size + jj]) timestamp[ii * bots_arg_size + jj] = -1;
+  for (kk = 0; kk < bots_arg_size; kk++) {
+    for (ii = kk + 1; ii < bots_arg_size; ii++)
+      if (BENCH[ii * bots_arg_size + kk] != (float*)0)
+        for (jj = kk + 1; jj < bots_arg_size; jj++)
+          if (BENCH[kk * bots_arg_size + jj] != (float*)0) {
+            if (BENCH[ii * bots_arg_size + jj] == (float*)0) {
+              timestamp[ii * bots_arg_size + jj] = kk;
+              BENCH[ii * bots_arg_size + jj] = allocate_clean_block();
             }
           }
-        }
-      }
-    }
-    bots_message(" completed!\n");
-  __apac_exit:;
   }
+  bots_message(" completed!\n");
 }
 
 void sparselu_init(float*** pBENCH, char* pass, int** timestamp) {

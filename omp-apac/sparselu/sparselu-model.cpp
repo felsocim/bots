@@ -6,7 +6,7 @@
 #include <string.h>
 
 #include "bots.h"
-#include "sparselu.h"
+#include "sparselu.hpp"
 
 const double __apac_cutoff = getenv("APAC_EXECUTION_TIME_CUTOFF") ? atof(getenv("APAC_EXECUTION_TIME_CUTOFF")) : 2.22100e-6;
 
@@ -148,34 +148,23 @@ void fwd(float* diag, float* col) {
 }
 
 void prealloc_sparselu_par_call(float** BENCH, int* timestamp) {
-#pragma omp taskgroup
-  {
-    int ii, jj, kk;
-    bots_message("Pre-allocating factorized matrix");
-    for (ii = kk + 1; ii < bots_arg_size; ii++) {
-      for (jj = kk + 1; jj < bots_arg_size; jj++) {
-        if (BENCH[ii * bots_arg_size + jj]) {
-          timestamp[ii * bots_arg_size + jj] = -1;
-        }
-      }
-    }
-    for (kk = 0; kk < bots_arg_size; kk++) {
-      for (ii = kk + 1; ii < bots_arg_size; ii++) {
-        if (BENCH[ii * bots_arg_size + kk] != (float*)0) {
-          for (jj = kk + 1; jj < bots_arg_size; jj++) {
-            if (BENCH[kk * bots_arg_size + jj] != (float*)0) {
-              if (BENCH[ii * bots_arg_size + jj] == (float*)0) {
-                timestamp[ii * bots_arg_size + jj] = kk;
-                BENCH[ii * bots_arg_size + jj] = allocate_clean_block();
-              }
+  int ii, jj, kk;
+  bots_message("Pre-allocating factorized matrix");
+  for (ii = kk + 1; ii < bots_arg_size; ii++)
+    for (jj = kk + 1; jj < bots_arg_size; jj++)
+      if (BENCH[ii * bots_arg_size + jj]) timestamp[ii * bots_arg_size + jj] = -1;
+  for (kk = 0; kk < bots_arg_size; kk++) {
+    for (ii = kk + 1; ii < bots_arg_size; ii++)
+      if (BENCH[ii * bots_arg_size + kk] != (float*)0)
+        for (jj = kk + 1; jj < bots_arg_size; jj++)
+          if (BENCH[kk * bots_arg_size + jj] != (float*)0) {
+            if (BENCH[ii * bots_arg_size + jj] == (float*)0) {
+              timestamp[ii * bots_arg_size + jj] = kk;
+              BENCH[ii * bots_arg_size + jj] = allocate_clean_block();
             }
           }
-        }
-      }
-    }
-    bots_message(" completed!\n");
-  __apac_exit:;
   }
+  bots_message(" completed!\n");
 }
 
 void sparselu_init(float*** pBENCH, char* pass, int** timestamp) {

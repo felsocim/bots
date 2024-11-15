@@ -66,7 +66,7 @@ int * init(int in_size) {
     bots_error(errno, "unable to allocate the array of items to sort");
   }
   
-  srand(time(NULL));
+  srand(time((time_t *)0));
   
   for(int idx = 0; idx < in_size; idx++) {
     data[idx] = rand();

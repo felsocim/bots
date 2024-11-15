@@ -30,7 +30,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "bots.h"
-#include "app-desc.h"
+#include "app-desc.hpp"
 
 /* Definitions and operations for complex numbers */
 

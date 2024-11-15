@@ -1,5 +1,5 @@
-#ifndef FFT_H
-#define FFT_H
+#ifndef FFT_HPP
+#define FFT_HPP
 
 /* our real numbers */
 typedef double REAL;

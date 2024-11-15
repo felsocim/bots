@@ -136,10 +136,10 @@ profiling: $(BIN_DIR)/$(PROGRAM).$(LABEL).$(SUB)$(VERSION)_profiling
 	$(APAC) $(APAC_ALL_FLAGS) --cutoff -o $@ $<
 
 %-model.c: %.in.c Makefile $(COMMON_DIR)/Makefile.common 
-	$(APAC) $(APAC_ALL_FLAGS) --profile --profile-with="custom,$(BASE_DIR)/run/run-$(PROGRAM).sh -c 1 -l $(CC) -v omp-apac_profiling" -o $@ $<
+	$(APAC) $(APAC_ALL_FLAGS) --profile --run-with-custom="bash $(BASE_DIR)/run/run-$(PROGRAM).sh -c 1 -l $(CC) -v omp-apac_profiling" -o $@ $<
 
 %-both.c: %.in.c Makefile $(COMMON_DIR)/Makefile.common 
-	$(APAC) $(APAC_ALL_FLAGS) --cutoff --profile --profile-with="custom,$(BASE_DIR)/run/run-$(PROGRAM).sh -c 1 -l $(CC) -v omp-apac_profiling" -o $@ $<
+	$(APAC) $(APAC_ALL_FLAGS) --cutoff --profile --run-with-custom="bash $(BASE_DIR)/run/run-$(PROGRAM).sh -c 1 -l $(CC) -v omp-apac_profiling" -o $@ $<
 
 INFO_FLAGS_OMP=-DCDATE="\"$(TODAY)\"" -DCC="\"$(OMPC)\"" -DLD="\"$(OMPLINK)\"" -DCMESSAGE="\"$(CMESSAGE)\"" \
                -DLDFLAGS="\"$(OMPLINK_ALL_FLAGS) $(LIBS)\"" -DCFLAGS="\"$(OMPC_ALL_FLAGS) -I.\"" -DAPACFLAGS="\"$(APAC_ALL_FLAGS)\""

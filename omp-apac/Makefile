@@ -25,12 +25,13 @@ DIRS  =
 DIRS += fib
 #DIRS += floorplan
 #DIRS += knapsack
+#DIRS += moldyn
 #DIRS += nqueens
 DIRS += quicksort
 #DIRS += sort
 DIRS += sparselu
 #DIRS += strassen
-DIRS += uts
+#DIRS += uts
 
 RECURSIVE=all-recursive clean-recursive dist-clean-recursive
 

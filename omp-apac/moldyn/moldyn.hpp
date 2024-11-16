@@ -38,6 +38,10 @@ void grid_update(
   Particle_symb***, Particle_forces***
 );
 void fill_cell_with_rand_particles(Cell*, double, int);
+void compute(
+  const int, const int, const int, const double, const double, double, int**,
+  Particle_symb***, Particle_forces***
+);
 int check(
   const int, int*, Particle_symb**, Particle_forces**, Particle_symb**, 
   Particle_forces**

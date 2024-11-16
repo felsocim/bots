@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-#include "molecular_dyn.hpp"
+#include "moldyn.hpp"
 #include "bots.h"
 #include "tools.hpp"
 
@@ -340,6 +340,21 @@ void fill_cell_with_rand_particles(Cell* inCell, double box_width, int size){
     particle_forces.fy = random_number();
     particle_forces.fz = random_number();
     cell_add_particle(inCell, particle, particle_forces);
+  }
+}
+
+void compute(
+  const int steps, const int nb_particles, const int nb_cells_per_dim,
+  const double box_width, const double cell_width, double time_step,
+  int** sizes, Particle_symb*** particles_symb, 
+  Particle_forces*** particles_forces
+) {
+  for(int idx = 0; idx < steps; idx++) {
+    grid_compute(nb_cells_per_dim, *sizes, *particles_symb, *particles_forces);
+    grid_update(
+      nb_particles, nb_cells_per_dim, box_width, cell_width, time_step, sizes,
+      particles_symb, particles_forces
+    );
   }
 }
 

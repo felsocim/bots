@@ -1,0 +1,11 @@
+[test]
+inputs=1000000
+
+[small]
+inputs=1000000
+
+[medium]
+inputs=10000000
+
+[large]
+inputs=100000000

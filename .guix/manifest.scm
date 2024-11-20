@@ -3,6 +3,8 @@
   "bash"
   "coreutils"
   "diffutils"
+  "valgrind"
+  "gdb"
   "grep"
   "sed"
   "make"

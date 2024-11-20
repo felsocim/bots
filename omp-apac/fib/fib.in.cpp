@@ -26,7 +26,7 @@ long long fib_results[FIB_RESULTS_PRE] = {0,1,1,2,3,5,8,13,21,34,55,89,144,233,3
 
 long long fib_seq (int n)
 {
-	int x, y;
+	long long x, y;
 	if (n < 2) return n;
 
 	x = fib_seq(n - 1);

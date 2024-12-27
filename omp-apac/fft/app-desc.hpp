@@ -19,7 +19,7 @@
 /**********************************************************************************************/
 
 #include "omp-tasks-app.h"
-#include "fft.h"
+#include "fft.hpp"
 
 #define BOTS_APP_NAME "FFT"
 #define BOTS_APP_PARAMETERS_DESC "Size=%d"

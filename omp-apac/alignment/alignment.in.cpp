@@ -27,9 +27,9 @@
 #include <math.h>
 #include <sys/time.h>
 #include <libgen.h>
-#include "param.h"
-#include "sequence.h"
-#include "alignment.h"
+#include "param.hpp"
+#include "sequence.hpp"
+#include "alignment.hpp"
 #include "bots.h"
 
 int ktup, window, signif;

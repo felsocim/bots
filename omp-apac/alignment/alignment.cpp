@@ -1,4 +1,4 @@
-#include "alignment.h"
+#include "alignment.hpp"
 
 #include <libgen.h>
 #include <math.h>
@@ -8,8 +8,8 @@
 #include <sys/time.h>
 
 #include "bots.h"
-#include "param.h"
-#include "sequence.h"
+#include "param.hpp"
+#include "sequence.hpp"
 
 int ktup;
 

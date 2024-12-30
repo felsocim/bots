@@ -89,8 +89,10 @@ ELM *seqpart(ELM *low, ELM *high)
 	  if (curr_low >= curr_high)
 	       break;
 
-	  *curr_high-- = l;
-	  *curr_low++ = h;
+       *curr_high = l;
+	  curr_high--;
+	  *curr_low = h;
+       curr_low++;
      }
 
      /*
@@ -172,13 +174,17 @@ void seqmerge(ELM *low1, ELM *high1, ELM *low2, ELM *high2,
 	  a2 = *low2;
 	  for (;;) {
 	       if (a1 < a2) {
-		    *lowdest++ = a1;
-		    a1 = *++low1;
+		    *lowdest = a1;
+		    lowdest++;
+              ++low1;
+		    a1 = *low1;
 		    if (low1 >= high1)
 			 break;
 	       } else {
-		    *lowdest++ = a2;
-		    a2 = *++low2;
+		    *lowdest = a2;
+		    lowdest++;
+              ++low2;
+		    a2 = *low2;
 		    if (low2 >= high2)
 			 break;
 	       }
@@ -189,13 +195,15 @@ void seqmerge(ELM *low1, ELM *high1, ELM *low2, ELM *high2,
 	  a2 = *low2;
 	  for (;;) {
 	       if (a1 < a2) {
-		    *lowdest++ = a1;
+		    *lowdest = a1;
+		    lowdest++;
 		    ++low1;
 		    if (low1 > high1)
 			 break;
 		    a1 = *low1;
 	       } else {
-		    *lowdest++ = a2;
+		    *lowdest = a2;
+		    lowdest++;
 		    ++low2;
 		    if (low2 > high2)
 			 break;
@@ -281,14 +289,14 @@ void cilkmerge_par(ELM *low1, ELM *high1, ELM *low2, ELM *high2, ELM *lowdest)
       */
 
      split1 = ((high1 - low1 + 1) / 2) + low1;
-     split2 = binsplit(*split1, low2, high2);
+     split2 = binsplit(split1[0], low2, high2);
      lowsize = split1 - low1 + split2 - low2;
 
      /* 
       * directly put the splitting element into
       * the appropriate location
       */
-     *(lowdest + lowsize + 1) = *split1;
+     lowdest[lowsize + 1] = split1[0];
      cilkmerge_par(low1, split1 - 1, low2, split2, lowdest);
      cilkmerge_par(split1 + 1, high1, split2 + 1, high2,
 		     lowdest + lowsize + 2);

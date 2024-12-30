@@ -172,7 +172,7 @@ void seqmerge(ELM *low1, ELM *high1, ELM *low2, ELM *high2,
      if (low1 < high1 && low2 < high2) {
 	  a1 = *low1;
 	  a2 = *low2;
-	  for (;;) {
+	  while (1) {
 	       if (a1 < a2) {
 		    *lowdest = a1;
 		    lowdest++;
@@ -193,7 +193,7 @@ void seqmerge(ELM *low1, ELM *high1, ELM *low2, ELM *high2,
      if (low1 <= high1 && low2 <= high2) {
 	  a1 = *low1;
 	  a2 = *low2;
-	  for (;;) {
+	  while (1) {
 	       if (a1 < a2) {
 		    *lowdest = a1;
 		    lowdest++;

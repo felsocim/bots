@@ -4775,7 +4775,8 @@ void fft(int n, COMPLEX * in, COMPLEX * out)
       */
      do {
 	  r = factor(l);
-	  *p++ = r;
+	  *p = r;
+	  p++;
 	  l /= r;
      } while (l > 1);
 
@@ -4803,7 +4804,8 @@ void fft_seq(int n, COMPLEX * in, COMPLEX * out)
       */
      do {
 	  r = factor(l);
-	  *p++ = r;
+	  *p = r;
+	  p++;
 	  l /= r;
      } while (l > 1);
 

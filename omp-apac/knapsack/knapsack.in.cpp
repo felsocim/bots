@@ -31,22 +31,11 @@
 #include <limits.h>
 #include <string.h>
 #include "app-desc.hpp"
+#include "compare.hpp"
 #include "bots.h"
 
 int best_so_far;
 int number_of_tasks;
-
-static int compare(const void *p1, const void *p2)
-{
-     item_t *a = (item_t *) p1;
-     item_t *b = (item_t *) p2;
-     double c = ((double) a->value / a->weight) -
-     ((double) b->value / b->weight);
-
-     if (c > 0) return -1;
-     if (c < 0) return 1;
-     return 0;
-}
 
 int read_input(const char *filename, item_t *items, int *capacity, int *n)
 {

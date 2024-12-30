@@ -43,7 +43,6 @@ typedef struct {
      int weight;
 } item_t;
 
-int read_input(const char *filename, item_t *items, int *capacity, int *n);
 void knapsack_seq(item_t *e, int c, int n, int v, int *sol);
 void knapsack_par(item_t *e, int c, int n, int v, int *sol, int l);
 void knapsack_main_seq (item_t *e, int c, int n, int *sol);

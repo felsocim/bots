@@ -43,8 +43,11 @@
 /***********************************************************************
  * The real numbers we are using --- either double or float
  **********************************************************************/
+#ifndef __STRASSEN_TYPES
+#define __STRASSEN_TYPES
 typedef double REAL;
 typedef unsigned long PTR;
+#endif
 void init_matrix(int n, REAL *A, int an);
 void strassen_main_par(REAL *A, REAL *B, REAL *C, int n);
 void strassen_main_seq(REAL *A, REAL *B, REAL *C, int n);

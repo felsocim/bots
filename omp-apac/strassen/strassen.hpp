@@ -17,6 +17,12 @@
 /*  along with this program; if not, write to the Free Software                               */
 /*  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA            */
 /**********************************************************************************************/
+#ifndef __STRASSEN_TYPES
+#define __STRASSEN_TYPES
+typedef double REAL;
+typedef unsigned long PTR;
+#endif
+
 #ifndef _STRASSEN_HPP
 #define _STRASSEN_HPP
 /* ******************************************************************* */

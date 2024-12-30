@@ -42,6 +42,8 @@
 
 typedef long ELM;
 
+ELM *seqpart(ELM *low, ELM *high);
+void insertion_sort(ELM *low, ELM *high);
 void seqquick(ELM *low, ELM *high); 
 void seqmerge(ELM *low1, ELM *high1, ELM *low2, ELM *high2, ELM *lowdest);
 ELM *binsplit(ELM val, ELM *low, ELM *high); 

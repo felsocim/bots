@@ -66,55 +66,11 @@
 #include <string.h>
 #include "bots.h"
 #include "app-desc.hpp"
+#include "inlines.cpp"
 
 ELM *array, *tmp;
 
-static unsigned long rand_nxt = 0;
-
-static inline unsigned long my_rand(void)
-{
-     rand_nxt = rand_nxt * 1103515245 + 12345;
-     return rand_nxt;
-}
-
-static inline void my_srand(unsigned long seed)
-{
-     rand_nxt = seed;
-}
-
-static inline ELM med3(ELM a, ELM b, ELM c)
-{
-     if (a < b) {
-	  if (b < c) {
-	       return b;
-	  } else {
-	       if (a < c)
-		    return c;
-	       else
-		    return a;
-	  }
-     } else {
-	  if (b > c) {
-	       return b;
-	  } else {
-	       if (a > c)
-		    return c;
-	       else
-		    return a;
-	  }
-     }
-}
-
-/*
- * simple approach for now; a better median-finding
- * may be preferable
- */
-static inline ELM choose_pivot(ELM *low, ELM *high)
-{
-     return med3(*low, *high, low[(high - low) / 2]);
-}
-
-static ELM *seqpart(ELM *low, ELM *high)
+ELM *seqpart(ELM *low, ELM *high)
 {
      ELM pivot;
      ELM h, l;
@@ -151,7 +107,7 @@ static ELM *seqpart(ELM *low, ELM *high)
 	  return curr_high - 1;
 }
 
-static void insertion_sort(ELM *low, ELM *high)
+void insertion_sort(ELM *low, ELM *high)
 {
      ELM *p, *q;
      ELM a, b;

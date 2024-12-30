@@ -4757,7 +4757,7 @@ void fft(int n, COMPLEX * in, COMPLEX * out)
      int factors[40];		/* allows FFTs up to at least 3^40 */
      int *p = factors;
      int l = n;
-     int r;
+     int r, s = 1;
      COMPLEX *W;
 
      bots_message("Computing coefficients ");
@@ -4769,12 +4769,13 @@ void fft(int n, COMPLEX * in, COMPLEX * out)
       * find factors of n, first 8, then 4 and then primes in ascending
       * order 
       */
-     do {
+     while (l > 1 || s) {
 	  r = factor(l);
 	  *p = r;
 	  p++;
 	  l /= r;
-     } while (l > 1);
+	  s = 0;
+     }
 
      bots_message("Computing FFT ");
      fft_aux(n, in, out, factors, W, n);
@@ -4788,7 +4789,7 @@ void fft_seq(int n, COMPLEX * in, COMPLEX * out)
      int factors[40];		/* allows FFTs up to at least 3^40 */
      int *p = factors;
      int l = n;
-     int r;
+     int r, s = 1;
      COMPLEX *W;
 
      W = (COMPLEX *) malloc((n + 1) * sizeof(COMPLEX));
@@ -4798,12 +4799,13 @@ void fft_seq(int n, COMPLEX * in, COMPLEX * out)
       * find factors of n, first 8, then 4 and then primes in ascending
       * order 
       */
-     do {
+     while (l > 1 || s) {
 	  r = factor(l);
 	  *p = r;
 	  p++;
 	  l /= r;
-     } while (l > 1);
+	  s = 0;
+     }
 
      fft_aux_seq(n, in, out, factors, W, n);
 

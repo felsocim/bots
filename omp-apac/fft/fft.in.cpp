@@ -171,13 +171,16 @@ void fft_twiddle_gen1(COMPLEX * in, COMPLEX * out,
      int j, k;
      COMPLEX *jp, *kp;
 
-     for (k = 0, kp = out; k < r; ++k, kp += m) {
+	 kp = out;
+     for (k = 0; k < r; ++k) {
 	  REAL r0, i0, rt, it, rw, iw;
 	  int l1 = nWdnti + nWdntm * k;
 	  int l0;
 
 	  r0 = i0 = 0.0;
-	  for (j = 0, jp = in, l0 = 0; j < r; ++j, jp += m) {
+	  jp = in;
+	  l0 = 0;
+	  for (j = 0; j < r; ++j) {
 	       rw = c_re(W[l0]);
 	       iw = c_im(W[l0]);
 	       rt = c_re(*jp);
@@ -187,9 +190,11 @@ void fft_twiddle_gen1(COMPLEX * in, COMPLEX * out,
 	       l0 += l1;
 	       if (l0 > nW)
 		    l0 -= nW;
+		   jp += m;
 	  }
 	  c_re(*kp) = r0;
 	  c_im(*kp) = i0;
+	  kp += m;
      }
 }
 
@@ -240,8 +245,9 @@ void fft_twiddle_2(int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, int n
      COMPLEX *jp, *kp;
      REAL tmpr, tmpi, wr, wi;
      if ((b - a) < 128) {
-	  for (i = a, l1 = nWdn * i, kp = out + i; i < b;
-	       i++, l1 += nWdn, kp++) {
+	  l1 = nWdn * a;
+	  kp = out + a;
+	  for (i = a; i < b; i++) {
 	       jp = in + i;
 	       {
 		    REAL r1_0, i1_0;
@@ -259,6 +265,8 @@ void fft_twiddle_2(int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, int n
 		    c_re(kp[1 * m]) = (r1_0 - r1_1);
 		    c_im(kp[1 * m]) = (i1_0 - i1_1);
 	       }
+		l1 += nWdn;
+		kp++;
 	  }
      } else {
 	  int ab = (a + b) / 2;
@@ -272,8 +280,9 @@ void fft_twiddle_2_seq(int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, i
      COMPLEX *jp, *kp;
      REAL tmpr, tmpi, wr, wi;
      if ((b - a) < 128) {
-	  for (i = a, l1 = nWdn * i, kp = out + i; i < b;
-	       i++, l1 += nWdn, kp++) {
+	  l1 = nWdn * a;
+	  kp = out + a;
+	  for (i = a; i < b; i++) {
 	       jp = in + i;
 	       {
 		    REAL r1_0, i1_0;
@@ -291,6 +300,8 @@ void fft_twiddle_2_seq(int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, i
 		    c_re(kp[1 * m]) = (r1_0 - r1_1);
 		    c_im(kp[1 * m]) = (i1_0 - i1_1);
 	       }
+		l1 += nWdn;
+		kp++;
 	  }
      } else {
 	  int ab = (a + b) / 2;
@@ -381,8 +392,9 @@ void fft_twiddle_4(int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, int n
      COMPLEX *jp, *kp;
      REAL tmpr, tmpi, wr, wi;
      if ((b - a) < 128) {
-	  for (i = a, l1 = nWdn * i, kp = out + i; i < b;
-	       i++, l1 += nWdn, kp++) {
+	  l1 = nWdn * a;
+	  kp = out + a;
+	  for (i = a; i < b; i++) {
 	       jp = in + i;
 	       {
 		    REAL r1_0, i1_0;
@@ -434,6 +446,8 @@ void fft_twiddle_4(int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, int n
 		    c_re(kp[3 * m]) = (r1_2 - i1_3);
 		    c_im(kp[3 * m]) = (i1_2 + r1_3);
 	       }
+		l1 += nWdn;
+		kp++;
 	  }
      } else {
 	  int ab = (a + b) / 2;
@@ -447,8 +461,9 @@ void fft_twiddle_4_seq(int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, i
      COMPLEX *jp, *kp;
      REAL tmpr, tmpi, wr, wi;
      if ((b - a) < 128) {
-	  for (i = a, l1 = nWdn * i, kp = out + i; i < b;
-	       i++, l1 += nWdn, kp++) {
+	  l1 = nWdn * a;
+	  kp = out + a;
+	  for (i = a; i < b; i++) {
 	       jp = in + i;
 	       {
 		    REAL r1_0, i1_0;
@@ -500,6 +515,8 @@ void fft_twiddle_4_seq(int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, i
 		    c_re(kp[3 * m]) = (r1_2 - i1_3);
 		    c_im(kp[3 * m]) = (i1_2 + r1_3);
 	       }
+		l1 += nWdn;
+		kp++;
 	  }
      } else {
 	  int ab = (a + b) / 2;
@@ -669,8 +686,9 @@ void fft_twiddle_8(int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, int n
      COMPLEX *jp, *kp;
      REAL tmpr, tmpi, wr, wi;
      if ((b - a) < 128) {
-	  for (i = a, l1 = nWdn * i, kp = out + i; i < b;
-	       i++, l1 += nWdn, kp++) {
+	  l1 = nWdn * a;
+	  kp = out + a;
+	  for (i = a; i < b; i++) {
 	       jp = in + i;
 	       {
 		    REAL r1_0, i1_0;
@@ -806,6 +824,8 @@ void fft_twiddle_8(int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, int n
 		    c_re(kp[7 * m]) = (r1_6 - tmpr);
 		    c_im(kp[7 * m]) = (i1_6 + tmpi);
 	       }
+		l1 += nWdn;
+		kp++;
 	  }
      } else {
 	  int ab = (a + b) / 2;
@@ -819,8 +839,9 @@ void fft_twiddle_8_seq(int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, i
      COMPLEX *jp, *kp;
      REAL tmpr, tmpi, wr, wi;
      if ((b - a) < 128) {
-	  for (i = a, l1 = nWdn * i, kp = out + i; i < b;
-	       i++, l1 += nWdn, kp++) {
+	  l1 = nWdn * a;
+	  kp = out + a;
+	  for (i = a; i < b; i++) {
 	       jp = in + i;
 	       {
 		    REAL r1_0, i1_0;
@@ -956,6 +977,8 @@ void fft_twiddle_8_seq(int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, i
 		    c_re(kp[7 * m]) = (r1_6 - tmpr);
 		    c_im(kp[7 * m]) = (i1_6 + tmpi);
 	       }
+		l1 += nWdn;
+		kp++;
 	  }
      } else {
 	  int ab = (a + b) / 2;
@@ -1309,8 +1332,9 @@ void fft_twiddle_16(int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, int 
      COMPLEX *jp, *kp;
      REAL tmpr, tmpi, wr, wi;
      if ((b - a) < 128) {
-	  for (i = a, l1 = nWdn * i, kp = out + i; i < b;
-	       i++, l1 += nWdn, kp++) {
+	  l1 = nWdn * a;
+	  kp = out + a;
+	  for (i = a; i < b; i++) {
 	       jp = in + i;
 	       {
 		    REAL r1_0, i1_0;
@@ -1646,6 +1670,8 @@ void fft_twiddle_16(int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, int 
 		    c_re(kp[15 * m]) = (r1_14 - tmpr);
 		    c_im(kp[15 * m]) = (i1_14 + tmpi);
 	       }
+		l1 += nWdn;
+		kp++;
 	  }
      } else {
 	  int ab = (a + b) / 2;
@@ -1659,8 +1685,9 @@ void fft_twiddle_16_seq(int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, 
      COMPLEX *jp, *kp;
      REAL tmpr, tmpi, wr, wi;
      if ((b - a) < 128) {
-	  for (i = a, l1 = nWdn * i, kp = out + i; i < b;
-	       i++, l1 += nWdn, kp++) {
+	  l1 = nWdn * a;
+	  kp = out + a;
+	  for (i = a; i < b; i++) {
 	       jp = in + i;
 	       {
 		    REAL r1_0, i1_0;
@@ -1996,6 +2023,8 @@ void fft_twiddle_16_seq(int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, 
 		    c_re(kp[15 * m]) = (r1_14 - tmpr);
 		    c_im(kp[15 * m]) = (i1_14 + tmpi);
 	       }
+		l1 += nWdn;
+		kp++;
 	  }
      } else {
 	  int ab = (a + b) / 2;
@@ -2781,8 +2810,9 @@ void fft_twiddle_32(int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, int 
      COMPLEX *jp, *kp;
      REAL tmpr, tmpi, wr, wi;
      if ((b - a) < 128) {
-	  for (i = a, l1 = nWdn * i, kp = out + i; i < b;
-	       i++, l1 += nWdn, kp++) {
+	  l1 = nWdn * a;
+	  kp = out + a;
+	  for (i = a; i < b; i++) {
 	       jp = in + i;
 	       {
 		    REAL r1_0, i1_0;
@@ -3582,6 +3612,8 @@ void fft_twiddle_32(int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, int 
 		    c_re(kp[31 * m]) = (r1_30 - tmpr);
 		    c_im(kp[31 * m]) = (i1_30 + tmpi);
 	       }
+		l1 += nWdn;
+		kp++;
 	  }
      } else {
 	  int ab = (a + b) / 2;
@@ -3595,8 +3627,9 @@ void fft_twiddle_32_seq(int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, 
      COMPLEX *jp, *kp;
      REAL tmpr, tmpi, wr, wi;
      if ((b - a) < 128) {
-	  for (i = a, l1 = nWdn * i, kp = out + i; i < b;
-	       i++, l1 += nWdn, kp++) {
+	  l1 = nWdn * a;
+	  kp = out + a;
+	  for (i = a; i < b; i++) {
 	       jp = in + i;
 	       {
 		    REAL r1_0, i1_0;
@@ -4396,6 +4429,8 @@ void fft_twiddle_32_seq(int a, int b, COMPLEX * in, COMPLEX * out, COMPLEX * W, 
 		    c_re(kp[31 * m]) = (r1_30 - tmpr);
 		    c_im(kp[31 * m]) = (i1_30 + tmpi);
 	       }
+		l1 += nWdn;
+		kp++;
 	  }
      } else {
 	  int ab = (a + b) / 2;

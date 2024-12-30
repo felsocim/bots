@@ -235,7 +235,7 @@ void uts_read_file ( char *filename )
    );
    fclose(fin);
 
-   computeGranularity = max(1,computeGranularity);
+   computeGranularity = uts_max(1,computeGranularity);
 
    // Printing input data
    bots_message("\n");

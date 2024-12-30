@@ -55,8 +55,8 @@ typedef struct {
 //extern int    verbose;
 
 /* Utility Functions */
-#define max(a,b) (((a) > (b)) ? (a) : (b))
-#define min(a,b) (((a) < (b)) ? (a) : (b))
+#define uts_max(a,b) (((a) > (b)) ? (a) : (b))
+#define uts_min(a,b) (((a) < (b)) ? (a) : (b))
 
 unsigned long long parTreeSearch(int depth, Node *parent, int numChildren);
 

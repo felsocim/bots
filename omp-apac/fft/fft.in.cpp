@@ -153,10 +153,11 @@ void unshuffle_seq(int a, int b, COMPLEX * in, COMPLEX * out, int r, int m)
 		    jp += 4 * m;
 		    ip += 4;
 	       }
-	       for (; j < r; ++j) {
+	       while (j < r) {
 		    *jp = *ip;
 		    ip++;
 		    jp += m;
+			++j;
 	       }
 	  }
      } else {

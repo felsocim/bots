@@ -7,4 +7,5 @@ bots-*.tar.gz
 *.model
 *.profile
 *_profiling.*
+*_invalid.cpp
 tmp_*.cpp

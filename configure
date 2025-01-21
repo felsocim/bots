@@ -105,7 +105,7 @@ fi
 
 if [ "$COMPILER" = "apac+clang" -a "$APAC" = "yes" ]; then
    APAC="apac"
-   APAC_FLAGS="--constify --constify-quietly --omit='.*_seq\$$' --wrap-at 1024"
+   APAC_FLAGS="--constify --constify-quietly --omit='.*_se[qr]\$$' --wrap-at 1024"
    APAC_FLAGS="$APAC_FLAGS --compile-with='custom,make profiling'"
    CC=clang
    CXX=clang++

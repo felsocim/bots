@@ -21,7 +21,7 @@
 #LIBS = 
 #PROGRAM_OBJS=
 
-CUTOFF_VERSIONS = counters model both
+CUTOFF_VERSIONS = counters #model both
 SKIP = verify_queens
 MAIN = find_queens
 

@@ -21,7 +21,7 @@
 #LIBS = 
 #PROGRAM_OBJS=
 
-CUTOFF_VERSIONS = counters model both
+CUTOFF_VERSIONS = counters #model both
 SKIP = read_integer,read_inputs,write_outputs,floorplan_init
 MAIN = compute_floorplan
 

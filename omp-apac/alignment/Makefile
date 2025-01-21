@@ -20,7 +20,7 @@
 
 BASE_DIR = ../../
 LIBS= -lm
-CUTOFF_VERSIONS = counters model both
+CUTOFF_VERSIONS = counters #model both
 OTHER_OBJS=sequence.o
 SKIP = init_matrix,pairalign_init,align_init,align_end,align_verify
 MAIN = align

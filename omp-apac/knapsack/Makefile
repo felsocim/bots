@@ -22,7 +22,7 @@
 #PROGRAM_OBJS=
 
 OTHER_OBJS = compare.o
-CUTOFF_VERSIONS = counters model both
+CUTOFF_VERSIONS = counters #model both
 SKIP = read_input,knapsack_check
 MAIN = knapsack_main_par
 

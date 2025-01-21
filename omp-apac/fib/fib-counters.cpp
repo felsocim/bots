@@ -20,7 +20,8 @@ int __apac_depth = 0;
 long long int fib_results[41] = {0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181, 6765, 10946, 17711, 28657, 46368, 75025, 121393, 196418, 317811, 514229, 832040, 1346269, 2178309, 3524578, 5702887, 9227465, 14930352, 24157817, 39088169, 63245986, 102334155};
 
 long long int fib_seq(int n) {
-  long long int x, y;
+  long long int x;
+  long long int y;
   if (n < 2) return n;
   x = fib_seq(n - 1);
   y = fib_seq(n - 2);
@@ -34,7 +35,8 @@ long long int fib(int n) {
     int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
     int __apac_depth_local = __apac_depth;
     int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
-    long long int x, y;
+    long long int x;
+    long long int y;
     if (n < 2) {
       __apac_result = n;
       goto __apac_exit;
@@ -93,7 +95,7 @@ void fib0(int n) {
 #pragma omp atomic
       __apac_count++;
     }
-#pragma omp task default(shared) depend(inout : n, par_res) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+#pragma omp task default(shared) depend(in : n) depend(inout : par_res) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
     {
       if (__apac_count_ok || __apac_depth_ok) {
         __apac_depth = __apac_depth_local + 1;

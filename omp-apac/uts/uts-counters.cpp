@@ -143,21 +143,22 @@ long long unsigned int parTreeSearch(int depth, Node* parent, int numChildren) {
     int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
     Node n[numChildren];
     Node* nodePtr;
-    int i, j;
+    int i;
+    int j;
     long long unsigned int subtreesize = 1;
     long long unsigned int partialCount[numChildren];
     for (i = 0; i < numChildren; i++) {
       nodePtr = &n[i];
       nodePtr->height = parent->height + 1;
       for (j = 0; j < computeGranularity; j++) {
-#pragma omp taskwait depend(inout : i, n, parent)
+#pragma omp taskwait depend(in : i) depend(inout : n, parent)
         rng_spawn(parent->state.state, nodePtr->state.state, i);
       }
       if (__apac_count_ok) {
 #pragma omp atomic
         __apac_count++;
       }
-#pragma omp task default(shared) depend(in : partialCount, depth) depend(inout : partialCount[i], n) firstprivate(__apac_depth_local, i) if (__apac_count_ok || __apac_depth_ok)
+#pragma omp task default(shared) depend(in : depth, partialCount) depend(inout : n, partialCount[i]) firstprivate(__apac_depth_local, i) if (__apac_count_ok || __apac_depth_ok)
       {
         if (__apac_count_ok || __apac_depth_ok) {
           __apac_depth = __apac_depth_local + 1;

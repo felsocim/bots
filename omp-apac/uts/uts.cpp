@@ -98,17 +98,18 @@ long long unsigned int parTreeSearch(int depth, Node* parent, int numChildren) {
   {
     Node n[numChildren];
     Node* nodePtr;
-    int i, j;
+    int i;
+    int j;
     long long unsigned int subtreesize = 1;
     long long unsigned int partialCount[numChildren];
     for (i = 0; i < numChildren; i++) {
       nodePtr = &n[i];
       nodePtr->height = parent->height + 1;
       for (j = 0; j < computeGranularity; j++) {
-#pragma omp taskwait depend(inout : i, n, parent)
+#pragma omp taskwait depend(in : i) depend(inout : n, parent)
         rng_spawn(parent->state.state, nodePtr->state.state, i);
       }
-#pragma omp task default(shared) depend(in : partialCount, depth) depend(inout : partialCount[i], n) firstprivate(i)
+#pragma omp task default(shared) depend(in : depth, partialCount) depend(inout : n, partialCount[i]) firstprivate(i)
       {
         nodePtr->numChildren = uts_numChildren(nodePtr);
         partialCount[i] = parTreeSearch(depth + 1, nodePtr, nodePtr->numChildren);

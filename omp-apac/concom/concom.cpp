@@ -24,7 +24,11 @@ int linkable(int N1, int N2) {
 }
 
 void initialize() {
-  int i, l1, l2, N1, N2;
+  int i;
+  int l1;
+  int l2;
+  int N1;
+  int N2;
   double RN;
   nodes = (node*)malloc(bots_arg_size * sizeof(node));
   visited = (int*)malloc(bots_arg_size * sizeof(int));
@@ -59,7 +63,8 @@ void write_outputs(int n, int cc) {
 void CC_par(int i, int cc) {
 #pragma omp taskgroup
   {
-    int j, n;
+    int j;
+    int n;
     int expected = 0;
     if (atomic_compare(&visited[i], &expected)) {
       if (bots_verbose_mode) {
@@ -79,7 +84,8 @@ void CC_par(int i, int cc) {
 }
 
 void CC_seq(int i, int cc) {
-  int j, n;
+  int j;
+  int n;
   if (visited[i] == 0) {
     if (bots_verbose_mode) printf("Adding node %d to component %d\n", i, cc);
     visited[i] = 1;
@@ -108,7 +114,7 @@ void cc_par(int* cc) {
     *cc = 0;
     for (i = 0; i < bots_arg_size; i++) {
       if (visited[i] == 0) {
-#pragma omp task default(shared) depend(in : cc[0]) depend(inout : cc) firstprivate(i)
+#pragma omp task default(shared) depend(in : cc) depend(inout : cc[0]) firstprivate(i)
         {
           CC_par(i, *cc);
           (*cc)++;

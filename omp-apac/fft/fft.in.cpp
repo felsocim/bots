@@ -40,9 +40,9 @@
  */
 void compute_w_coefficients(int n, int a, int b, COMPLEX * W)
 {
-     register double twoPiOverN;
-     register int k;
-     register REAL s, c;
+     double twoPiOverN;
+     int k;
+     REAL s, c;
 
      if (b - a < 128) {
 	  twoPiOverN = 2.0 * 3.1415926535897932384626434 / n;
@@ -61,9 +61,9 @@ void compute_w_coefficients(int n, int a, int b, COMPLEX * W)
 }
 void compute_w_coefficients_seq(int n, int a, int b, COMPLEX * W)
 {
-     register double twoPiOverN;
-     register int k;
-     register REAL s, c;
+     double twoPiOverN;
+     int k;
+     REAL s, c;
 
      if (b - a < 128) {
 	  twoPiOverN = 2.0 * 3.1415926535897932384626434 / n;

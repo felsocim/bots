@@ -40,7 +40,8 @@ int __apac_depth = 0;
 #pragma omp threadprivate(__apac_depth)
 
 int checkmat(float* M, float* N) {
-  int i, j;
+  int i;
+  int j;
   float r_err;
   for (i = 0; i < bots_arg_size_1; i++) {
     for (j = 0; j < bots_arg_size_1; j++) {
@@ -62,7 +63,12 @@ int checkmat(float* M, float* N) {
 }
 
 void genmat(float* M[]) {
-  int null_entry, init_val, i, j, ii, jj;
+  int null_entry;
+  int init_val;
+  int i;
+  int j;
+  int ii;
+  int jj;
   float* p;
   init_val = 1325;
   for (ii = 0; ii < bots_arg_size; ii++) {
@@ -97,7 +103,8 @@ void genmat(float* M[]) {
 }
 
 void print_structure(const char* name, float* M[]) {
-  int ii, jj;
+  int ii;
+  int jj;
   bots_message("Structure for matrix %s @ 0x%p\n", name, M);
   for (ii = 0; ii < bots_arg_size; ii++) {
     for (jj = 0; jj < bots_arg_size; jj++) {
@@ -112,8 +119,10 @@ void print_structure(const char* name, float* M[]) {
 }
 
 float* allocate_clean_block() {
-  int i, j;
-  float *p, *q;
+  int i;
+  int j;
+  float* p;
+  float* q;
   p = (float*)malloc(bots_arg_size_1 * bots_arg_size_1 * sizeof(float));
   q = p;
   if (p) {
@@ -130,7 +139,9 @@ float* allocate_clean_block() {
 }
 
 void lu0(float* diag) {
-  int i, j, k;
+  int i;
+  int j;
+  int k;
   for (k = 0; k < bots_arg_size_1; k++)
     for (i = k + 1; i < bots_arg_size_1; i++) {
       diag[i * bots_arg_size_1 + k] = diag[i * bots_arg_size_1 + k] / diag[k * bots_arg_size_1 + k];
@@ -139,7 +150,9 @@ void lu0(float* diag) {
 }
 
 void bdiv(float* diag, float* row) {
-  int i, j, k;
+  int i;
+  int j;
+  int k;
   for (i = 0; i < bots_arg_size_1; i++)
     for (k = 0; k < bots_arg_size_1; k++) {
       row[i * bots_arg_size_1 + k] = row[i * bots_arg_size_1 + k] / diag[k * bots_arg_size_1 + k];
@@ -148,14 +161,18 @@ void bdiv(float* diag, float* row) {
 }
 
 void bmod(float* row, float* col, float* inner) {
-  int i, j, k;
+  int i;
+  int j;
+  int k;
   for (i = 0; i < bots_arg_size_1; i++)
     for (j = 0; j < bots_arg_size_1; j++)
       for (k = 0; k < bots_arg_size_1; k++) inner[i * bots_arg_size_1 + j] = inner[i * bots_arg_size_1 + j] - row[i * bots_arg_size_1 + k] * col[k * bots_arg_size_1 + j];
 }
 
 void fwd(float* diag, float* col) {
-  int i, j, k;
+  int i;
+  int j;
+  int k;
   for (j = 0; j < bots_arg_size_1; j++)
     for (k = 0; k < bots_arg_size_1; k++)
       for (i = k + 1; i < bots_arg_size_1; i++) col[i * bots_arg_size_1 + j] = col[i * bots_arg_size_1 + j] - diag[i * bots_arg_size_1 + k] * col[k * bots_arg_size_1 + j];
@@ -307,7 +324,9 @@ void sparselu_fini(float** BENCH, const char* pass, int** timestamp) {
 }
 
 int sparselu_check(float** SEQ, float** BENCH) {
-  int ii, jj, ok = 1;
+  int ii;
+  int jj;
+  int ok = 1;
   for (ii = 0; ii < bots_arg_size && ok; ii++) {
     for (jj = 0; jj < bots_arg_size && ok; jj++) {
       if (SEQ[ii * bots_arg_size + jj] == (float*)0 && BENCH[ii * bots_arg_size + jj]) ok = 0;

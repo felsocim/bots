@@ -55,7 +55,11 @@ int linkable(int N1, int N2) {
 }
 
 void initialize() {
-  int i, l1, l2, N1, N2;
+  int i;
+  int l1;
+  int l2;
+  int N1;
+  int N2;
   double RN;
   nodes = (node*)malloc(bots_arg_size * sizeof(node));
   visited = (int*)malloc(bots_arg_size * sizeof(int));
@@ -93,7 +97,8 @@ void CC_par(int i, int cc) {
     int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
     int __apac_depth_local = __apac_depth;
     int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
-    int j, n;
+    int j;
+    int n;
     int expected = 0;
     if (atomic_compare(&visited[i], &expected)) {
       if (bots_verbose_mode) {
@@ -124,7 +129,8 @@ void CC_par(int i, int cc) {
 }
 
 void CC_seq(int i, int cc) {
-  int j, n;
+  int j;
+  int n;
   if (visited[i] == 0) {
     if (bots_verbose_mode) printf("Adding node %d to component %d\n", i, cc);
     visited[i] = 1;
@@ -160,7 +166,7 @@ void cc_par(int* cc) {
 #pragma omp atomic
           __apac_count++;
         }
-#pragma omp task default(shared) depend(in : cc[0]) depend(inout : cc) firstprivate(__apac_depth_local, i) if (__apac_count_ok || __apac_depth_ok)
+#pragma omp task default(shared) depend(in : cc) depend(inout : cc[0]) firstprivate(__apac_depth_local, i) if (__apac_count_ok || __apac_depth_ok)
         {
           if (__apac_count_ok || __apac_depth_ok) {
             __apac_depth = __apac_depth_local + 1;

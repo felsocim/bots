@@ -21,7 +21,7 @@
 #LIBS = 
 #PROGRAM_OBJS=
 
-CUTOFF_VERSIONS = counters #model both
+CUTOFF_VERSIONS = counters model both
 SKIP = fib_verify_value,fib_verify
 MAIN = fib0
 

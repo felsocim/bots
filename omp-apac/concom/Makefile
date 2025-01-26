@@ -21,7 +21,7 @@
 #LIBS = 
 #PROGRAM_OBJS=
 OTHER_OBJS = atomic.o
-CUTOFF_VERSIONS = counters #model both
+CUTOFF_VERSIONS = counters model both
 SKIP = initialize,write_outputs,cc_init,cc_check
 MAIN = cc_par
 

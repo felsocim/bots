@@ -198,7 +198,7 @@ void sparselu_par_call(float** BENCH, int* timestamp) {
   {
     bots_message("Computing SparseLU Factorization (%dx%d matrix with %dx%d blocks) ", bots_arg_size, bots_arg_size, bots_arg_size_1, bots_arg_size_1);
     for (int kk = 0; kk < bots_arg_size; kk++) {
-#pragma omp taskwait depend(in : BENCH, BENCH[kk * bots_arg_size + kk], kk) depend(inout : BENCH[kk * bots_arg_size + kk][0])
+#pragma omp task default(shared) depend(in : BENCH, BENCH[kk * bots_arg_size + kk]) depend(inout : BENCH[kk * bots_arg_size + kk][0]) firstprivate(kk)
       lu0(BENCH[kk * bots_arg_size + kk]);
       for (int jj = kk + 1; jj < bots_arg_size; jj++) {
         if (BENCH[kk * bots_arg_size + jj] && timestamp[kk * bots_arg_size + jj] < kk) {

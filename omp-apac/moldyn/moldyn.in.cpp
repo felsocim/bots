@@ -369,10 +369,13 @@ static int check_force(Particle_forces p1, Particle_forces p2) {
 }
 
 int check(
-  const int nb_cells_per_dim, int* sizes, 
+  const int nb_cells_per_dim_seq, const int nb_cells_per_dim_par, int* sizes, 
   Particle_symb** particles_symb_seq, Particle_forces** particles_forces_seq, 
   Particle_symb** particles_symb_par, Particle_forces** particles_forces_par
 ) {
+  if(nb_cells_per_dim_par != nb_cells_per_dim_seq)
+    return BOTS_RESULT_UNSUCCESSFUL;
+  const int nb_cells_per_dim = nb_cells_per_dim_par;
   for(int idx_x = 0; idx_x < nb_cells_per_dim; idx_x++) {
     for(int idx_y = 0; idx_y < nb_cells_per_dim; idx_y++) {
       for(int idx_z = 0; idx_z < nb_cells_per_dim; idx_z++) {

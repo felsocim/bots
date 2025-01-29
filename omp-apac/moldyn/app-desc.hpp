@@ -70,8 +70,8 @@ void compute(
   Particle_symb***, Particle_forces***
 );
 int check(
-  const int, int*, Particle_symb**, Particle_forces**, Particle_symb**, 
-  Particle_forces**
+  const int, const int, int*, Particle_symb**, Particle_forces**,
+  Particle_symb**, Particle_forces**
 );
 
 #define BOTS_APP_INIT\
@@ -94,7 +94,7 @@ int check(
     grid_create(\
       box_width, cell_width,\
       cell.particles_symb, cell.particles_forces, cell.size,\
-      &sizes_par, &particles_symb_seq, &particles_forces_seq\
+      &sizes_seq, &particles_symb_seq, &particles_forces_seq\
     )
 #define KERNEL_SEQ_CALL compute(size, steps, nb_cells_per_dim_seq, box_width,\
   cell_width, time_step, &sizes_seq, &particles_symb_seq, &particles_forces_seq)
@@ -109,13 +109,8 @@ int check(
     grid_create(\
       box_width, cell_width,\
       cell.particles_symb, cell.particles_forces, cell.size,\
-      &sizes_seq, &particles_symb_par, &particles_forces_par\
-    );\
-  if(nb_cells_per_dim_par != nb_cells_per_dim_seq)\
-    bots_error(\
-      1, "datasets for the parallel and the sequential run are not the same"\
-    );\
-  cell_destroy(&cell)
+      &sizes_par, &particles_symb_par, &particles_forces_par\
+    )
 #define KERNEL_CALL compute(size, steps, nb_cells_per_dim_par, box_width,\
   cell_width, time_step, &sizes_par, &particles_symb_par, &particles_forces_par)
 #define KERNEL_FINI\
@@ -127,7 +122,8 @@ int check(
 #define BOTS_APP_CHECK_USES_SEQ_RESULT
 #define KERNEL_CHECK\
   check(\
-    nb_cells_per_dim_par, sizes_par, particles_symb_seq, particles_forces_seq,\
+    nb_cells_per_dim_seq, nb_cells_per_dim_par, sizes_par,\
+    particles_symb_seq, particles_forces_seq,\
     particles_symb_par, particles_forces_par\
   )
 

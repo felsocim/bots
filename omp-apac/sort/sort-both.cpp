@@ -1,3 +1,4 @@
+#include <omp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -5,7 +6,6 @@
 #include "app-desc.hpp"
 #include "bots.h"
 #include "inlines.cpp"
-
 const double __apac_cutoff = getenv("APAC_EXECUTION_TIME_CUTOFF") ? atof(getenv("APAC_EXECUTION_TIME_CUTOFF")) : 2.22100e-6;
 
 template <class T>
@@ -22,6 +22,20 @@ T apac_fpow(int exp, const T& base) {
   }
   return result;
 }
+
+const static int __apac_count_infinite = getenv("APAC_TASK_COUNT_INFINITE") ? 1 : 0;
+
+const static int __apac_depth_infinite = getenv("APAC_TASK_DEPTH_INFINITE") ? 1 : 0;
+
+const static int __apac_count_max = getenv("APAC_TASK_COUNT_MAX") ? atoi(getenv("APAC_TASK_COUNT_MAX")) : omp_get_max_threads() * 10;
+
+const static int __apac_depth_max = getenv("APAC_TASK_DEPTH_MAX") ? atoi(getenv("APAC_TASK_DEPTH_MAX")) : 5;
+
+int __apac_count = 0;
+
+int __apac_depth = 0;
+
+#pragma omp threadprivate(__apac_depth)
 
 ELM* array;
 
@@ -64,6 +78,9 @@ void insertion_sort(ELM* low, ELM* high) {
 void seqquick(ELM* low, ELM* high) {
 #pragma omp taskgroup
   {
+    int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
+    int __apac_depth_local = __apac_depth;
+    int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
     ELM* p;
     while (high - low >= bots_app_cutoff_value_2) {
       p = seqpart(low, high);
@@ -141,6 +158,9 @@ ELM* binsplit(ELM val, ELM* low, ELM* high) {
 void cilkmerge_par(ELM* low1, ELM* high1, ELM* low2, ELM* high2, ELM* lowdest) {
 #pragma omp taskgroup
   {
+    int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
+    int __apac_depth_local = __apac_depth;
+    int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
     ELM* split1;
     ELM* split2;
     ELM* tmp;
@@ -175,6 +195,9 @@ void cilkmerge_par(ELM* low1, ELM* high1, ELM* low2, ELM* high2, ELM* lowdest) {
 void cilksort_par(ELM* low, ELM* tmp, long int size) {
 #pragma omp taskgroup
   {
+    int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
+    int __apac_depth_local = __apac_depth;
+    int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
     long int quarter = size / 4;
     ELM* A;
     ELM* B;
@@ -196,8 +219,15 @@ void cilksort_par(ELM* low, ELM* tmp, long int size) {
     tmpB = tmpA + quarter;
     tmpC = tmpB + quarter;
     tmpD = tmpC + quarter;
-#pragma omp task default(shared) depend(in : low[0], quarter, size) depend(inout : low, tmp) if (0.00083648779761 + (size - 3 * quarter) * 2.55785804136e-06 > __apac_cutoff)
+    if (__apac_count_ok) {
+#pragma omp atomic
+      __apac_count++;
+    }
+#pragma omp task default(shared) depend(in : low[0], quarter, size) depend(inout : low, tmp) firstprivate(__apac_depth_local) if ((__apac_count_ok || __apac_depth_ok) && 0.00283940481163 + quarter * 3.83613073874e-06 > __apac_cutoff)
     {
+      if (__apac_count_ok || __apac_depth_ok) {
+        __apac_depth = __apac_depth_local + 1;
+      }
       cilksort_par(A, tmpA, quarter);
       cilksort_par(B, tmpB, quarter);
       cilksort_par(C, tmpC, quarter);
@@ -205,6 +235,10 @@ void cilksort_par(ELM* low, ELM* tmp, long int size) {
       cilkmerge_par(A, A + quarter - 1, B, B + quarter - 1, tmpA);
       cilkmerge_par(C, C + quarter - 1, D, low + size - 1, tmpC);
       cilkmerge_par(tmpA, tmpC - 1, tmpC, tmpA + size - 1, A);
+      if (__apac_count_ok) {
+#pragma omp atomic
+        __apac_count--;
+      }
     }
   __apac_exit:;
   }
@@ -269,11 +303,25 @@ void sort_par() {
 #pragma omp master
 #pragma omp taskgroup
   {
+    int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
+    int __apac_depth_local = __apac_depth;
+    int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
     bots_message("Computing multisort algorithm (n=%d) ", bots_arg_size);
-#pragma omp task default(shared) depend(in : array, tmp) depend(inout : array[0], tmp[0])
+    if (__apac_count_ok) {
+#pragma omp atomic
+      __apac_count++;
+    }
+#pragma omp task default(shared) depend(in : array, tmp) depend(inout : array[0], tmp[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
     {
+      if (__apac_count_ok || __apac_depth_ok) {
+        __apac_depth = __apac_depth_local + 1;
+      }
 #pragma omp critical
       cilksort_par(array, tmp, bots_arg_size);
+      if (__apac_count_ok) {
+#pragma omp atomic
+        __apac_count--;
+      }
     }
     bots_message(" completed!\n");
   __apac_exit:;

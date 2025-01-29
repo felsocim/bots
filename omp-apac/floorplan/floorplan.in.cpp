@@ -53,7 +53,7 @@ cell * gcells;
 
 int  MIN_AREA;
 char BEST_BOARD[ROWS][COLS];
-int  *MIN_FOOTPRINT;
+int  MIN_FOOTPRINT[COOR];
 
 int N;
 

@@ -27,7 +27,7 @@ int MIN_AREA;
 
 char BEST_BOARD[64][64];
 
-int* MIN_FOOTPRINT;
+int MIN_FOOTPRINT[2];
 
 int N;
 

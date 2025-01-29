@@ -40,7 +40,8 @@ int __apac_depth = 0;
 void partition(int* out_pivot, int* arr, int right_limit) {
   int pivot = arr[right_limit - 1];
   int idx_left = -1;
-  int idx_iter, tmp;
+  int idx_iter;
+  int tmp;
   for (idx_iter = 0; idx_iter < right_limit - 1; idx_iter++) {
     if (arr[idx_iter] < pivot) {
       idx_left++;
@@ -88,7 +89,7 @@ void sort_core(int* in_out_data, int right_limit) {
 #pragma omp atomic
         __apac_count++;
       }
-#pragma omp task default(shared) depend(in : in_out_data, pivot[0], pivot) depend(inout : in_out_data[0]) firstprivate(__apac_depth_local) if ((__apac_count_ok || __apac_depth_ok) && -0.00048583558816 + *pivot * 1.87497275395e-07 > __apac_cutoff)
+#pragma omp task default(shared) depend(in : in_out_data, pivot[0], pivot) depend(inout : in_out_data[0]) firstprivate(__apac_depth_local) if ((__apac_count_ok || __apac_depth_ok) && -0.000376382220376 + *pivot * 2.00711676059e-07 > __apac_cutoff)
       {
         if (__apac_count_ok || __apac_depth_ok) {
           __apac_depth = __apac_depth_local + 1;
@@ -103,7 +104,7 @@ void sort_core(int* in_out_data, int right_limit) {
 #pragma omp atomic
         __apac_count++;
       }
-#pragma omp task default(shared) depend(in : in_out_data, pivot[0], right_limit, pivot) depend(inout : in_out_data[*pivot + 1]) firstprivate(__apac_depth_local) if ((__apac_count_ok || __apac_depth_ok) && -0.000637848080535 + (right_limit - (*pivot + 1)) * 1.90886823469e-07 > __apac_cutoff)
+#pragma omp task default(shared) depend(in : in_out_data, pivot[0], right_limit, pivot) depend(inout : in_out_data[*pivot + 1]) firstprivate(__apac_depth_local) if ((__apac_count_ok || __apac_depth_ok) && -0.000530305455783 + (right_limit - (*pivot + 1)) * 2.0544574535e-07 > __apac_cutoff)
       {
         if (__apac_count_ok || __apac_depth_ok) {
           __apac_depth = __apac_depth_local + 1;

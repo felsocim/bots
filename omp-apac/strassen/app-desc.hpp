@@ -49,7 +49,7 @@ typedef double REAL;
 typedef unsigned long PTR;
 #endif
 void init_matrix(int n, REAL *A, int an);
-void strassen_main_par(REAL *A, REAL *B, REAL *C, int n);
+void strassen_main(REAL *A, REAL *B, REAL *C, int n);
 void strassen_main_seq(REAL *A, REAL *B, REAL *C, int n);
 int compare_matrix(int n, REAL *A, int an, REAL *B, int bn);
 
@@ -67,7 +67,7 @@ int compare_matrix(int n, REAL *A, int an, REAL *B, int bn);
     init_matrix(bots_arg_size,B,bots_arg_size);
 
 //#define KERNEL_INIT
-#define KERNEL_CALL strassen_main_par(C,A,B,bots_arg_size);
+#define KERNEL_CALL strassen_main(C,A,B,bots_arg_size);
 //#define KERNEL_FINI
 
 //#define KERNEL_SEQ_INIT

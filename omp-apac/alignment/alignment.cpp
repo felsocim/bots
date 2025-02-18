@@ -926,7 +926,7 @@ void align() {
   }
 }
 
-void align_seq_init() {
+void align_init_seq() {
   int i;
   int j;
   seq_output = (int*)malloc(sizeof(int) * nseqs * nseqs);

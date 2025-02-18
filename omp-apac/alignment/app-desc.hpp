@@ -31,7 +31,7 @@ void pairalign_init(char *);
 void align_init ();
 void align ();
 void align_end ();
-void align_seq_init ();
+void align_init_seq ();
 void align_seq ();
 int align_verify ();
 
@@ -42,7 +42,7 @@ int align_verify ();
 #define KERNEL_CALL align()
 #define KERNEL_FINI align_end()
 
-#define KERNEL_SEQ_INIT align_seq_init()
+#define KERNEL_SEQ_INIT align_init_seq()
 #define KERNEL_SEQ_CALL align_seq()
 //#define KERNEL_SEQ_FINI
 

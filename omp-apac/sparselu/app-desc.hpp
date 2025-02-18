@@ -37,11 +37,11 @@
 void sparselu_init(float ***pM, const char *pass, int **timestamp);
 void sparselu_fini(float **M, const char *pass, int **timestamp);
 void sparselu_seq(float **SEQ, int *timestamp);
-void sparselu_par_call(float **BENCH, int *timestamp);
+void sparselu(float **BENCH, int *timestamp);
 int sparselu_check(float **SEQ, float **BENCH);
 
 #define KERNEL_INIT sparselu_init(&BENCH,"benchmark",&timestamp);
-#define KERNEL_CALL sparselu_par_call(BENCH,timestamp);
+#define KERNEL_CALL sparselu(BENCH,timestamp);
 #define KERNEL_FINI sparselu_fini(BENCH,"benchmark",&timestamp);
 
 #define KERNEL_SEQ_INIT sparselu_init(&SEQ,"serial",&timestamp);

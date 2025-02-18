@@ -204,7 +204,7 @@ void fwd(float *diag, float *col)
             col[i*bots_arg_size_1+j] = col[i*bots_arg_size_1+j] - diag[i*bots_arg_size_1+k]*col[k*bots_arg_size_1+j];
 }
 
-void prealloc_sparselu_par_call(float **BENCH, int* timestamp)
+void prealloc_sparselu(float **BENCH, int* timestamp)
 {
    bots_message("Pre-allocating factorized matrix");
    for (int ii=0; ii<bots_arg_size; ii++)
@@ -235,10 +235,10 @@ void sparselu_init (float ***pBENCH, const char *pass, int **timestamp)
    print_structure(pass, *pBENCH);
 
    (*timestamp) = (int*)calloc(bots_arg_size*bots_arg_size,sizeof(int));
-   prealloc_sparselu_par_call(*pBENCH, *timestamp);
+   prealloc_sparselu(*pBENCH, *timestamp);
 }
 
-void sparselu_par_call(float **BENCH, int* timestamp)
+void sparselu(float **BENCH, int* timestamp)
 {
    bots_message("Computing SparseLU Factorization (%dx%d matrix with %dx%d blocks) ",
            bots_arg_size,bots_arg_size,bots_arg_size_1,bots_arg_size_1);

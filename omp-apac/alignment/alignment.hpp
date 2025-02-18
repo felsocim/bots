@@ -47,7 +47,7 @@ int pairalign();
 int pairalign_seq();
 void align_init();
 void align();
-void align_seq_init();
+void align_init_seq();
 void align_seq();
 void align_end();
 int align_verify();

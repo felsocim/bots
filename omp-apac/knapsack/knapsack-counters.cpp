@@ -42,7 +42,7 @@ int read_input(const char* filename, item_t* items, int* capacity, int* n) {
   return 0;
 }
 
-void knapsack_par(item_t* e, int c, int n, int v, int* sol, int l) {
+void knapsack(item_t* e, int c, int n, int v, int* sol, int l) {
 #pragma omp taskgroup
   {
     int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
@@ -77,7 +77,7 @@ void knapsack_par(item_t* e, int c, int n, int v, int* sol, int l) {
       if (__apac_count_ok || __apac_depth_ok) {
         __apac_depth = __apac_depth_local + 1;
       }
-      knapsack_par(e + 1, c, n - 1, v, &without, l + 1);
+      knapsack(e + 1, c, n - 1, v, &without, l + 1);
       if (__apac_count_ok) {
 #pragma omp atomic
         __apac_count--;
@@ -92,7 +92,7 @@ void knapsack_par(item_t* e, int c, int n, int v, int* sol, int l) {
       if (__apac_count_ok || __apac_depth_ok) {
         __apac_depth = __apac_depth_local + 1;
       }
-      knapsack_par(e + 1, c - e->weight, n - 1, v + e->value, &with, l + 1);
+      knapsack(e + 1, c - e->weight, n - 1, v + e->value, &with, l + 1);
       if (__apac_count_ok) {
 #pragma omp atomic
         __apac_count--;
@@ -138,7 +138,7 @@ void knapsack_seq(item_t* e, int c, int n, int v, int* sol) {
   *sol = best;
 }
 
-void knapsack_main_par(item_t* e, int c, int n, int* sol) {
+void knapsack_main(item_t* e, int c, int n, int* sol) {
 #pragma omp parallel
 #pragma omp master
 #pragma omp taskgroup
@@ -161,7 +161,7 @@ void knapsack_main_par(item_t* e, int c, int n, int* sol) {
       if (__apac_count_ok || __apac_depth_ok) {
         __apac_depth = __apac_depth_local + 1;
       }
-      knapsack_par(e, c, n, 0, sol, 0);
+      knapsack(e, c, n, 0, sol, 0);
       if (__apac_count_ok) {
 #pragma omp atomic
         __apac_count--;

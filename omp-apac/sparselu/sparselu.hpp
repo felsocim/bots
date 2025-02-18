@@ -16,7 +16,7 @@ void sparselu_init (float ***pBENCH, const char *pass, int **timestamp);
 void sparselu_fini (float **BENCH, const char *pass, int **timestamp); 
 
 void sparselu_seq(float **BENCH, int* timestamp);
-void sparselu_par_call(float **BENCH, int* timestamp);
+void sparselu(float **BENCH, int* timestamp);
 
 int sparselu_check(float **SEQ, float **BENCH);
 

@@ -166,7 +166,7 @@ ELM* binsplit(ELM val, ELM* low, ELM* high) {
     return low;
 }
 
-void cilkmerge_par(ELM* low1, ELM* high1, ELM* low2, ELM* high2, ELM* lowdest) {
+void cilkmerge(ELM* low1, ELM* high1, ELM* low2, ELM* high2, ELM* lowdest) {
 #pragma omp taskgroup
   {
     int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
@@ -221,8 +221,8 @@ void cilkmerge_par(ELM* low1, ELM* high1, ELM* low2, ELM* high2, ELM* lowdest) {
       split2 = binsplit(split1[0], low2, high2);
       lowsize = split1 - low1 + split2 - low2;
       lowdest[lowsize + 1] = split1[0];
-      cilkmerge_par(low1, split1 - 1, low2, split2, lowdest);
-      cilkmerge_par(split1 + 1, high1, split2 + 1, high2, lowdest + lowsize + 2);
+      cilkmerge(low1, split1 - 1, low2, split2, lowdest);
+      cilkmerge(split1 + 1, high1, split2 + 1, high2, lowdest + lowsize + 2);
       if (__apac_count_ok) {
 #pragma omp atomic
         __apac_count--;
@@ -233,7 +233,7 @@ void cilkmerge_par(ELM* low1, ELM* high1, ELM* low2, ELM* high2, ELM* lowdest) {
   }
 }
 
-void cilksort_par(ELM* low, ELM* tmp, long int size) {
+void cilksort(ELM* low, ELM* tmp, long int size) {
 #pragma omp taskgroup
   {
     int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
@@ -285,13 +285,13 @@ void cilksort_par(ELM* low, ELM* tmp, long int size) {
       if (__apac_count_ok || __apac_depth_ok) {
         __apac_depth = __apac_depth_local + 1;
       }
-      cilksort_par(A, tmpA, quarter);
-      cilksort_par(B, tmpB, quarter);
-      cilksort_par(C, tmpC, quarter);
-      cilksort_par(D, tmpD, size - 3 * quarter);
-      cilkmerge_par(A, A + quarter - 1, B, B + quarter - 1, tmpA);
-      cilkmerge_par(C, C + quarter - 1, D, low + size - 1, tmpC);
-      cilkmerge_par(tmpA, tmpC - 1, tmpC, tmpA + size - 1, A);
+      cilksort(A, tmpA, quarter);
+      cilksort(B, tmpB, quarter);
+      cilksort(C, tmpC, quarter);
+      cilksort(D, tmpD, size - 3 * quarter);
+      cilkmerge(A, A + quarter - 1, B, B + quarter - 1, tmpA);
+      cilkmerge(C, C + quarter - 1, D, low + size - 1, tmpC);
+      cilkmerge(tmpA, tmpC - 1, tmpC, tmpA + size - 1, A);
       if (__apac_count_ok) {
 #pragma omp atomic
         __apac_count--;
@@ -355,7 +355,7 @@ void sort_init() {
   }
 }
 
-void sort_par() {
+void sort() {
 #pragma omp parallel
 #pragma omp master
 #pragma omp taskgroup
@@ -374,7 +374,7 @@ void sort_par() {
         __apac_depth = __apac_depth_local + 1;
       }
 #pragma omp critical
-      cilksort_par(array, tmp, bots_arg_size);
+      cilksort(array, tmp, bots_arg_size);
       if (__apac_count_ok) {
 #pragma omp atomic
         __apac_count--;

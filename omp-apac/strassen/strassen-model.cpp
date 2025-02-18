@@ -327,7 +327,7 @@ void OptimizedStrassenMultiply_seq(REAL* C, REAL* A, REAL* B, unsigned int Matri
   free(StartHeap);
 }
 
-void OptimizedStrassenMultiply_par(REAL* C, REAL* A, REAL* B, unsigned int MatrixSize, unsigned int RowWidthC, unsigned int RowWidthA, unsigned int RowWidthB, int Depth) {
+void OptimizedStrassenMultiply(REAL* C, REAL* A, REAL* B, unsigned int MatrixSize, unsigned int RowWidthC, unsigned int RowWidthA, unsigned int RowWidthB, int Depth) {
 #pragma omp taskgroup
   {
     unsigned int QuadrantSize = MatrixSize >> 1;
@@ -415,19 +415,19 @@ void OptimizedStrassenMultiply_par(REAL* C, REAL* A, REAL* B, unsigned int Matri
       MatrixOffsetB += RowIncrementB;
     }
 #pragma omp task default(shared) depend(in : A, B, Depth, QuadrantSize, RowWidthA, RowWidthB) depend(inout : A[0], B[0], Heap) if (-0.00852048915189 + *QuadrantSize * 0.00160425053739 + apac_fpow(2, Depth + 1) * 1.47406346101e-07 > __apac_cutoff)
-    OptimizedStrassenMultiply_par(M2, A, B, QuadrantSize, QuadrantSize, RowWidthA, RowWidthB, Depth + 1);
+    OptimizedStrassenMultiply(M2, A, B, QuadrantSize, QuadrantSize, RowWidthA, RowWidthB, Depth + 1);
 #pragma omp task default(shared) depend(in : Depth, QuadrantSize) depend(inout : A, B, Heap) if (0.00397850657798 + 0. + apac_fpow(2, *QuadrantSize) * 2.80786503052e-07 + *QuadrantSize * *QuadrantSize * -1.5410733005e-05 > __apac_cutoff)
     {
-      OptimizedStrassenMultiply_par(M5, S1, S5, QuadrantSize, QuadrantSize, QuadrantSize, QuadrantSize, Depth + 1);
-      OptimizedStrassenMultiply_par(T1sMULT, S2, S6, QuadrantSize, QuadrantSize, QuadrantSize, QuadrantSize, Depth + 1);
+      OptimizedStrassenMultiply(M5, S1, S5, QuadrantSize, QuadrantSize, QuadrantSize, QuadrantSize, Depth + 1);
+      OptimizedStrassenMultiply(T1sMULT, S2, S6, QuadrantSize, QuadrantSize, QuadrantSize, QuadrantSize, Depth + 1);
     }
 #pragma omp task default(shared) depend(in : Depth, QuadrantSize, RowWidthA, RowWidthB, RowWidthC) depend(inout : A, B, C, C[0]) if (0.0070585935097 + 0. + (Depth + 1) * *QuadrantSize * 3.15413017601e-08 + RowWidthA * *QuadrantSize * 3.15413017601e-08 + RowWidthA * *QuadrantSize * 3.15413017601e-08 + RowWidthA * *QuadrantSize * 3.15413017601e-08 + RowWidthC * *QuadrantSize * 3.15413017601e-08 + RowWidthC * *QuadrantSize * 3.15413017601e-08 + RowWidthC * *QuadrantSize * 3.15413017601e-08 + RowWidthC * *QuadrantSize * 3.15413017601e-08 + apac_fpow(2, Depth + 1) * 3.15413017601e-08 + (Depth + 1) * *QuadrantSize * 3.15413017601e-08 + *QuadrantSize * 3.15413017601e-08 + *QuadrantSize * *QuadrantSize * 3.15413017601e-08 + *QuadrantSize * *QuadrantSize * 3.15413017601e-08 + *QuadrantSize * 3.15413017601e-08 + *QuadrantSize * *QuadrantSize * -2.7685166584e-05 + *QuadrantSize * 3.15413017601e-08 + *QuadrantSize * *QuadrantSize * 3.15413017601e-08 + *QuadrantSize * 3.15413017601e-08 > __apac_cutoff
     )
     {
-      OptimizedStrassenMultiply_par(C22, S3, S7, QuadrantSize, RowWidthC, QuadrantSize, QuadrantSize, Depth + 1);
-      OptimizedStrassenMultiply_par(C, A12, B21, QuadrantSize, RowWidthC, RowWidthA, RowWidthB, Depth + 1);
-      OptimizedStrassenMultiply_par(C12, S4, B22, QuadrantSize, RowWidthC, QuadrantSize, RowWidthB, Depth + 1);
-      OptimizedStrassenMultiply_par(C21, A22, S8, QuadrantSize, RowWidthC, RowWidthA, QuadrantSize, Depth + 1);
+      OptimizedStrassenMultiply(C22, S3, S7, QuadrantSize, RowWidthC, QuadrantSize, QuadrantSize, Depth + 1);
+      OptimizedStrassenMultiply(C, A12, B21, QuadrantSize, RowWidthC, RowWidthA, RowWidthB, Depth + 1);
+      OptimizedStrassenMultiply(C12, S4, B22, QuadrantSize, RowWidthC, QuadrantSize, RowWidthB, Depth + 1);
+      OptimizedStrassenMultiply(C21, A22, S8, QuadrantSize, RowWidthC, RowWidthA, QuadrantSize, Depth + 1);
     }
 #pragma omp taskwait
     for (Row = 0; Row < QuadrantSize; Row++) {
@@ -508,14 +508,14 @@ int compare_matrix(int n, REAL* A, int an, REAL* B, int bn) {
 
 REAL* alloc_matrix(int n) { return (REAL*)malloc(n * n * sizeof(REAL)); }
 
-void strassen_main_par(REAL* A, REAL* B, REAL* C, int n) {
+void strassen_main(REAL* A, REAL* B, REAL* C, int n) {
 #pragma omp parallel
 #pragma omp master
 #pragma omp taskgroup
   {
     bots_message("Computing parallel Strassen algorithm (n=%d) ", n);
 #pragma omp task default(shared) depend(in : A, B, C, n) depend(inout : A[0], B[0], C[0])
-    OptimizedStrassenMultiply_par(C, A, B, n, n, n, n, 1);
+    OptimizedStrassenMultiply(C, A, B, n, n, n, n, 1);
     bots_message(" completed!\n");
   __apac_exit:;
   }

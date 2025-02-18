@@ -91,7 +91,7 @@ void write_outputs(int n, int cc) {
     for (i = 0; i < cc; i++) printf("Component %d       Size: %d\n", i, components[i]);
 }
 
-void CC_par(int i, int cc) {
+void cc_core(int i, int cc) {
 #pragma omp taskgroup
   {
     int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
@@ -116,7 +116,7 @@ void CC_par(int i, int cc) {
             __apac_depth = __apac_depth_local + 1;
           }
           n = nodes[i].neighbor[j];
-          CC_par(n, cc);
+          cc_core(n, cc);
           if (__apac_count_ok) {
 #pragma omp atomic
             __apac_count--;
@@ -128,7 +128,7 @@ void CC_par(int i, int cc) {
   }
 }
 
-void CC_seq(int i, int cc) {
+void cc_core_seq(int i, int cc) {
   int j;
   int n;
   if (visited[i] == 0) {
@@ -137,7 +137,7 @@ void CC_seq(int i, int cc) {
     components[cc]++;
     for (j = 0; j < nodes[i].n; j++) {
       n = nodes[i].neighbor[j];
-      CC_seq(n, cc);
+      cc_core_seq(n, cc);
     }
   }
 }
@@ -150,7 +150,7 @@ void cc_init() {
   }
 }
 
-void cc_par(int* cc) {
+void cc(int* cc) {
 #pragma omp parallel
 #pragma omp master
 #pragma omp taskgroup
@@ -171,7 +171,7 @@ void cc_par(int* cc) {
           if (__apac_count_ok || __apac_depth_ok) {
             __apac_depth = __apac_depth_local + 1;
           }
-          CC_par(i, *cc);
+          cc_core(i, *cc);
           (*cc)++;
           if (__apac_count_ok) {
 #pragma omp atomic
@@ -189,7 +189,7 @@ void cc_seq(int* cc) {
   *cc = 0;
   for (i = 0; i < bots_arg_size; i++) {
     if (visited[i] == 0) {
-      CC_seq(i, *cc);
+      cc_core_seq(i, *cc);
       (*cc)++;
     }
   }

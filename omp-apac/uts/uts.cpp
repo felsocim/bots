@@ -71,7 +71,7 @@ int uts_numChildren(Node* parent) {
   return numChildren;
 }
 
-long long unsigned int parallel_uts(Node* root) {
+long long unsigned int uts_compute(Node* root) {
   long long unsigned int __apac_result;
 #pragma omp parallel
 #pragma omp master

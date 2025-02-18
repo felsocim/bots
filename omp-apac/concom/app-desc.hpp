@@ -48,10 +48,10 @@ typedef struct node {
 int linkable(int N1, int N2);
 void initialize();
 void write_outputs(int n, int cc);
-void CC_par (int i, int cc);
-void CC_seq (int i, int cc);
+void cc_core (int i, int cc);
+void cc_core_seq (int i, int cc);
 void cc_init();
-void cc_par(int *cc);
+void cc(int *cc);
 void cc_seq(int *cc);
 int cc_check(int ccs, int ccb);
 
@@ -59,7 +59,7 @@ int cc_check(int ccs, int ccb);
    initialize();
 
 #define KERNEL_INIT cc_init();
-#define KERNEL_CALL cc_par(&ccp);
+#define KERNEL_CALL cc(&ccp);
 #define KERNEL_FINI
 
 #define KERNEL_SEQ_INIT cc_init();

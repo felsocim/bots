@@ -60,7 +60,7 @@ void write_outputs(int n, int cc) {
     for (i = 0; i < cc; i++) printf("Component %d       Size: %d\n", i, components[i]);
 }
 
-void CC_par(int i, int cc) {
+void cc_core(int i, int cc) {
 #pragma omp taskgroup
   {
     int j;
@@ -75,7 +75,7 @@ void CC_par(int i, int cc) {
 #pragma omp task default(shared) depend(in : cc, i, nodes) depend(inout : n) firstprivate(j)
         {
           n = nodes[i].neighbor[j];
-          CC_par(n, cc);
+          cc_core(n, cc);
         }
       }
     }
@@ -83,7 +83,7 @@ void CC_par(int i, int cc) {
   }
 }
 
-void CC_seq(int i, int cc) {
+void cc_core_seq(int i, int cc) {
   int j;
   int n;
   if (visited[i] == 0) {
@@ -92,7 +92,7 @@ void CC_seq(int i, int cc) {
     components[cc]++;
     for (j = 0; j < nodes[i].n; j++) {
       n = nodes[i].neighbor[j];
-      CC_seq(n, cc);
+      cc_core_seq(n, cc);
     }
   }
 }
@@ -105,7 +105,7 @@ void cc_init() {
   }
 }
 
-void cc_par(int* cc) {
+void cc(int* cc) {
 #pragma omp parallel
 #pragma omp master
 #pragma omp taskgroup
@@ -116,7 +116,7 @@ void cc_par(int* cc) {
       if (visited[i] == 0) {
 #pragma omp task default(shared) depend(in : cc) depend(inout : cc[0]) firstprivate(i)
         {
-          CC_par(i, *cc);
+          cc_core(i, *cc);
           (*cc)++;
         }
       }
@@ -130,7 +130,7 @@ void cc_seq(int* cc) {
   *cc = 0;
   for (i = 0; i < bots_arg_size; i++) {
     if (visited[i] == 0) {
-      CC_seq(i, *cc);
+      cc_core_seq(i, *cc);
       (*cc)++;
     }
   }

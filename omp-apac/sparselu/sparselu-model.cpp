@@ -164,7 +164,7 @@ void fwd(float* diag, float* col) {
       for (i = k + 1; i < bots_arg_size_1; i++) col[i * bots_arg_size_1 + j] = col[i * bots_arg_size_1 + j] - diag[i * bots_arg_size_1 + k] * col[k * bots_arg_size_1 + j];
 }
 
-void prealloc_sparselu_par_call(float** BENCH, int* timestamp) {
+void prealloc_sparselu(float** BENCH, int* timestamp) {
   bots_message("Pre-allocating factorized matrix");
   for (int ii = 0; ii < bots_arg_size; ii++)
     for (int jj = 0; jj < bots_arg_size; jj++)
@@ -188,10 +188,10 @@ void sparselu_init(float*** pBENCH, const char* pass, int** timestamp) {
   genmat(*pBENCH);
   print_structure(pass, *pBENCH);
   *timestamp = (int*)calloc(bots_arg_size * bots_arg_size, sizeof(int));
-  prealloc_sparselu_par_call(*pBENCH, *timestamp);
+  prealloc_sparselu(*pBENCH, *timestamp);
 }
 
-void sparselu_par_call(float** BENCH, int* timestamp) {
+void sparselu(float** BENCH, int* timestamp) {
 #pragma omp parallel
 #pragma omp master
 #pragma omp taskgroup

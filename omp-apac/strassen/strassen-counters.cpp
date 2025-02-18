@@ -383,7 +383,7 @@ void OptimizedStrassenMultiply_seq(REAL* C, REAL* A, REAL* B, unsigned int Matri
   free(StartHeap);
 }
 
-void OptimizedStrassenMultiply_par(REAL* C, REAL* A, REAL* B, unsigned int MatrixSize, unsigned int RowWidthC, unsigned int RowWidthA, unsigned int RowWidthB, int Depth) {
+void OptimizedStrassenMultiply(REAL* C, REAL* A, REAL* B, unsigned int MatrixSize, unsigned int RowWidthC, unsigned int RowWidthA, unsigned int RowWidthB, int Depth) {
 #pragma omp taskgroup
   {
     int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
@@ -497,7 +497,7 @@ void OptimizedStrassenMultiply_par(REAL* C, REAL* A, REAL* B, unsigned int Matri
       if (__apac_count_ok || __apac_depth_ok) {
         __apac_depth = __apac_depth_local + 1;
       }
-      OptimizedStrassenMultiply_par(M2, A, B, QuadrantSize, QuadrantSize, RowWidthA, RowWidthB, Depth + 1);
+      OptimizedStrassenMultiply(M2, A, B, QuadrantSize, QuadrantSize, RowWidthA, RowWidthB, Depth + 1);
       if (__apac_count_ok) {
 #pragma omp atomic
         __apac_count--;
@@ -512,8 +512,8 @@ void OptimizedStrassenMultiply_par(REAL* C, REAL* A, REAL* B, unsigned int Matri
       if (__apac_count_ok || __apac_depth_ok) {
         __apac_depth = __apac_depth_local + 1;
       }
-      OptimizedStrassenMultiply_par(M5, S1, S5, QuadrantSize, QuadrantSize, QuadrantSize, QuadrantSize, Depth + 1);
-      OptimizedStrassenMultiply_par(T1sMULT, S2, S6, QuadrantSize, QuadrantSize, QuadrantSize, QuadrantSize, Depth + 1);
+      OptimizedStrassenMultiply(M5, S1, S5, QuadrantSize, QuadrantSize, QuadrantSize, QuadrantSize, Depth + 1);
+      OptimizedStrassenMultiply(T1sMULT, S2, S6, QuadrantSize, QuadrantSize, QuadrantSize, QuadrantSize, Depth + 1);
       if (__apac_count_ok) {
 #pragma omp atomic
         __apac_count--;
@@ -528,10 +528,10 @@ void OptimizedStrassenMultiply_par(REAL* C, REAL* A, REAL* B, unsigned int Matri
       if (__apac_count_ok || __apac_depth_ok) {
         __apac_depth = __apac_depth_local + 1;
       }
-      OptimizedStrassenMultiply_par(C22, S3, S7, QuadrantSize, RowWidthC, QuadrantSize, QuadrantSize, Depth + 1);
-      OptimizedStrassenMultiply_par(C, A12, B21, QuadrantSize, RowWidthC, RowWidthA, RowWidthB, Depth + 1);
-      OptimizedStrassenMultiply_par(C12, S4, B22, QuadrantSize, RowWidthC, QuadrantSize, RowWidthB, Depth + 1);
-      OptimizedStrassenMultiply_par(C21, A22, S8, QuadrantSize, RowWidthC, RowWidthA, QuadrantSize, Depth + 1);
+      OptimizedStrassenMultiply(C22, S3, S7, QuadrantSize, RowWidthC, QuadrantSize, QuadrantSize, Depth + 1);
+      OptimizedStrassenMultiply(C, A12, B21, QuadrantSize, RowWidthC, RowWidthA, RowWidthB, Depth + 1);
+      OptimizedStrassenMultiply(C12, S4, B22, QuadrantSize, RowWidthC, QuadrantSize, RowWidthB, Depth + 1);
+      OptimizedStrassenMultiply(C21, A22, S8, QuadrantSize, RowWidthC, RowWidthA, QuadrantSize, Depth + 1);
       if (__apac_count_ok) {
 #pragma omp atomic
         __apac_count--;
@@ -616,7 +616,7 @@ int compare_matrix(int n, REAL* A, int an, REAL* B, int bn) {
 
 REAL* alloc_matrix(int n) { return (REAL*)malloc(n * n * sizeof(REAL)); }
 
-void strassen_main_par(REAL* A, REAL* B, REAL* C, int n) {
+void strassen_main(REAL* A, REAL* B, REAL* C, int n) {
 #pragma omp parallel
 #pragma omp master
 #pragma omp taskgroup
@@ -634,7 +634,7 @@ void strassen_main_par(REAL* A, REAL* B, REAL* C, int n) {
       if (__apac_count_ok || __apac_depth_ok) {
         __apac_depth = __apac_depth_local + 1;
       }
-      OptimizedStrassenMultiply_par(C, A, B, n, n, n, n, 1);
+      OptimizedStrassenMultiply(C, A, B, n, n, n, n, 1);
       if (__apac_count_ok) {
 #pragma omp atomic
         __apac_count--;

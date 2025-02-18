@@ -170,7 +170,7 @@ int uts_numChildren(Node *parent)
  * Recursive depth-first implementation                    *
  ***********************************************************/
 
-unsigned long long parallel_uts ( Node *root )
+unsigned long long uts_compute ( Node *root )
 {
    unsigned long long num_nodes = 0 ;
    root->numChildren = uts_numChildren(root);

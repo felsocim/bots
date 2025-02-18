@@ -90,7 +90,7 @@ void write_outputs(int n, int cc) {
          printf("Component %d       Size: %d\n", i, components[i]);
 }
 // Marks a node and all its neighbors as part of the CC
-void CC_par (int i, int cc)
+void cc_core (int i, int cc)
 {
    int j, n;
 
@@ -105,11 +105,11 @@ void CC_par (int i, int cc)
       for (j = 0; j < nodes[i].n; j++)
       {
          n = nodes[i].neighbor[j];
-         CC_par(n, cc);
+         cc_core(n, cc);
       }
    }
 }
-void CC_seq (int i, int cc)
+void cc_core_seq (int i, int cc)
 {
    int j, n;
    /* if node has not been visited */
@@ -122,7 +122,7 @@ void CC_seq (int i, int cc)
       for (j = 0; j < nodes[i].n; j++)
       {
          n = nodes[i].neighbor[j];
-         CC_seq(n, cc);
+         cc_core_seq(n, cc);
       }
    }  
 }
@@ -136,7 +136,7 @@ void cc_init()
       components[i] = 0;
    }
 }
-void cc_par(int *cc)
+void cc(int *cc)
 {
    int i;
    (*cc) = 0;
@@ -145,7 +145,7 @@ void cc_par(int *cc)
    {
       if (visited[i] == 0)
       {
-         CC_par(i, *cc);
+         cc_core(i, *cc);
          (*cc)++;
       }
    }
@@ -159,7 +159,7 @@ void cc_seq(int *cc)
    {
       if (visited[i] == 0)
       {
-         CC_seq(i, *cc);
+         cc_core_seq(i, *cc);
          (*cc)++;
       }
    }

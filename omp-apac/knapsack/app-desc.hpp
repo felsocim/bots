@@ -45,9 +45,9 @@ typedef struct {
 
 int read_input(const char *filename, item_t *items, int *capacity, int *n);
 void knapsack_seq(item_t *e, int c, int n, int v, int *sol);
-void knapsack_par(item_t *e, int c, int n, int v, int *sol, int l);
+void knapsack(item_t *e, int c, int n, int v, int *sol, int l);
 void knapsack_main_seq (item_t *e, int c, int n, int *sol);
-void knapsack_main_par (item_t *e, int c, int n, int *sol);
+void knapsack_main (item_t *e, int c, int n, int *sol);
 int  knapsack_check (int sol_seq, int sol_par);
 
 #define BOTS_APP_INIT\
@@ -57,7 +57,7 @@ int  knapsack_check (int sol_seq, int sol_par);
      read_input(bots_arg_file, items, &capacity, &n);
 
 #define KERNEL_INIT 
-#define KERNEL_CALL knapsack_main_par(items, capacity, n, &sol_par);
+#define KERNEL_CALL knapsack_main(items, capacity, n, &sol_par);
 #define KERNEL_FINI
 
 #define KERNEL_SEQ_INIT 

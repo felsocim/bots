@@ -241,7 +241,7 @@ ELM *binsplit(ELM val, ELM *low, ELM *high)
 }
 
 
-void cilkmerge_par(ELM *low1, ELM *high1, ELM *low2, ELM *high2, ELM *lowdest)
+void cilkmerge(ELM *low1, ELM *high1, ELM *low2, ELM *high2, ELM *lowdest)
 {
      /*
       * Cilkmerge: Merges range [low1, high1] with range [low2, high2] 
@@ -297,14 +297,14 @@ void cilkmerge_par(ELM *low1, ELM *high1, ELM *low2, ELM *high2, ELM *lowdest)
       * the appropriate location
       */
      lowdest[lowsize + 1] = split1[0];
-     cilkmerge_par(low1, split1 - 1, low2, split2, lowdest);
-     cilkmerge_par(split1 + 1, high1, split2 + 1, high2,
+     cilkmerge(low1, split1 - 1, low2, split2, lowdest);
+     cilkmerge(split1 + 1, high1, split2 + 1, high2,
 		     lowdest + lowsize + 2);
 
      return;
 }
 
-void cilksort_par(ELM *low, ELM *tmp, long size)
+void cilksort(ELM *low, ELM *tmp, long size)
 {
      /*
       * divide the input in four parts of the same size (A, B, C, D)
@@ -330,15 +330,15 @@ void cilksort_par(ELM *low, ELM *tmp, long size)
      D = C + quarter;
      tmpD = tmpC + quarter;
 
-     cilksort_par(A, tmpA, quarter);
-     cilksort_par(B, tmpB, quarter);
-     cilksort_par(C, tmpC, quarter);
-     cilksort_par(D, tmpD, size - 3 * quarter);
+     cilksort(A, tmpA, quarter);
+     cilksort(B, tmpB, quarter);
+     cilksort(C, tmpC, quarter);
+     cilksort(D, tmpD, size - 3 * quarter);
 
-     cilkmerge_par(A, A + quarter - 1, B, B + quarter - 1, tmpA);
-     cilkmerge_par(C, C + quarter - 1, D, low + size - 1, tmpC);
+     cilkmerge(A, A + quarter - 1, B, B + quarter - 1, tmpA);
+     cilkmerge(C, C + quarter - 1, D, low + size - 1, tmpC);
 
-     cilkmerge_par(tmpA, tmpC - 1, tmpC, tmpA + size - 1, A);
+     cilkmerge(tmpA, tmpC - 1, tmpC, tmpA + size - 1, A);
 }
 
 void scramble_array( ELM *array )
@@ -408,10 +408,10 @@ void sort_init ( void )
      scramble_array(array);
 }
 
-void sort_par ( void )
+void sort ( void )
 {
 	bots_message("Computing multisort algorithm (n=%d) ", bots_arg_size);
-	cilksort_par(array, tmp, bots_arg_size);
+	cilksort(array, tmp, bots_arg_size);
 	bots_message(" completed!\n");
 }
 

@@ -23,7 +23,7 @@
 
 CUTOFF_VERSIONS = counters #model both
 SKIP = init_matrix,compare_matrix,alloc_matrix
-MAIN = strassen_main_par
+MAIN = strassen_main
 
 BASE_DIR = ../../
 

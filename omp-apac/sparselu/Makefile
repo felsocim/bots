@@ -22,8 +22,8 @@
 #PROGRAM_OBJS=
 
 CUTOFF_VERSIONS = counters model both
-SKIP = checkmat,genmat,print_structure,allocate_clean_block,sparselu_init,sparselu_fini,sparselu_check,prealloc_sparselu_par_call
-MAIN = sparselu_par_call
+SKIP = checkmat,genmat,print_structure,allocate_clean_block,sparselu_init,sparselu_fini,sparselu_check,prealloc_sparselu
+MAIN = sparselu
 
 BASE_DIR = ../../
 

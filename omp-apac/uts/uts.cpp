@@ -71,27 +71,6 @@ int uts_numChildren(Node* parent) {
   return numChildren;
 }
 
-long long unsigned int uts_compute(Node* root) {
-  long long unsigned int __apac_result;
-#pragma omp parallel
-#pragma omp master
-#pragma omp taskgroup
-  {
-    long long unsigned int num_nodes = 0;
-#pragma omp task default(shared) depend(inout : root, root[0])
-    root->numChildren = uts_numChildren(root);
-    bots_message("Computing Unbalance Tree Search algorithm ");
-#pragma omp task default(shared) depend(in : root) depend(inout : num_nodes, root[0])
-    num_nodes = parTreeSearch(0, root, root->numChildren);
-#pragma omp taskwait
-    bots_message(" completed!");
-    __apac_result = num_nodes;
-    goto __apac_exit;
-  __apac_exit:;
-  }
-  return __apac_result;
-}
-
 long long unsigned int parTreeSearch(int depth, Node* parent, int numChildren) {
   long long unsigned int __apac_result;
 #pragma omp taskgroup
@@ -120,6 +99,25 @@ long long unsigned int parTreeSearch(int depth, Node* parent, int numChildren) {
       subtreesize += partialCount[i];
     }
     __apac_result = subtreesize;
+    goto __apac_exit;
+  __apac_exit:;
+  }
+  return __apac_result;
+}
+
+long long unsigned int uts_compute(Node* root) {
+  long long unsigned int __apac_result;
+#pragma omp taskgroup
+  {
+    long long unsigned int num_nodes = 0;
+#pragma omp task default(shared) depend(inout : root, root[0])
+    root->numChildren = uts_numChildren(root);
+    bots_message("Computing Unbalance Tree Search algorithm ");
+#pragma omp task default(shared) depend(in : root) depend(inout : num_nodes, root[0])
+    num_nodes = parTreeSearch(0, root, root->numChildren);
+#pragma omp taskwait
+    bots_message(" completed!");
+    __apac_result = num_nodes;
     goto __apac_exit;
   __apac_exit:;
   }

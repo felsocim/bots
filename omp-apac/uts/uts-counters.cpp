@@ -11,13 +11,13 @@
 
 const static int __apac_count_infinite = getenv("APAC_TASK_COUNT_INFINITE") ? 1 : 0;
 
-const static int __apac_depth_infinite = getenv("APAC_TASK_DEPTH_INFINITE") ? 1 : 0;
-
 const static int __apac_count_max = getenv("APAC_TASK_COUNT_MAX") ? atoi(getenv("APAC_TASK_COUNT_MAX")) : omp_get_max_threads() * 10;
 
-const static int __apac_depth_max = getenv("APAC_TASK_DEPTH_MAX") ? atoi(getenv("APAC_TASK_DEPTH_MAX")) : 5;
-
 int __apac_count = 0;
+
+const static int __apac_depth_infinite = getenv("APAC_TASK_DEPTH_INFINITE") ? 1 : 0;
+
+const static int __apac_depth_max = getenv("APAC_TASK_DEPTH_MAX") ? atoi(getenv("APAC_TASK_DEPTH_MAX")) : 5;
 
 int __apac_depth = 0;
 
@@ -84,102 +84,139 @@ int uts_numChildren(Node* parent) {
   return numChildren;
 }
 
-long long unsigned int uts_compute(Node* root) {
-  long long unsigned int __apac_result;
-#pragma omp parallel
-#pragma omp master
-#pragma omp taskgroup
-  {
-    int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
-    int __apac_depth_local = __apac_depth;
-    int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
-    long long unsigned int num_nodes = 0;
-    if (__apac_count_ok) {
-#pragma omp atomic
-      __apac_count++;
+long long unsigned int __apac_sequential_parTreeSearch(int depth, Node* parent, int numChildren) {
+  Node n[numChildren];
+  Node* nodePtr;
+  int i;
+  int j;
+  long long unsigned int subtreesize = 1;
+  long long unsigned int partialCount[numChildren];
+  for (i = 0; i < numChildren; i++) {
+    nodePtr = &n[i];
+    nodePtr->height = parent->height + 1;
+    for (j = 0; j < computeGranularity; j++) {
+      rng_spawn(parent->state.state, nodePtr->state.state, i);
     }
-#pragma omp task default(shared) depend(inout : root, root[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
-    {
-      if (__apac_count_ok || __apac_depth_ok) {
-        __apac_depth = __apac_depth_local + 1;
-      }
-      root->numChildren = uts_numChildren(root);
-      if (__apac_count_ok) {
-#pragma omp atomic
-        __apac_count--;
-      }
-    }
-    bots_message("Computing Unbalance Tree Search algorithm ");
-    if (__apac_count_ok) {
-#pragma omp atomic
-      __apac_count++;
-    }
-#pragma omp task default(shared) depend(in : root) depend(inout : num_nodes, root[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
-    {
-      if (__apac_count_ok || __apac_depth_ok) {
-        __apac_depth = __apac_depth_local + 1;
-      }
-      num_nodes = parTreeSearch(0, root, root->numChildren);
-      if (__apac_count_ok) {
-#pragma omp atomic
-        __apac_count--;
-      }
-    }
-#pragma omp taskwait
-    bots_message(" completed!");
-    __apac_result = num_nodes;
-    goto __apac_exit;
-  __apac_exit:;
+    nodePtr->numChildren = uts_numChildren(nodePtr);
+    partialCount[i] = __apac_sequential_parTreeSearch(depth + 1, nodePtr, nodePtr->numChildren);
   }
-  return __apac_result;
+  for (i = 0; i < numChildren; i++) {
+    subtreesize += partialCount[i];
+  }
+  return subtreesize;
 }
 
 long long unsigned int parTreeSearch(int depth, Node* parent, int numChildren) {
-  long long unsigned int __apac_result;
+  int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
+  int __apac_depth_local = __apac_depth;
+  int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
+  if (__apac_depth_ok) {
+    long long unsigned int __apac_result;
 #pragma omp taskgroup
-  {
-    int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
-    int __apac_depth_local = __apac_depth;
-    int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
-    Node n[numChildren];
-    Node* nodePtr;
-    int i;
-    int j;
-    long long unsigned int subtreesize = 1;
-    long long unsigned int partialCount[numChildren];
-    for (i = 0; i < numChildren; i++) {
-      nodePtr = &n[i];
-      nodePtr->height = parent->height + 1;
-      for (j = 0; j < computeGranularity; j++) {
+    {
+      Node n[numChildren];
+      Node* nodePtr;
+      int i;
+      int j;
+      long long unsigned int subtreesize = 1;
+      long long unsigned int partialCount[numChildren];
+      for (i = 0; i < numChildren; i++) {
+        nodePtr = &n[i];
+        nodePtr->height = parent->height + 1;
+        for (j = 0; j < computeGranularity; j++) {
 #pragma omp taskwait depend(in : i) depend(inout : n, parent)
-        rng_spawn(parent->state.state, nodePtr->state.state, i);
+          rng_spawn(parent->state.state, nodePtr->state.state, i);
+        }
+        if (__apac_count_ok) {
+#pragma omp atomic
+          __apac_count++;
+        }
+#pragma omp task default(shared) depend(in : depth, partialCount) depend(inout : n, partialCount[i]) firstprivate(__apac_depth_local, i) if (__apac_count_ok || __apac_depth_ok)
+        {
+          if (__apac_count_ok || __apac_depth_ok) {
+            __apac_depth = __apac_depth_local + 1;
+          }
+          nodePtr->numChildren = uts_numChildren(nodePtr);
+          partialCount[i] = parTreeSearch(depth + 1, nodePtr, nodePtr->numChildren);
+          if (__apac_count_ok) {
+#pragma omp atomic
+            __apac_count--;
+          }
+        }
       }
+#pragma omp taskwait
+      for (i = 0; i < numChildren; i++) {
+        subtreesize += partialCount[i];
+      }
+      __apac_result = subtreesize;
+      goto __apac_exit;
+    __apac_exit:;
+    }
+    return __apac_result;
+  } else {
+    return __apac_sequential_parTreeSearch(depth, parent, numChildren);
+  }
+}
+
+long long unsigned int __apac_sequential_uts_compute(Node* root) {
+  long long unsigned int num_nodes = 0;
+  root->numChildren = uts_numChildren(root);
+  bots_message("Computing Unbalance Tree Search algorithm ");
+  num_nodes = __apac_sequential_parTreeSearch(0, root, root->numChildren);
+  bots_message(" completed!");
+  return num_nodes;
+}
+
+long long unsigned int uts_compute(Node* root) {
+  int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
+  int __apac_depth_local = __apac_depth;
+  int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
+  if (__apac_depth_ok) {
+    long long unsigned int __apac_result;
+#pragma omp taskgroup
+    {
+      long long unsigned int num_nodes = 0;
       if (__apac_count_ok) {
 #pragma omp atomic
         __apac_count++;
       }
-#pragma omp task default(shared) depend(in : depth, partialCount) depend(inout : n, partialCount[i]) firstprivate(__apac_depth_local, i) if (__apac_count_ok || __apac_depth_ok)
+#pragma omp task default(shared) depend(inout : root, root[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
       {
         if (__apac_count_ok || __apac_depth_ok) {
           __apac_depth = __apac_depth_local + 1;
         }
-        nodePtr->numChildren = uts_numChildren(nodePtr);
-        partialCount[i] = parTreeSearch(depth + 1, nodePtr, nodePtr->numChildren);
+        root->numChildren = uts_numChildren(root);
         if (__apac_count_ok) {
 #pragma omp atomic
           __apac_count--;
         }
       }
-    }
+      bots_message("Computing Unbalance Tree Search algorithm ");
+      if (__apac_count_ok) {
+#pragma omp atomic
+        __apac_count++;
+      }
+#pragma omp task default(shared) depend(in : root) depend(inout : num_nodes, root[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+      {
+        if (__apac_count_ok || __apac_depth_ok) {
+          __apac_depth = __apac_depth_local + 1;
+        }
+        num_nodes = parTreeSearch(0, root, root->numChildren);
+        if (__apac_count_ok) {
+#pragma omp atomic
+          __apac_count--;
+        }
+      }
 #pragma omp taskwait
-    for (i = 0; i < numChildren; i++) {
-      subtreesize += partialCount[i];
+      bots_message(" completed!");
+      __apac_result = num_nodes;
+      goto __apac_exit;
+    __apac_exit:;
     }
-    __apac_result = subtreesize;
-    goto __apac_exit;
-  __apac_exit:;
+    return __apac_result;
+  } else {
+    return __apac_sequential_uts_compute(root);
   }
-  return __apac_result;
 }
 
 void uts_read_file(char* filename) {

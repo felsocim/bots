@@ -9,4 +9,4 @@
   "sed"
   "make"
   "clang-toolchain@13"
-  "ocaml-apac"))
+  "ocaml-optitrust"))

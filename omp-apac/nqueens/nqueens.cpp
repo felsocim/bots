@@ -43,7 +43,7 @@ void nqueens_ser(int n, int j, char* a, int* solutions) {
   }
 }
 
-void nqueens(int n, int j, char* a, int* solutions, int depth) {
+void nqueens(int n, int j, char* a, int* solutions) {
 #pragma omp taskgroup
   {
     int* csols;
@@ -62,8 +62,8 @@ void nqueens(int n, int j, char* a, int* solutions, int depth) {
       b[j] = (char)i;
 #pragma omp taskwait depend(in : b, j) depend(inout : b[0])
       if (ok(j + 1, b)) {
-#pragma omp task default(shared) depend(in : b, csols, depth, j, n) depend(inout : b[0], csols[i]) firstprivate(i)
-        nqueens(n, j + 1, b, &csols[i], depth);
+#pragma omp task default(shared) depend(in : b, csols, j, n) depend(inout : b[0], csols[i]) firstprivate(i)
+        nqueens(n, j + 1, b, &csols[i]);
       }
     }
 #pragma omp taskwait
@@ -87,7 +87,7 @@ void find_queens(int size) {
 #pragma omp task default(shared) depend(in : a, size) depend(inout : a[0], total_count)
     {
 #pragma omp critical
-      nqueens(size, 0, a, &total_count, 0);
+      nqueens(size, 0, a, &total_count);
     }
     bots_message(" completed!\n");
   __apac_exit:;

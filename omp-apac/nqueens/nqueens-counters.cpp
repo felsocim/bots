@@ -9,13 +9,13 @@
 
 const static int __apac_count_infinite = getenv("APAC_TASK_COUNT_INFINITE") ? 1 : 0;
 
-const static int __apac_depth_infinite = getenv("APAC_TASK_DEPTH_INFINITE") ? 1 : 0;
-
 const static int __apac_count_max = getenv("APAC_TASK_COUNT_MAX") ? atoi(getenv("APAC_TASK_COUNT_MAX")) : omp_get_max_threads() * 10;
 
-const static int __apac_depth_max = getenv("APAC_TASK_DEPTH_MAX") ? atoi(getenv("APAC_TASK_DEPTH_MAX")) : 5;
-
 int __apac_count = 0;
+
+const static int __apac_depth_infinite = getenv("APAC_TASK_DEPTH_INFINITE") ? 1 : 0;
+
+const static int __apac_depth_max = getenv("APAC_TASK_DEPTH_MAX") ? atoi(getenv("APAC_TASK_DEPTH_MAX")) : 5;
 
 int __apac_depth = 0;
 
@@ -57,84 +57,101 @@ void nqueens_ser(int n, int j, char* a, int* solutions) {
   }
 }
 
-void nqueens(int n, int j, char* a, int* solutions, int depth) {
+void nqueens(int n, int j, char* a, int* solutions) {
+  int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
+  int __apac_depth_local = __apac_depth;
+  int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
+  if (__apac_depth_ok) {
 #pragma omp taskgroup
-  {
-    int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
-    int __apac_depth_local = __apac_depth;
-    int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
-    int* csols;
-    int i;
-    if (n == j) {
-      *solutions = 1;
-      goto __apac_exit;
-    }
-    *solutions = 0;
-    csols = (int*)__builtin_alloca(n * sizeof(int));
-    memset(csols, 0, n * sizeof(int));
-    for (i = 0; i < n; i++) {
-      char* b;
-      b = (char*)__builtin_alloca(n * sizeof(char));
-      memcpy(b, a, j * sizeof(char));
-      b[j] = (char)i;
+    {
+      int* csols;
+      int i;
+      if (n == j) {
+        *solutions = 1;
+        goto __apac_exit;
+      }
+      *solutions = 0;
+      csols = (int*)__builtin_alloca(n * sizeof(int));
+      memset(csols, 0, n * sizeof(int));
+      for (i = 0; i < n; i++) {
+        char* b;
+        b = (char*)__builtin_alloca(n * sizeof(char));
+        memcpy(b, a, j * sizeof(char));
+        b[j] = (char)i;
 #pragma omp taskwait depend(in : b, j) depend(inout : b[0])
-      if (ok(j + 1, b)) {
-        if (__apac_count_ok) {
-#pragma omp atomic
-          __apac_count++;
-        }
-#pragma omp task default(shared) depend(in : b, csols, depth, j, n) depend(inout : b[0], csols[i]) firstprivate(__apac_depth_local, i) if (__apac_count_ok || __apac_depth_ok)
-        {
-          if (__apac_count_ok || __apac_depth_ok) {
-            __apac_depth = __apac_depth_local + 1;
-          }
-          nqueens(n, j + 1, b, &csols[i], depth);
+        if (ok(j + 1, b)) {
           if (__apac_count_ok) {
 #pragma omp atomic
-            __apac_count--;
+            __apac_count++;
+          }
+#pragma omp task default(shared) depend(in : b, csols, j, n) depend(inout : b[0], csols[i]) firstprivate(__apac_depth_local, i) if (__apac_count_ok || __apac_depth_ok)
+          {
+            if (__apac_count_ok || __apac_depth_ok) {
+              __apac_depth = __apac_depth_local + 1;
+            }
+            nqueens(n, j + 1, b, &csols[i]);
+            if (__apac_count_ok) {
+#pragma omp atomic
+              __apac_count--;
+            }
           }
         }
       }
-    }
 #pragma omp taskwait
-    for (i = 0; i < n; i++) {
-      *solutions += csols[i];
+      for (i = 0; i < n; i++) {
+        *solutions += csols[i];
+      }
+    __apac_exit:;
     }
-  __apac_exit:;
+  } else {
+    nqueens_ser(n, j, a, solutions);
   }
 }
 
+void __apac_sequential_find_queens(int size) {
+  total_count = 0;
+  bots_message("Computing N-Queens algorithm (n=%d) ", size);
+  char* a;
+  a = (char*)__builtin_alloca(size * sizeof(char));
+  nqueens(size, 0, a, &total_count);
+  bots_message(" completed!\n");
+}
+
 void find_queens(int size) {
+  int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
+  int __apac_depth_local = __apac_depth;
+  int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
+  if (__apac_depth_ok) {
 #pragma omp parallel
 #pragma omp master
 #pragma omp taskgroup
-  {
-    int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
-    int __apac_depth_local = __apac_depth;
-    int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
-#pragma omp critical
-    total_count = 0;
-    bots_message("Computing N-Queens algorithm (n=%d) ", size);
-    char* a;
-    a = (char*)__builtin_alloca(size * sizeof(char));
-    if (__apac_count_ok) {
-#pragma omp atomic
-      __apac_count++;
-    }
-#pragma omp task default(shared) depend(in : a, size) depend(inout : a[0], total_count) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
     {
-      if (__apac_count_ok || __apac_depth_ok) {
-        __apac_depth = __apac_depth_local + 1;
-      }
 #pragma omp critical
-      nqueens(size, 0, a, &total_count, 0);
+      total_count = 0;
+      bots_message("Computing N-Queens algorithm (n=%d) ", size);
+      char* a;
+      a = (char*)__builtin_alloca(size * sizeof(char));
       if (__apac_count_ok) {
 #pragma omp atomic
-        __apac_count--;
+        __apac_count++;
       }
+#pragma omp task default(shared) depend(in : a, size) depend(inout : a[0], total_count) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+      {
+        if (__apac_count_ok || __apac_depth_ok) {
+          __apac_depth = __apac_depth_local + 1;
+        }
+#pragma omp critical
+        nqueens(size, 0, a, &total_count);
+        if (__apac_count_ok) {
+#pragma omp atomic
+          __apac_count--;
+        }
+      }
+      bots_message(" completed!\n");
+    __apac_exit:;
     }
-    bots_message(" completed!\n");
-  __apac_exit:;
+  } else {
+    __apac_sequential_find_queens(size);
   }
 }
 

@@ -144,13 +144,13 @@ $(PROGRAM).cpp: $(PROGRAM).in.cpp $(COMMON_DIR)/Makefile.common
 	$(APAC) $(APAC_ALL_FLAGS) -o $@ $<
 
 $(PROGRAM)-counters.cpp: $(PROGRAM).in.cpp Makefile $(COMMON_DIR)/Makefile.common 
-	$(APAC) $(APAC_ALL_FLAGS) --cutoff -o $@ $<
+	$(APAC) $(APAC_ALL_FLAGS) --cutoff-count --cutoff-depth -o $@ $<
 
 $(PROGRAM)-model.cpp: $(PROGRAM).in.cpp Makefile $(COMMON_DIR)/Makefile.common 
 	$(APAC) $(APAC_ALL_FLAGS) --profile --run-with-custom="bash $(BASE_DIR)/run/run-$(PROGRAM).sh -c 1 -l $(CC) -v omp-apac_profiling" -o $@ $<
 
 $(PROGRAM)-both.cpp: $(PROGRAM).in.cpp Makefile $(COMMON_DIR)/Makefile.common 
-	$(APAC) $(APAC_ALL_FLAGS) --cutoff --profile --run-with-custom="bash $(BASE_DIR)/run/run-$(PROGRAM).sh -c 1 -l $(CC) -v omp-apac_profiling" -o $@ $<
+	$(APAC) $(APAC_ALL_FLAGS) --cutoff-count --cutoff-depth --profile --run-with-custom="bash $(BASE_DIR)/run/run-$(PROGRAM).sh -c 1 -l $(CC) -v omp-apac_profiling" -o $@ $<
 
 INFO_FLAGS_OMP=-DCDATE="\"$(TODAY)\"" -DCC="\"$(OMPCXX)\"" -DLD="\"$(OMPCXXLINK)\"" -DCMESSAGE="\"$(CMESSAGE)\"" \
                -DLDFLAGS="\"$(OMPCXXLINK_ALL_FLAGS) $(LIBS)\"" -DCFLAGS="\"$(OMPCXX_ALL_FLAGS) -I.\"" -DAPACFLAGS="\"$(APAC_ALL_FLAGS)\""

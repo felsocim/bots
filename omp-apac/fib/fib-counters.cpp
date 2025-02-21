@@ -5,13 +5,13 @@
 #include "fib.hpp"
 const static int __apac_count_infinite = getenv("APAC_TASK_COUNT_INFINITE") ? 1 : 0;
 
-const static int __apac_depth_infinite = getenv("APAC_TASK_DEPTH_INFINITE") ? 1 : 0;
-
 const static int __apac_count_max = getenv("APAC_TASK_COUNT_MAX") ? atoi(getenv("APAC_TASK_COUNT_MAX")) : omp_get_max_threads() * 10;
 
-const static int __apac_depth_max = getenv("APAC_TASK_DEPTH_MAX") ? atoi(getenv("APAC_TASK_DEPTH_MAX")) : 5;
-
 int __apac_count = 0;
+
+const static int __apac_depth_infinite = getenv("APAC_TASK_DEPTH_INFINITE") ? 1 : 0;
+
+const static int __apac_depth_max = getenv("APAC_TASK_DEPTH_MAX") ? atoi(getenv("APAC_TASK_DEPTH_MAX")) : 5;
 
 int __apac_depth = 0;
 
@@ -29,54 +29,58 @@ long long int fib_seq(int n) {
 }
 
 long long int fib(int n) {
-  long long int __apac_result;
+  int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
+  int __apac_depth_local = __apac_depth;
+  int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
+  if (__apac_depth_ok) {
+    long long int __apac_result;
 #pragma omp taskgroup
-  {
-    int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
-    int __apac_depth_local = __apac_depth;
-    int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
-    long long int x;
-    long long int y;
-    if (n < 2) {
-      __apac_result = n;
-      goto __apac_exit;
-    }
-    if (__apac_count_ok) {
+    {
+      long long int x;
+      long long int y;
+      if (n < 2) {
+        __apac_result = n;
+        goto __apac_exit;
+      }
+      if (__apac_count_ok) {
 #pragma omp atomic
-      __apac_count++;
-    }
+        __apac_count++;
+      }
 #pragma omp task default(shared) depend(in : n) depend(inout : x) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
-    {
-      if (__apac_count_ok || __apac_depth_ok) {
-        __apac_depth = __apac_depth_local + 1;
+      {
+        if (__apac_count_ok || __apac_depth_ok) {
+          __apac_depth = __apac_depth_local + 1;
+        }
+        x = fib(n - 1);
+        if (__apac_count_ok) {
+#pragma omp atomic
+          __apac_count--;
+        }
       }
-      x = fib(n - 1);
       if (__apac_count_ok) {
 #pragma omp atomic
-        __apac_count--;
+        __apac_count++;
       }
-    }
-    if (__apac_count_ok) {
-#pragma omp atomic
-      __apac_count++;
-    }
 #pragma omp task default(shared) depend(in : n) depend(inout : y) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
-    {
-      if (__apac_count_ok || __apac_depth_ok) {
-        __apac_depth = __apac_depth_local + 1;
-      }
-      y = fib(n - 2);
-      if (__apac_count_ok) {
+      {
+        if (__apac_count_ok || __apac_depth_ok) {
+          __apac_depth = __apac_depth_local + 1;
+        }
+        y = fib(n - 2);
+        if (__apac_count_ok) {
 #pragma omp atomic
-        __apac_count--;
+          __apac_count--;
+        }
       }
-    }
 #pragma omp taskwait
-    __apac_result = x + y;
-    goto __apac_exit;
-  __apac_exit:;
+      __apac_result = x + y;
+      goto __apac_exit;
+    __apac_exit:;
+    }
+    return __apac_result;
+  } else {
+    return fib_seq(n);
   }
-  return __apac_result;
 }
 
 long long int par_res;
@@ -84,33 +88,37 @@ long long int par_res;
 long long int seq_res;
 
 void fib0(int n) {
+  int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
+  int __apac_depth_local = __apac_depth;
+  int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
+  if (__apac_depth_ok) {
 #pragma omp parallel
 #pragma omp master
 #pragma omp taskgroup
-  {
-    int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
-    int __apac_depth_local = __apac_depth;
-    int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
-    if (__apac_count_ok) {
-#pragma omp atomic
-      __apac_count++;
-    }
-#pragma omp task default(shared) depend(in : n) depend(inout : par_res) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
     {
-      if (__apac_count_ok || __apac_depth_ok) {
-        __apac_depth = __apac_depth_local + 1;
-      }
-#pragma omp critical
-      {
-        par_res = fib(n);
-        bots_message("Fibonacci result for %d is %lld\n", n, par_res);
-      }
       if (__apac_count_ok) {
 #pragma omp atomic
-        __apac_count--;
+        __apac_count++;
       }
+#pragma omp task default(shared) depend(in : n) depend(inout : par_res) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+      {
+        if (__apac_count_ok || __apac_depth_ok) {
+          __apac_depth = __apac_depth_local + 1;
+        }
+#pragma omp critical
+        {
+          par_res = fib(n);
+          bots_message("Fibonacci result for %d is %lld\n", n, par_res);
+        }
+        if (__apac_count_ok) {
+#pragma omp atomic
+          __apac_count--;
+        }
+      }
+    __apac_exit:;
     }
-  __apac_exit:;
+  } else {
+    fib0_seq(n);
   }
 }
 

@@ -8,21 +8,6 @@
 
 const double __apac_cutoff = getenv("APAC_EXECUTION_TIME_CUTOFF") ? atof(getenv("APAC_EXECUTION_TIME_CUTOFF")) : 2.22100e-6;
 
-template <class T>
-T apac_fpow(int exp, const T& base) {
-  T result = T(1);
-  T pow = base;
-  int i = exp;
-  while (i) {
-    if (i & 1) {
-      result *= pow;
-    }
-    pow *= pow;
-    i /= 2;
-  }
-  return result;
-}
-
 void partition(int* out_pivot, int* arr, int right_limit) {
   int pivot = arr[right_limit - 1];
   int idx_left = -1;
@@ -68,9 +53,9 @@ void sort_core(int* in_out_data, int right_limit) {
     } else {
       int* pivot = new int();
       partition(pivot, in_out_data, right_limit);
-#pragma omp task default(shared) depend(in : in_out_data, pivot[0], pivot) depend(inout : in_out_data[0]) if (-0.00026815880701 + *pivot * 1.82054968092e-07 > __apac_cutoff)
+#pragma omp task default(shared) depend(in : in_out_data, pivot[0], pivot) depend(inout : in_out_data[0]) if (-0.000737093374081 + *pivot * 3.6562530483e-07 > __apac_cutoff)
       sort_core(&in_out_data[0], *pivot);
-#pragma omp task default(shared) depend(in : in_out_data, pivot[0], right_limit, pivot) depend(inout : in_out_data[*pivot + 1]) if (-0.000588127087762 + (right_limit - (*pivot + 1)) * 1.89770578075e-07 > __apac_cutoff)
+#pragma omp task default(shared) depend(in : in_out_data, pivot[0], right_limit, pivot) depend(inout : in_out_data[*pivot + 1]) if (-0.0010016770895 + (right_limit - (*pivot + 1)) * 3.77927754024e-07 > __apac_cutoff)
       sort_core(&in_out_data[*pivot + 1], right_limit - (*pivot + 1));
 #pragma omp task default(shared) depend(inout : pivot)
       delete pivot;

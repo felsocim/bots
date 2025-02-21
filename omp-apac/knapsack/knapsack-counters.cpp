@@ -9,13 +9,13 @@
 #include "compare.hpp"
 const static int __apac_count_infinite = getenv("APAC_TASK_COUNT_INFINITE") ? 1 : 0;
 
-const static int __apac_depth_infinite = getenv("APAC_TASK_DEPTH_INFINITE") ? 1 : 0;
-
 const static int __apac_count_max = getenv("APAC_TASK_COUNT_MAX") ? atoi(getenv("APAC_TASK_COUNT_MAX")) : omp_get_max_threads() * 10;
 
-const static int __apac_depth_max = getenv("APAC_TASK_DEPTH_MAX") ? atoi(getenv("APAC_TASK_DEPTH_MAX")) : 5;
-
 int __apac_count = 0;
+
+const static int __apac_depth_infinite = getenv("APAC_TASK_DEPTH_INFINITE") ? 1 : 0;
+
+const static int __apac_depth_max = getenv("APAC_TASK_DEPTH_MAX") ? atoi(getenv("APAC_TASK_DEPTH_MAX")) : 5;
 
 int __apac_depth = 0;
 
@@ -42,70 +42,74 @@ int read_input(const char* filename, item_t* items, int* capacity, int* n) {
   return 0;
 }
 
-void knapsack(item_t* e, int c, int n, int v, int* sol, int l) {
+void knapsack(item_t* e, int c, int n, int v, int* sol) {
+  int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
+  int __apac_depth_local = __apac_depth;
+  int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
+  if (__apac_depth_ok) {
 #pragma omp taskgroup
-  {
-    int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
-    int __apac_depth_local = __apac_depth;
-    int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
-    int with;
-    int without;
-    int best;
-    double ub;
-#pragma omp critical
-    number_of_tasks++;
-    if (c < 0) {
-      *sol = -2147483647 - 1;
-      goto __apac_exit;
-    }
-    if (n == 0 || c == 0) {
-      *sol = v;
-      goto __apac_exit;
-    }
-    ub = (double)v + c * e->value / e->weight;
-#pragma omp critical
-    if (ub < best_so_far) {
-      *sol = -2147483647 - 1;
-      goto __apac_exit;
-    }
-    if (__apac_count_ok) {
-#pragma omp atomic
-      __apac_count++;
-    }
-#pragma omp task default(shared) depend(in : c, e, e[0], l, n, v) depend(inout : without) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
     {
-      if (__apac_count_ok || __apac_depth_ok) {
-        __apac_depth = __apac_depth_local + 1;
+      int with;
+      int without;
+      int best;
+      double ub;
+#pragma omp critical
+      number_of_tasks++;
+      if (c < 0) {
+        *sol = -2147483647 - 1;
+        goto __apac_exit;
       }
-      knapsack(e + 1, c, n - 1, v, &without, l + 1);
+      if (n == 0 || c == 0) {
+        *sol = v;
+        goto __apac_exit;
+      }
+      ub = (double)v + c * e->value / e->weight;
+#pragma omp critical
+      if (ub < best_so_far) {
+        *sol = -2147483647 - 1;
+        goto __apac_exit;
+      }
       if (__apac_count_ok) {
 #pragma omp atomic
-        __apac_count--;
+        __apac_count++;
       }
-    }
-    if (__apac_count_ok) {
+#pragma omp task default(shared) depend(in : c, e, e[0], n, v) depend(inout : without) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+      {
+        if (__apac_count_ok || __apac_depth_ok) {
+          __apac_depth = __apac_depth_local + 1;
+        }
+        knapsack(e + 1, c, n - 1, v, &without);
+        if (__apac_count_ok) {
 #pragma omp atomic
-      __apac_count++;
-    }
-#pragma omp task default(shared) depend(in : c, e, e[0], l, n, v) depend(inout : with) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
-    {
-      if (__apac_count_ok || __apac_depth_ok) {
-        __apac_depth = __apac_depth_local + 1;
+          __apac_count--;
+        }
       }
-      knapsack(e + 1, c - e->weight, n - 1, v + e->value, &with, l + 1);
       if (__apac_count_ok) {
 #pragma omp atomic
-        __apac_count--;
+        __apac_count++;
       }
-    }
+#pragma omp task default(shared) depend(in : c, e, e[0], n, v) depend(inout : with) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+      {
+        if (__apac_count_ok || __apac_depth_ok) {
+          __apac_depth = __apac_depth_local + 1;
+        }
+        knapsack(e + 1, c - e->weight, n - 1, v + e->value, &with);
+        if (__apac_count_ok) {
+#pragma omp atomic
+          __apac_count--;
+        }
+      }
 #pragma omp taskwait
-    best = (with > without ? with : without);
+      best = (with > without ? with : without);
 #pragma omp critical
-    if (best > best_so_far) {
-      best_so_far = best;
+      if (best > best_so_far) {
+        best_so_far = best;
+      }
+      *sol = best;
+    __apac_exit:;
     }
-    *sol = best;
-  __apac_exit:;
+  } else {
+    knapsack_seq(e, c, n, v, sol);
   }
 }
 
@@ -139,39 +143,43 @@ void knapsack_seq(item_t* e, int c, int n, int v, int* sol) {
 }
 
 void knapsack_main(item_t* e, int c, int n, int* sol) {
+  int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
+  int __apac_depth_local = __apac_depth;
+  int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
+  if (__apac_depth_ok) {
 #pragma omp parallel
 #pragma omp master
 #pragma omp taskgroup
-  {
-    int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
-    int __apac_depth_local = __apac_depth;
-    int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
+    {
 #pragma omp critical
-    {
-      best_so_far = -2147483647 - 1;
-      number_of_tasks = 0;
-      bots_number_of_tasks += number_of_tasks;
-    }
-    if (__apac_count_ok) {
-#pragma omp atomic
-      __apac_count++;
-    }
-#pragma omp task default(shared) depend(in : c, e, e[0], n, sol) depend(inout : sol[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
-    {
-      if (__apac_count_ok || __apac_depth_ok) {
-        __apac_depth = __apac_depth_local + 1;
+      {
+        best_so_far = -2147483647 - 1;
+        number_of_tasks = 0;
+        bots_number_of_tasks += number_of_tasks;
       }
-      knapsack(e, c, n, 0, sol, 0);
       if (__apac_count_ok) {
 #pragma omp atomic
-        __apac_count--;
+        __apac_count++;
       }
-    }
+#pragma omp task default(shared) depend(in : c, e, e[0], n, sol) depend(inout : sol[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+      {
+        if (__apac_count_ok || __apac_depth_ok) {
+          __apac_depth = __apac_depth_local + 1;
+        }
+        knapsack(e, c, n, 0, sol);
+        if (__apac_count_ok) {
+#pragma omp atomic
+          __apac_count--;
+        }
+      }
 #pragma omp taskwait
-    if (bots_verbose_mode) {
-      printf("Best value for parallel execution is %d\n\n", *sol);
+      if (bots_verbose_mode) {
+        printf("Best value for parallel execution is %d\n\n", *sol);
+      }
+    __apac_exit:;
     }
-  __apac_exit:;
+  } else {
+    knapsack_main_seq(e, c, n, sol);
   }
 }
 

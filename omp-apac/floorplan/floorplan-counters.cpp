@@ -7,13 +7,13 @@
 #include "bots.h"
 const static int __apac_count_infinite = getenv("APAC_TASK_COUNT_INFINITE") ? 1 : 0;
 
-const static int __apac_depth_infinite = getenv("APAC_TASK_DEPTH_INFINITE") ? 1 : 0;
-
 const static int __apac_count_max = getenv("APAC_TASK_COUNT_MAX") ? atoi(getenv("APAC_TASK_COUNT_MAX")) : omp_get_max_threads() * 10;
 
-const static int __apac_depth_max = getenv("APAC_TASK_DEPTH_MAX") ? atoi(getenv("APAC_TASK_DEPTH_MAX")) : 5;
-
 int __apac_count = 0;
+
+const static int __apac_depth_infinite = getenv("APAC_TASK_DEPTH_INFINITE") ? 1 : 0;
+
+const static int __apac_depth_max = getenv("APAC_TASK_DEPTH_MAX") ? atoi(getenv("APAC_TASK_DEPTH_MAX")) : 5;
 
 int __apac_depth = 0;
 
@@ -178,127 +178,188 @@ void write_outputs() {
   }
 }
 
-int add_cell(int id, int FOOTPRINT[2], char BOARD[64][64], cell* CELLS) {
-  int __apac_result;
-#pragma omp taskgroup
-  {
-    int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
-    int __apac_depth_local = __apac_depth;
-    int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
-    int i;
-    int j;
-    int nn;
-    int area;
-    int nnc;
-    int nnl;
-    char board[64][64];
-    int footprint[2];
-    int** NWS;
-    NWS = (int**)malloc(64 * sizeof(int*));
-    for (i = 0; i < 64; i++) {
-      NWS[i] = (int*)malloc(2 * sizeof(int));
+int __apac_sequential_add_cell(int id, int FOOTPRINT[2], char BOARD[64][64], cell* CELLS) {
+  int i;
+  int j;
+  int nn;
+  int area;
+  int nnc;
+  int nnl;
+  char board[64][64];
+  int footprint[2];
+  int** NWS = (int**)malloc(64 * sizeof(int*));
+  for (i = 0; i < 64; i++) {
+    NWS[i] = (int*)malloc(2 * sizeof(int));
+  }
+  nnc = nnl = 0;
+  for (i = 0; i < CELLS[id].n; i++) {
+    nn = starts(id, i, NWS, CELLS);
+    nnl += nn;
+    for (j = 0; j < nn; j++) {
+      cell cells[N + 1];
+      memcpy(cells, CELLS, sizeof(cell) * (N + 1));
+      cells[id].top = NWS[j][0];
+      cells[id].bot = cells[id].top + cells[id].alt[i][0] - 1;
+      cells[id].lhs = NWS[j][1];
+      cells[id].rhs = cells[id].lhs + cells[id].alt[i][1] - 1;
+      memcpy(board, BOARD, (size_t)64 * 64 * sizeof(char));
+      if (!lay_down(id, board, cells)) {
+        bots_debug("Chip %d, shape %d does not fit\n", id, i);
+        goto _end;
+      }
+      footprint[0] = (FOOTPRINT[0] > cells[id].bot + 1 ? FOOTPRINT[0] : cells[id].bot + 1);
+      footprint[1] = (FOOTPRINT[1] > cells[id].rhs + 1 ? FOOTPRINT[1] : cells[id].rhs + 1);
+      area = footprint[0] * footprint[1];
+      if (cells[id].next == 0) {
+        if (area < MIN_AREA) {
+          if (area < MIN_AREA) {
+            MIN_AREA = area;
+            MIN_FOOTPRINT[0] = footprint[0];
+            MIN_FOOTPRINT[1] = footprint[1];
+            memcpy(BEST_BOARD, board, (size_t)64 * 64 * sizeof(char));
+            bots_debug("N  %d\n", MIN_AREA);
+          }
+        }
+      } else if (area < MIN_AREA) {
+        nnc += __apac_sequential_add_cell(cells[id].next, footprint, board, cells);
+      } else {
+        bots_debug("T  %d, %d\n", area, MIN_AREA);
+      }
+    _end:;
     }
-    nnc = nnl = 0;
-    for (i = 0; i < CELLS[id].n; i++) {
-      if (__apac_count_ok) {
-#pragma omp atomic
-        __apac_count++;
+  }
+  for (i = 0; i < 64; i++) {
+    free(NWS[i]);
+  }
+  free(NWS);
+  return nnc + nnl;
+}
+
+int add_cell(int id, int FOOTPRINT[2], char BOARD[64][64], cell* CELLS) {
+  int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
+  int __apac_depth_local = __apac_depth;
+  int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
+  if (__apac_depth_ok) {
+    int __apac_result;
+#pragma omp taskgroup
+    {
+      int i;
+      int j;
+      int nn;
+      int area;
+      int nnc;
+      int nnl;
+      char board[64][64];
+      int footprint[2];
+      int** NWS;
+      NWS = (int**)malloc(64 * sizeof(int*));
+      for (i = 0; i < 64; i++) {
+        NWS[i] = (int*)malloc(2 * sizeof(int));
       }
-#pragma omp task default(shared) depend(in : CELLS, NWS, id) depend(inout : CELLS[0], NWS[0], NWS[0][0], nn) firstprivate(__apac_depth_local, i) if (__apac_count_ok || __apac_depth_ok)
-      {
-        if (__apac_count_ok || __apac_depth_ok) {
-          __apac_depth = __apac_depth_local + 1;
-        }
-        nn = starts(id, i, NWS, CELLS);
-        if (__apac_count_ok) {
-#pragma omp atomic
-          __apac_count--;
-        }
-      }
-#pragma omp taskwait depend(in : nn) depend(inout : nnl)
-      nnl += nn;
-#pragma omp taskwait depend(in : nn) depend(inout : j)
-      for (j = 0; j < nn; j++) {
-        cell* cells = new cell[N + 1]();
-        memcpy(cells, CELLS, sizeof(cell) * (N + 1));
-        cells[id].top = NWS[j][0];
-        cells[id].bot = cells[id].top + cells[id].alt[i][0] - 1;
-        cells[id].lhs = NWS[j][1];
-        cells[id].rhs = cells[id].lhs + cells[id].alt[i][1] - 1;
-#pragma omp taskwait depend(in : BOARD, board) depend(inout : BOARD[0], BOARD[0][0], board[0], board[0][0])
-        memcpy(board, BOARD, (size_t)64 * 64 * sizeof(char));
-#pragma omp taskwait depend(in : board, cells, id) depend(inout : board[0], board[0][0], cells[0])
-        if (!lay_down(id, board, cells)) {
-          bots_debug("Chip %d, shape %d does not fit\n", id, i);
-          goto _end;
-        }
-#pragma omp taskwait depend(in : FOOTPRINT, FOOTPRINT[0], cells, footprint, id) depend(inout : footprint[0])
-        footprint[0] = (FOOTPRINT[0] > cells[id].bot + 1 ? FOOTPRINT[0] : cells[id].bot + 1);
-#pragma omp taskwait depend(in : FOOTPRINT, FOOTPRINT[1], cells, footprint, id) depend(inout : footprint[1])
-        footprint[1] = (FOOTPRINT[1] > cells[id].rhs + 1 ? FOOTPRINT[1] : cells[id].rhs + 1);
-        area = footprint[0] * footprint[1];
-        if (cells[id].next == 0) {
-#pragma omp critical
-          if (area < MIN_AREA) {
-            if (area < MIN_AREA) {
-              MIN_AREA = area;
-              bots_debug("N  %d\n", MIN_AREA);
-              MIN_FOOTPRINT[0] = footprint[0];
-              MIN_FOOTPRINT[1] = footprint[1];
-#pragma omp taskwait depend(in : BEST_BOARD, board) depend(inout : BEST_BOARD[0], BEST_BOARD[0][0], board[0], board[0][0])
-              memcpy(BEST_BOARD, board, (size_t)64 * 64 * sizeof(char));
-            }
-          }
-        } else {
-#pragma omp critical
-          if (area < MIN_AREA) {
-            if (__apac_count_ok) {
-#pragma omp atomic
-              __apac_count++;
-            }
-#pragma omp task default(shared) depend(in : board, cells, footprint, footprint[0], id) depend(inout : board[0], board[0][0], cells[0], nnc) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
-            {
-              if (__apac_count_ok || __apac_depth_ok) {
-                __apac_depth = __apac_depth_local + 1;
-              }
-              nnc += add_cell(cells[id].next, footprint, board, cells);
-              if (__apac_count_ok) {
-#pragma omp atomic
-                __apac_count--;
-              }
-            }
-          } else {
-            bots_debug("T  %d, %d\n", area, MIN_AREA);
-          }
-        }
-      _end:;
+      nnc = nnl = 0;
+      for (i = 0; i < CELLS[id].n; i++) {
         if (__apac_count_ok) {
 #pragma omp atomic
           __apac_count++;
         }
-#pragma omp task default(shared) depend(inout : cells) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+#pragma omp task default(shared) depend(in : CELLS, NWS, id) depend(inout : CELLS[0], NWS[0], NWS[0][0], nn) firstprivate(__apac_depth_local, i) if (__apac_count_ok || __apac_depth_ok)
         {
           if (__apac_count_ok || __apac_depth_ok) {
             __apac_depth = __apac_depth_local + 1;
           }
-          delete[] cells;
+          nn = starts(id, i, NWS, CELLS);
           if (__apac_count_ok) {
 #pragma omp atomic
             __apac_count--;
           }
         }
+#pragma omp taskwait depend(in : nn) depend(inout : nnl)
+        nnl += nn;
+#pragma omp taskwait depend(in : nn) depend(inout : j)
+        for (j = 0; j < nn; j++) {
+          cell* cells = new cell[N + 1]();
+          memcpy(cells, CELLS, sizeof(cell) * (N + 1));
+          cells[id].top = NWS[j][0];
+          cells[id].bot = cells[id].top + cells[id].alt[i][0] - 1;
+          cells[id].lhs = NWS[j][1];
+          cells[id].rhs = cells[id].lhs + cells[id].alt[i][1] - 1;
+#pragma omp taskwait depend(in : BOARD, board) depend(inout : BOARD[0], BOARD[0][0], board[0], board[0][0])
+          memcpy(board, BOARD, (size_t)64 * 64 * sizeof(char));
+#pragma omp taskwait depend(in : board, cells, id) depend(inout : board[0], board[0][0], cells[0])
+          if (!lay_down(id, board, cells)) {
+            bots_debug("Chip %d, shape %d does not fit\n", id, i);
+            goto _end;
+          }
+#pragma omp taskwait depend(in : FOOTPRINT, FOOTPRINT[0], cells, footprint, id) depend(inout : footprint[0])
+          footprint[0] = (FOOTPRINT[0] > cells[id].bot + 1 ? FOOTPRINT[0] : cells[id].bot + 1);
+#pragma omp taskwait depend(in : FOOTPRINT, FOOTPRINT[1], cells, footprint, id) depend(inout : footprint[1])
+          footprint[1] = (FOOTPRINT[1] > cells[id].rhs + 1 ? FOOTPRINT[1] : cells[id].rhs + 1);
+          area = footprint[0] * footprint[1];
+          if (cells[id].next == 0) {
+#pragma omp critical
+            if (area < MIN_AREA) {
+              if (area < MIN_AREA) {
+                MIN_AREA = area;
+                bots_debug("N  %d\n", MIN_AREA);
+                MIN_FOOTPRINT[0] = footprint[0];
+                MIN_FOOTPRINT[1] = footprint[1];
+#pragma omp taskwait depend(in : BEST_BOARD, board) depend(inout : BEST_BOARD[0], BEST_BOARD[0][0], board[0], board[0][0])
+                memcpy(BEST_BOARD, board, (size_t)64 * 64 * sizeof(char));
+              }
+            }
+          } else {
+#pragma omp critical
+            if (area < MIN_AREA) {
+              if (__apac_count_ok) {
+#pragma omp atomic
+                __apac_count++;
+              }
+#pragma omp task default(shared) depend(in : board, cells, footprint, footprint[0], id) depend(inout : board[0], board[0][0], cells[0], nnc) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+              {
+                if (__apac_count_ok || __apac_depth_ok) {
+                  __apac_depth = __apac_depth_local + 1;
+                }
+                nnc += add_cell(cells[id].next, footprint, board, cells);
+                if (__apac_count_ok) {
+#pragma omp atomic
+                  __apac_count--;
+                }
+              }
+            } else {
+              bots_debug("T  %d, %d\n", area, MIN_AREA);
+            }
+          }
+        _end:;
+          if (__apac_count_ok) {
+#pragma omp atomic
+            __apac_count++;
+          }
+#pragma omp task default(shared) depend(inout : cells) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+          {
+            if (__apac_count_ok || __apac_depth_ok) {
+              __apac_depth = __apac_depth_local + 1;
+            }
+            delete[] cells;
+            if (__apac_count_ok) {
+#pragma omp atomic
+              __apac_count--;
+            }
+          }
+        }
       }
-    }
 #pragma omp taskwait
-    for (i = 0; i < 64; i++) {
-      free(NWS[i]);
+      for (i = 0; i < 64; i++) {
+        free(NWS[i]);
+      }
+      free(NWS);
+      __apac_result = nnc + nnl;
+      goto __apac_exit;
+    __apac_exit:;
     }
-    free(NWS);
-    __apac_result = nnc + nnl;
-    goto __apac_exit;
-  __apac_exit:;
+    return __apac_result;
+  } else {
+    return __apac_sequential_add_cell(id, FOOTPRINT, BOARD, CELLS);
   }
-  return __apac_result;
 }
 
 char board[64][64];
@@ -318,36 +379,49 @@ void floorplan_init(char* filename) {
     for (j = 0; j < 64; j++) board[i][j] = 0;
 }
 
+void __apac_sequential_compute_floorplan() {
+  int footprint[2];
+  footprint[0] = 0;
+  footprint[1] = 0;
+  bots_message("Computing floorplan ");
+  bots_number_of_tasks = __apac_sequential_add_cell(1, footprint, board, gcells);
+  bots_message(" completed!\n");
+}
+
 void compute_floorplan() {
+  int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
+  int __apac_depth_local = __apac_depth;
+  int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
+  if (__apac_depth_ok) {
 #pragma omp parallel
 #pragma omp master
 #pragma omp taskgroup
-  {
-    int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
-    int __apac_depth_local = __apac_depth;
-    int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
-    int footprint[2];
-    footprint[0] = 0;
-    footprint[1] = 0;
-    bots_message("Computing floorplan ");
-    if (__apac_count_ok) {
-#pragma omp atomic
-      __apac_count++;
-    }
-#pragma omp task default(shared) depend(in : board, footprint, footprint[0], gcells) depend(inout : board[0], board[0][0], gcells[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
     {
-      if (__apac_count_ok || __apac_depth_ok) {
-        __apac_depth = __apac_depth_local + 1;
-      }
-#pragma omp critical
-      bots_number_of_tasks = add_cell(1, footprint, board, gcells);
+      int footprint[2];
+      footprint[0] = 0;
+      footprint[1] = 0;
+      bots_message("Computing floorplan ");
       if (__apac_count_ok) {
 #pragma omp atomic
-        __apac_count--;
+        __apac_count++;
       }
+#pragma omp task default(shared) depend(in : board, footprint, footprint[0], gcells) depend(inout : board[0], board[0][0], gcells[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+      {
+        if (__apac_count_ok || __apac_depth_ok) {
+          __apac_depth = __apac_depth_local + 1;
+        }
+#pragma omp critical
+        bots_number_of_tasks = add_cell(1, footprint, board, gcells);
+        if (__apac_count_ok) {
+#pragma omp atomic
+          __apac_count--;
+        }
+      }
+      bots_message(" completed!\n");
+    __apac_exit:;
     }
-    bots_message(" completed!\n");
-  __apac_exit:;
+  } else {
+    __apac_sequential_compute_floorplan();
   }
 }
 

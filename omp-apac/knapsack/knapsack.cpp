@@ -28,7 +28,7 @@ int read_input(const char* filename, item_t* items, int* capacity, int* n) {
   return 0;
 }
 
-void knapsack(item_t* e, int c, int n, int v, int* sol, int l) {
+void knapsack(item_t* e, int c, int n, int v, int* sol) {
 #pragma omp taskgroup
   {
     int with;
@@ -51,10 +51,10 @@ void knapsack(item_t* e, int c, int n, int v, int* sol, int l) {
       *sol = -2147483647 - 1;
       goto __apac_exit;
     }
-#pragma omp task default(shared) depend(in : c, e, e[0], l, n, v) depend(inout : without)
-    knapsack(e + 1, c, n - 1, v, &without, l + 1);
-#pragma omp task default(shared) depend(in : c, e, e[0], l, n, v) depend(inout : with)
-    knapsack(e + 1, c - e->weight, n - 1, v + e->value, &with, l + 1);
+#pragma omp task default(shared) depend(in : c, e, e[0], n, v) depend(inout : without)
+    knapsack(e + 1, c, n - 1, v, &without);
+#pragma omp task default(shared) depend(in : c, e, e[0], n, v) depend(inout : with)
+    knapsack(e + 1, c - e->weight, n - 1, v + e->value, &with);
 #pragma omp taskwait
     best = (with > without ? with : without);
 #pragma omp critical
@@ -107,7 +107,7 @@ void knapsack_main(item_t* e, int c, int n, int* sol) {
       bots_number_of_tasks += number_of_tasks;
     }
 #pragma omp task default(shared) depend(in : c, e, e[0], n, sol) depend(inout : sol[0])
-    knapsack(e, c, n, 0, sol, 0);
+    knapsack(e, c, n, 0, sol);
 #pragma omp taskwait
     if (bots_verbose_mode) {
       printf("Best value for parallel execution is %d\n\n", *sol);

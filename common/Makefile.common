@@ -457,8 +457,13 @@ endif
 endif
 endif
 
+ifeq ($(VERSION),omp-apac)
 clean:
-	rm -fr *.o *.log apac_profiling.hpp *.in_profiling.cpp *.profile *.model
+	rm -fr $(PROGRAM).cpp $(PROGRAM)-counters.cpp $(PROGRAM)-model.cpp $(PROGRAM)-both.cpp *.o *.log apac_profiling.hpp *.in_profiling.cpp *.profile *.model
+else
+clean:
+	rm -fr *.o
+endif
 
 dist-clean: clean
 

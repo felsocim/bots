@@ -170,20 +170,6 @@ int uts_numChildren(Node *parent)
  * Recursive depth-first implementation                    *
  ***********************************************************/
 
-unsigned long long uts_compute ( Node *root )
-{
-   unsigned long long num_nodes = 0 ;
-   root->numChildren = uts_numChildren(root);
-
-   bots_message("Computing Unbalance Tree Search algorithm ");
-
-   num_nodes = parTreeSearch( 0, root, root->numChildren );
-
-   bots_message(" completed!");
-
-   return num_nodes;
-}
-
 unsigned long long parTreeSearch(int depth, Node *parent, int numChildren) 
 {
   Node n[numChildren];
@@ -213,6 +199,20 @@ unsigned long long parTreeSearch(int depth, Node *parent, int numChildren)
   }
   
   return subtreesize;
+}
+
+unsigned long long uts_compute ( Node *root )
+{
+   unsigned long long num_nodes = 0 ;
+   root->numChildren = uts_numChildren(root);
+
+   bots_message("Computing Unbalance Tree Search algorithm ");
+
+   num_nodes = parTreeSearch( 0, root, root->numChildren );
+
+   bots_message(" completed!");
+
+   return num_nodes;
 }
 
 void uts_read_file ( char *filename )

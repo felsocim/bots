@@ -7,23 +7,6 @@
 #include "atomic.hpp"
 #include "bots.h"
 
-const double __apac_cutoff = getenv("APAC_EXECUTION_TIME_CUTOFF") ? atof(getenv("APAC_EXECUTION_TIME_CUTOFF")) : 2.22100e-6;
-
-template <class T>
-T apac_fpow(int exp, const T& base) {
-  T result = T(1);
-  T pow = base;
-  int i = exp;
-  while (i) {
-    if (i & 1) {
-      result *= pow;
-    }
-    pow *= pow;
-    i /= 2;
-  }
-  return result;
-}
-
 node* nodes;
 
 int* visited;

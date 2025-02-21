@@ -9,13 +9,13 @@
 #include "bots.h"
 const static int __apac_count_infinite = getenv("APAC_TASK_COUNT_INFINITE") ? 1 : 0;
 
-const static int __apac_depth_infinite = getenv("APAC_TASK_DEPTH_INFINITE") ? 1 : 0;
-
 const static int __apac_count_max = getenv("APAC_TASK_COUNT_MAX") ? atoi(getenv("APAC_TASK_COUNT_MAX")) : omp_get_max_threads() * 10;
 
-const static int __apac_depth_max = getenv("APAC_TASK_DEPTH_MAX") ? atoi(getenv("APAC_TASK_DEPTH_MAX")) : 5;
-
 int __apac_count = 0;
+
+const static int __apac_depth_infinite = getenv("APAC_TASK_DEPTH_INFINITE") ? 1 : 0;
+
+const static int __apac_depth_max = getenv("APAC_TASK_DEPTH_MAX") ? atoi(getenv("APAC_TASK_DEPTH_MAX")) : 5;
 
 int __apac_depth = 0;
 
@@ -75,39 +75,43 @@ void write_outputs(int n, int cc) {
 }
 
 void cc_core(int i, int cc) {
+  int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
+  int __apac_depth_local = __apac_depth;
+  int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
+  if (__apac_depth_ok) {
 #pragma omp taskgroup
-  {
-    int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
-    int __apac_depth_local = __apac_depth;
-    int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
-    int j;
-    int n;
-    int expected = 0;
-    if (atomic_compare(&visited[i], &expected)) {
-      if (bots_verbose_mode) {
-        printf("Adding node %d to component %d\n", i, cc);
-      }
-      atomic_add(&components[cc], 1);
-      for (j = 0; j < nodes[i].n; j++) {
-        if (__apac_count_ok) {
-#pragma omp atomic
-          __apac_count++;
+    {
+      int j;
+      int n;
+      int expected = 0;
+      if (atomic_compare(&visited[i], &expected)) {
+        if (bots_verbose_mode) {
+          printf("Adding node %d to component %d\n", i, cc);
         }
-#pragma omp task default(shared) depend(in : cc, i, nodes) depend(inout : n) firstprivate(__apac_depth_local, j) if (__apac_count_ok || __apac_depth_ok)
-        {
-          if (__apac_count_ok || __apac_depth_ok) {
-            __apac_depth = __apac_depth_local + 1;
-          }
-          n = nodes[i].neighbor[j];
-          cc_core(n, cc);
+        atomic_add(&components[cc], 1);
+        for (j = 0; j < nodes[i].n; j++) {
           if (__apac_count_ok) {
 #pragma omp atomic
-            __apac_count--;
+            __apac_count++;
+          }
+#pragma omp task default(shared) depend(in : cc, i, nodes) depend(inout : n) firstprivate(__apac_depth_local, j) if (__apac_count_ok || __apac_depth_ok)
+          {
+            if (__apac_count_ok || __apac_depth_ok) {
+              __apac_depth = __apac_depth_local + 1;
+            }
+            n = nodes[i].neighbor[j];
+            cc_core(n, cc);
+            if (__apac_count_ok) {
+#pragma omp atomic
+              __apac_count--;
+            }
           }
         }
       }
+    __apac_exit:;
     }
-  __apac_exit:;
+  } else {
+    cc_core_seq(i, cc);
   }
 }
 
@@ -134,36 +138,40 @@ void cc_init() {
 }
 
 void cc(int* cc) {
+  int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
+  int __apac_depth_local = __apac_depth;
+  int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
+  if (__apac_depth_ok) {
 #pragma omp parallel
 #pragma omp master
 #pragma omp taskgroup
-  {
-    int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
-    int __apac_depth_local = __apac_depth;
-    int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
-    int i;
-    *cc = 0;
-    for (i = 0; i < bots_arg_size; i++) {
-      if (visited[i] == 0) {
-        if (__apac_count_ok) {
-#pragma omp atomic
-          __apac_count++;
-        }
-#pragma omp task default(shared) depend(in : cc) depend(inout : cc[0]) firstprivate(__apac_depth_local, i) if (__apac_count_ok || __apac_depth_ok)
-        {
-          if (__apac_count_ok || __apac_depth_ok) {
-            __apac_depth = __apac_depth_local + 1;
-          }
-          cc_core(i, *cc);
-          (*cc)++;
+    {
+      int i;
+      *cc = 0;
+      for (i = 0; i < bots_arg_size; i++) {
+        if (visited[i] == 0) {
           if (__apac_count_ok) {
 #pragma omp atomic
-            __apac_count--;
+            __apac_count++;
+          }
+#pragma omp task default(shared) depend(in : cc) depend(inout : cc[0]) firstprivate(__apac_depth_local, i) if (__apac_count_ok || __apac_depth_ok)
+          {
+            if (__apac_count_ok || __apac_depth_ok) {
+              __apac_depth = __apac_depth_local + 1;
+            }
+            cc_core(i, *cc);
+            (*cc)++;
+            if (__apac_count_ok) {
+#pragma omp atomic
+              __apac_count--;
+            }
           }
         }
       }
+    __apac_exit:;
     }
-  __apac_exit:;
+  } else {
+    cc_seq(cc);
   }
 }
 

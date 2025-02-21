@@ -118,6 +118,8 @@ ifdef CUTOFF_VERSIONS
 	BOTH_PROGRAM_OBJS := $(PROGRAM_OBJS:%.o=%-both.o)
 endif
 
+.PHONY: $(PROGRAM).cpp $(PROGRAM)-counters.cpp $(PROGRAM)-model.cpp $(PROGRAM)-both.cpp
+
 all: $(TARGETS)
 
 profiling: $(BIN_DIR)/$(PROGRAM).$(LABEL).$(SUB)$(VERSION)_profiling

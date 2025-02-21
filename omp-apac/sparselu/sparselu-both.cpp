@@ -8,32 +8,15 @@
 
 #include "bots.h"
 #include "sparselu.hpp"
-const double __apac_cutoff = getenv("APAC_EXECUTION_TIME_CUTOFF") ? atof(getenv("APAC_EXECUTION_TIME_CUTOFF")) : 2.22100e-6;
-
-template <class T>
-T apac_fpow(int exp, const T& base) {
-  T result = T(1);
-  T pow = base;
-  int i = exp;
-  while (i) {
-    if (i & 1) {
-      result *= pow;
-    }
-    pow *= pow;
-    i /= 2;
-  }
-  return result;
-}
-
 const static int __apac_count_infinite = getenv("APAC_TASK_COUNT_INFINITE") ? 1 : 0;
-
-const static int __apac_depth_infinite = getenv("APAC_TASK_DEPTH_INFINITE") ? 1 : 0;
 
 const static int __apac_count_max = getenv("APAC_TASK_COUNT_MAX") ? atoi(getenv("APAC_TASK_COUNT_MAX")) : omp_get_max_threads() * 10;
 
-const static int __apac_depth_max = getenv("APAC_TASK_DEPTH_MAX") ? atoi(getenv("APAC_TASK_DEPTH_MAX")) : 5;
-
 int __apac_count = 0;
+
+const static int __apac_depth_infinite = getenv("APAC_TASK_DEPTH_INFINITE") ? 1 : 0;
+
+const static int __apac_depth_max = getenv("APAC_TASK_DEPTH_MAX") ? atoi(getenv("APAC_TASK_DEPTH_MAX")) : 5;
 
 int __apac_depth = 0;
 
@@ -206,94 +189,98 @@ void sparselu_init(float*** pBENCH, const char* pass, int** timestamp) {
 }
 
 void sparselu(float** BENCH, int* timestamp) {
+  int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
+  int __apac_depth_local = __apac_depth;
+  int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
+  if (__apac_depth_ok) {
 #pragma omp parallel
 #pragma omp master
 #pragma omp taskgroup
-  {
-    int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
-    int __apac_depth_local = __apac_depth;
-    int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
-    bots_message("Computing SparseLU Factorization (%dx%d matrix with %dx%d blocks) ", bots_arg_size, bots_arg_size, bots_arg_size_1, bots_arg_size_1);
-    for (int kk = 0; kk < bots_arg_size; kk++) {
-      if (__apac_count_ok) {
-#pragma omp atomic
-        __apac_count++;
-      }
-#pragma omp task default(shared) depend(in : BENCH, BENCH[kk * bots_arg_size + kk]) depend(inout : BENCH[kk * bots_arg_size + kk][0]) firstprivate(__apac_depth_local, kk) if (__apac_count_ok || __apac_depth_ok)
-      {
-        if (__apac_count_ok || __apac_depth_ok) {
-          __apac_depth = __apac_depth_local + 1;
-        }
-        lu0(BENCH[kk * bots_arg_size + kk]);
+    {
+      bots_message("Computing SparseLU Factorization (%dx%d matrix with %dx%d blocks) ", bots_arg_size, bots_arg_size, bots_arg_size_1, bots_arg_size_1);
+      for (int kk = 0; kk < bots_arg_size; kk++) {
         if (__apac_count_ok) {
 #pragma omp atomic
-          __apac_count--;
+          __apac_count++;
         }
-      }
-      for (int jj = kk + 1; jj < bots_arg_size; jj++) {
-        if (BENCH[kk * bots_arg_size + jj] && timestamp[kk * bots_arg_size + jj] < kk) {
+#pragma omp task default(shared) depend(in : BENCH, BENCH[kk * bots_arg_size + kk]) depend(inout : BENCH[kk * bots_arg_size + kk][0]) firstprivate(__apac_depth_local, kk) if (__apac_count_ok || __apac_depth_ok)
+        {
+          if (__apac_count_ok || __apac_depth_ok) {
+            __apac_depth = __apac_depth_local + 1;
+          }
+          lu0(BENCH[kk * bots_arg_size + kk]);
           if (__apac_count_ok) {
 #pragma omp atomic
-            __apac_count++;
+            __apac_count--;
           }
+        }
+        for (int jj = kk + 1; jj < bots_arg_size; jj++) {
+          if (BENCH[kk * bots_arg_size + jj] && timestamp[kk * bots_arg_size + jj] < kk) {
+            if (__apac_count_ok) {
+#pragma omp atomic
+              __apac_count++;
+            }
 #pragma omp task default(shared) depend(in : BENCH, BENCH[kk * bots_arg_size + jj], BENCH[kk * bots_arg_size + kk], BENCH[kk * bots_arg_size + kk][0]) depend(inout : BENCH[kk * bots_arg_size + jj][0]) firstprivate(__apac_depth_local, kk, jj) if (__apac_count_ok || __apac_depth_ok)
-          {
-            if (__apac_count_ok || __apac_depth_ok) {
-              __apac_depth = __apac_depth_local + 1;
-            }
-            fwd(BENCH[kk * bots_arg_size + kk], BENCH[kk * bots_arg_size + jj]);
-            if (__apac_count_ok) {
-#pragma omp atomic
-              __apac_count--;
-            }
-          }
-        }
-      }
-      for (int ii = kk + 1; ii < bots_arg_size; ii++) {
-        if (BENCH[ii * bots_arg_size + kk] && timestamp[ii * bots_arg_size + kk] < kk) {
-          if (__apac_count_ok) {
-#pragma omp atomic
-            __apac_count++;
-          }
-#pragma omp task default(shared) depend(in : BENCH, BENCH[ii * bots_arg_size + kk], BENCH[kk * bots_arg_size + kk], BENCH[kk * bots_arg_size + kk][0]) depend(inout : BENCH[ii * bots_arg_size + kk][0]) firstprivate(__apac_depth_local, kk, ii) if (__apac_count_ok || __apac_depth_ok)
-          {
-            if (__apac_count_ok || __apac_depth_ok) {
-              __apac_depth = __apac_depth_local + 1;
-            }
-            bdiv(BENCH[kk * bots_arg_size + kk], BENCH[ii * bots_arg_size + kk]);
-            if (__apac_count_ok) {
-#pragma omp atomic
-              __apac_count--;
-            }
-          }
-        }
-      }
-      for (int ii = kk + 1; ii < bots_arg_size; ii++) {
-        if (BENCH[ii * bots_arg_size + kk] && timestamp[ii * bots_arg_size + kk] < kk) {
-          for (int jj = kk + 1; jj < bots_arg_size; jj++) {
-            if (BENCH[kk * bots_arg_size + jj] && timestamp[kk * bots_arg_size + jj] < kk) {
+            {
+              if (__apac_count_ok || __apac_depth_ok) {
+                __apac_depth = __apac_depth_local + 1;
+              }
+              fwd(BENCH[kk * bots_arg_size + kk], BENCH[kk * bots_arg_size + jj]);
               if (__apac_count_ok) {
 #pragma omp atomic
-                __apac_count++;
+                __apac_count--;
               }
-#pragma omp task default(shared) depend(in : BENCH, BENCH[ii * bots_arg_size + jj], BENCH[ii * bots_arg_size + kk], BENCH[ii * bots_arg_size + kk][0], BENCH[kk * bots_arg_size + jj], BENCH[kk * bots_arg_size + jj][0]) depend(inout : BENCH[ii * bots_arg_size + jj][0]) firstprivate(__apac_depth_local, kk, jj, ii) if (__apac_count_ok || __apac_depth_ok)
-              {
-                if (__apac_count_ok || __apac_depth_ok) {
-                  __apac_depth = __apac_depth_local + 1;
-                }
-                bmod(BENCH[ii * bots_arg_size + kk], BENCH[kk * bots_arg_size + jj], BENCH[ii * bots_arg_size + jj]);
+            }
+          }
+        }
+        for (int ii = kk + 1; ii < bots_arg_size; ii++) {
+          if (BENCH[ii * bots_arg_size + kk] && timestamp[ii * bots_arg_size + kk] < kk) {
+            if (__apac_count_ok) {
+#pragma omp atomic
+              __apac_count++;
+            }
+#pragma omp task default(shared) depend(in : BENCH, BENCH[ii * bots_arg_size + kk], BENCH[kk * bots_arg_size + kk], BENCH[kk * bots_arg_size + kk][0]) depend(inout : BENCH[ii * bots_arg_size + kk][0]) firstprivate(__apac_depth_local, kk, ii) if (__apac_count_ok || __apac_depth_ok)
+            {
+              if (__apac_count_ok || __apac_depth_ok) {
+                __apac_depth = __apac_depth_local + 1;
+              }
+              bdiv(BENCH[kk * bots_arg_size + kk], BENCH[ii * bots_arg_size + kk]);
+              if (__apac_count_ok) {
+#pragma omp atomic
+                __apac_count--;
+              }
+            }
+          }
+        }
+        for (int ii = kk + 1; ii < bots_arg_size; ii++) {
+          if (BENCH[ii * bots_arg_size + kk] && timestamp[ii * bots_arg_size + kk] < kk) {
+            for (int jj = kk + 1; jj < bots_arg_size; jj++) {
+              if (BENCH[kk * bots_arg_size + jj] && timestamp[kk * bots_arg_size + jj] < kk) {
                 if (__apac_count_ok) {
 #pragma omp atomic
-                  __apac_count--;
+                  __apac_count++;
+                }
+#pragma omp task default(shared) depend(in : BENCH, BENCH[ii * bots_arg_size + jj], BENCH[ii * bots_arg_size + kk], BENCH[ii * bots_arg_size + kk][0], BENCH[kk * bots_arg_size + jj], BENCH[kk * bots_arg_size + jj][0]) depend(inout : BENCH[ii * bots_arg_size + jj][0]) firstprivate(__apac_depth_local, kk, jj, ii) if (__apac_count_ok || __apac_depth_ok)
+                {
+                  if (__apac_count_ok || __apac_depth_ok) {
+                    __apac_depth = __apac_depth_local + 1;
+                  }
+                  bmod(BENCH[ii * bots_arg_size + kk], BENCH[kk * bots_arg_size + jj], BENCH[ii * bots_arg_size + jj]);
+                  if (__apac_count_ok) {
+#pragma omp atomic
+                    __apac_count--;
+                  }
                 }
               }
             }
           }
         }
       }
+      bots_message(" completed!\n");
+    __apac_exit:;
     }
-    bots_message(" completed!\n");
-  __apac_exit:;
+  } else {
+    sparselu_seq(BENCH, timestamp);
   }
 }
 

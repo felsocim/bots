@@ -68,7 +68,7 @@ int read_input(const char *filename, item_t *items, int *capacity, int *n)
  * return the optimal solution for n items (first is e) and
  * capacity c. Value so far is v.
  */
-void knapsack(item_t *e, int c, int n, int v, int *sol, int l)
+void knapsack(item_t *e, int c, int n, int v, int *sol)
 {
      int with, without, best;
      double ub;
@@ -98,10 +98,10 @@ void knapsack(item_t *e, int c, int n, int v, int *sol, int l)
      /* 
       * compute the best solution without the current item in the knapsack 
       */
-     knapsack(e + 1, c, n - 1, v, &without,l+1);
+     knapsack(e + 1, c, n - 1, v, &without);
 
      /* compute the best solution with the current item in the knapsack */
-     knapsack(e + 1, c - e->weight, n - 1, v + e->value, &with,l+1);
+     knapsack(e + 1, c - e->weight, n - 1, v + e->value, &with);
 
      best = with > without ? with : without;
 
@@ -170,7 +170,7 @@ void knapsack_main (item_t *e, int c, int n, int *sol)
      best_so_far = INT_MIN;
      number_of_tasks = 0;
      
-     knapsack(e, c, n, 0, sol, 0);
+     knapsack(e, c, n, 0, sol);
 
      bots_number_of_tasks += number_of_tasks;
      

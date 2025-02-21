@@ -45,7 +45,7 @@ typedef struct {
 
 int read_input(const char *filename, item_t *items, int *capacity, int *n);
 void knapsack_seq(item_t *e, int c, int n, int v, int *sol);
-void knapsack(item_t *e, int c, int n, int v, int *sol, int l);
+void knapsack(item_t *e, int c, int n, int v, int *sol);
 void knapsack_main_seq (item_t *e, int c, int n, int *sol);
 void knapsack_main (item_t *e, int c, int n, int *sol);
 int  knapsack_check (int sol_seq, int sol_par);

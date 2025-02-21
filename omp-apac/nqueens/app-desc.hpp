@@ -30,7 +30,7 @@
 
 int ok(int n, char *a);
 
-void nqueens(int n, int j, char *a, int *solutions, int depth);
+void nqueens(int n, int j, char *a, int *solutions);
 void nqueens_ser (int n, int j, char *a, int *solutions);
 
 int verify_queens(int);

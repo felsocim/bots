@@ -102,7 +102,7 @@ void nqueens_ser (int n, int j, char *a, int *solutions)
 	}
 }
 
-void nqueens(int n, int j, char *a, int *solutions, int depth)
+void nqueens(int n, int j, char *a, int *solutions)
 {
 	int *csols;
 	int i;
@@ -126,7 +126,7 @@ void nqueens(int n, int j, char *a, int *solutions, int depth)
 		memcpy(b, a, j * sizeof(char));
 		b[j] = (char) i;
 		if (ok(j + 1, b))
-			nqueens(n, j + 1, b,&csols[i],depth); //FIXME: depth or depth+1 ???
+			nqueens(n, j + 1, b,&csols[i]);
 	}
 
 	for ( i = 0; i < n; i++) *solutions += csols[i];
@@ -140,7 +140,7 @@ void find_queens (int size)
   bots_message("Computing N-Queens algorithm (n=%d) ", size);
 	char *a;
 	a = (char *)alloca(size * sizeof(char));
-	nqueens(size, 0, a, &total_count,0);
+	nqueens(size, 0, a, &total_count);
 	bots_message(" completed!\n");
 }
 

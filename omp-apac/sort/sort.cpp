@@ -251,29 +251,16 @@ void sort_init() {
     bots_message("%s can not be greather than %s, using %d as a parameter.\n", "Sequential Insertion cutoff value", "Sequential Quicksort cutoff value", bots_app_cutoff_value_1);
     bots_app_cutoff_value_2 = bots_app_cutoff_value_1;
   }
-#pragma omp critical
-  {
-    array = (ELM*)malloc(bots_arg_size * sizeof(ELM));
-    tmp = (ELM*)malloc(bots_arg_size * sizeof(ELM));
-    fill_array(array);
-    scramble_array(array);
-  }
+  array = (ELM*)malloc(bots_arg_size * sizeof(ELM));
+  tmp = (ELM*)malloc(bots_arg_size * sizeof(ELM));
+  fill_array(array);
+  scramble_array(array);
 }
 
 void sort() {
-#pragma omp parallel
-#pragma omp master
-#pragma omp taskgroup
-  {
-    bots_message("Computing multisort algorithm (n=%d) ", bots_arg_size);
-#pragma omp task default(shared) depend(in : array, tmp) depend(inout : array[0], tmp[0])
-    {
-#pragma omp critical
-      cilksort(array, tmp, bots_arg_size);
-    }
-    bots_message(" completed!\n");
-  __apac_exit:;
-  }
+  bots_message("Computing multisort algorithm (n=%d) ", bots_arg_size);
+  cilksort(array, tmp, bots_arg_size);
+  bots_message(" completed!\n");
 }
 
 int sort_verify() {

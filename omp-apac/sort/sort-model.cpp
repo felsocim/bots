@@ -8,21 +8,6 @@
 
 const double __apac_cutoff = getenv("APAC_EXECUTION_TIME_CUTOFF") ? atof(getenv("APAC_EXECUTION_TIME_CUTOFF")) : 2.22100e-6;
 
-template <class T>
-T apac_fpow(int exp, const T& base) {
-  T result = T(1);
-  T pow = base;
-  int i = exp;
-  while (i) {
-    if (i & 1) {
-      result *= pow;
-    }
-    pow *= pow;
-    i /= 2;
-  }
-  return result;
-}
-
 ELM* array;
 
 ELM* tmp;
@@ -62,17 +47,13 @@ void insertion_sort(ELM* low, ELM* high) {
 }
 
 void seqquick(ELM* low, ELM* high) {
-#pragma omp taskgroup
-  {
-    ELM* p;
-    while (high - low >= bots_app_cutoff_value_2) {
-      p = seqpart(low, high);
-      seqquick(low, p);
-      low = p + 1;
-    }
-    insertion_sort(low, high);
-  __apac_exit:;
+  ELM* p;
+  while (high - low >= bots_app_cutoff_value_2) {
+    p = seqpart(low, high);
+    seqquick(low, p);
+    low = p + 1;
   }
+  insertion_sort(low, high);
 }
 
 void seqmerge(ELM* low1, ELM* high1, ELM* low2, ELM* high2, ELM* lowdest) {
@@ -139,37 +120,33 @@ ELM* binsplit(ELM val, ELM* low, ELM* high) {
 }
 
 void cilkmerge(ELM* low1, ELM* high1, ELM* low2, ELM* high2, ELM* lowdest) {
-#pragma omp taskgroup
-  {
-    ELM* split1;
-    ELM* split2;
-    ELM* tmp;
-    long int lowsize;
-    if (high2 - low2 > high1 - low1) {
-      tmp = low1;
-      low2 = tmp;
-      low1 = low2;
-      tmp = high1;
-      high2 = tmp;
-      high1 = high2;
-    }
-    if (high2 < low2) {
-      memcpy(lowdest, low1, sizeof(ELM) * (high1 - low1));
-      goto __apac_exit;
-    }
-    if (high2 - low2 < bots_app_cutoff_value) {
-      seqmerge(low1, high1, low2, high2, lowdest);
-      goto __apac_exit;
-    }
-    split1 = (high1 - low1 + 1) / 2 + low1;
-    split2 = binsplit(split1[0], low2, high2);
-    lowsize = split1 - low1 + split2 - low2;
-    lowdest[lowsize + 1] = split1[0];
-    cilkmerge(low1, split1 - 1, low2, split2, lowdest);
-    cilkmerge(split1 + 1, high1, split2 + 1, high2, lowdest + lowsize + 2);
-    goto __apac_exit;
-  __apac_exit:;
+  ELM* split1;
+  ELM* split2;
+  ELM* tmp;
+  long int lowsize;
+  if (high2 - low2 > high1 - low1) {
+    tmp = low1;
+    low1 = low2;
+    low2 = tmp;
+    tmp = high1;
+    high1 = high2;
+    high2 = tmp;
   }
+  if (high2 < low2) {
+    memcpy(lowdest, low1, sizeof(ELM) * (high1 - low1));
+    return;
+  }
+  if (high2 - low2 < bots_app_cutoff_value) {
+    seqmerge(low1, high1, low2, high2, lowdest);
+    return;
+  }
+  split1 = (high1 - low1 + 1) / 2 + low1;
+  split2 = binsplit(split1[0], low2, high2);
+  lowsize = split1 - low1 + split2 - low2;
+  lowdest[lowsize + 1] = split1[0];
+  cilkmerge(low1, split1 - 1, low2, split2, lowdest);
+  cilkmerge(split1 + 1, high1, split2 + 1, high2, lowdest + lowsize + 2);
+  return;
 }
 
 void cilksort(ELM* low, ELM* tmp, long int size) {
@@ -196,7 +173,7 @@ void cilksort(ELM* low, ELM* tmp, long int size) {
     tmpB = tmpA + quarter;
     tmpC = tmpB + quarter;
     tmpD = tmpC + quarter;
-#pragma omp task default(shared) depend(in : low[0], quarter, size) depend(inout : low, tmp) if (0.00083648779761 + (size - 3 * quarter) * 2.55785804136e-06 > __apac_cutoff)
+#pragma omp task default(shared) depend(in : low[0], quarter, size) depend(inout : low, tmp) if (0.00334156574174 + quarter * 4.59302571021e-06 > __apac_cutoff)
     {
       cilksort(A, tmpA, quarter);
       cilksort(B, tmpB, quarter);
@@ -255,29 +232,16 @@ void sort_init() {
     bots_message("%s can not be greather than %s, using %d as a parameter.\n", "Sequential Insertion cutoff value", "Sequential Quicksort cutoff value", bots_app_cutoff_value_1);
     bots_app_cutoff_value_2 = bots_app_cutoff_value_1;
   }
-#pragma omp critical
-  {
-    array = (ELM*)malloc(bots_arg_size * sizeof(ELM));
-    tmp = (ELM*)malloc(bots_arg_size * sizeof(ELM));
-    fill_array(array);
-    scramble_array(array);
-  }
+  array = (ELM*)malloc(bots_arg_size * sizeof(ELM));
+  tmp = (ELM*)malloc(bots_arg_size * sizeof(ELM));
+  fill_array(array);
+  scramble_array(array);
 }
 
 void sort() {
-#pragma omp parallel
-#pragma omp master
-#pragma omp taskgroup
-  {
-    bots_message("Computing multisort algorithm (n=%d) ", bots_arg_size);
-#pragma omp task default(shared) depend(in : array, tmp) depend(inout : array[0], tmp[0])
-    {
-#pragma omp critical
-      cilksort(array, tmp, bots_arg_size);
-    }
-    bots_message(" completed!\n");
-  __apac_exit:;
-  }
+  bots_message("Computing multisort algorithm (n=%d) ", bots_arg_size);
+  cilksort(array, tmp, bots_arg_size);
+  bots_message(" completed!\n");
 }
 
 int sort_verify() {

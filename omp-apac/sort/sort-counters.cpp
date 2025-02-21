@@ -8,13 +8,13 @@
 #include "inlines.cpp"
 const static int __apac_count_infinite = getenv("APAC_TASK_COUNT_INFINITE") ? 1 : 0;
 
-const static int __apac_depth_infinite = getenv("APAC_TASK_DEPTH_INFINITE") ? 1 : 0;
-
 const static int __apac_count_max = getenv("APAC_TASK_COUNT_MAX") ? atoi(getenv("APAC_TASK_COUNT_MAX")) : omp_get_max_threads() * 10;
 
-const static int __apac_depth_max = getenv("APAC_TASK_DEPTH_MAX") ? atoi(getenv("APAC_TASK_DEPTH_MAX")) : 5;
-
 int __apac_count = 0;
+
+const static int __apac_depth_infinite = getenv("APAC_TASK_DEPTH_INFINITE") ? 1 : 0;
+
+const static int __apac_depth_max = getenv("APAC_TASK_DEPTH_MAX") ? atoi(getenv("APAC_TASK_DEPTH_MAX")) : 5;
 
 int __apac_depth = 0;
 
@@ -58,48 +58,62 @@ void insertion_sort(ELM* low, ELM* high) {
   }
 }
 
+void __apac_sequential_seqquick(ELM* low, ELM* high) {
+  ELM* p;
+  while (high - low >= bots_app_cutoff_value_2) {
+    p = seqpart(low, high);
+    __apac_sequential_seqquick(low, p);
+    low = p + 1;
+  }
+  insertion_sort(low, high);
+}
+
 void seqquick(ELM* low, ELM* high) {
+  int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
+  int __apac_depth_local = __apac_depth;
+  int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
+  if (__apac_depth_ok) {
 #pragma omp taskgroup
-  {
-    int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
-    int __apac_depth_local = __apac_depth;
-    int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
-    ELM* p;
-    while (high - low >= bots_app_cutoff_value_2) {
+    {
+      ELM* p;
+      while (high - low >= bots_app_cutoff_value_2) {
+        if (__apac_count_ok) {
+#pragma omp atomic
+          __apac_count++;
+        }
+#pragma omp task default(shared) depend(in : high, low) depend(inout : high[0], low[0], p, p[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+        {
+          if (__apac_count_ok || __apac_depth_ok) {
+            __apac_depth = __apac_depth_local + 1;
+          }
+          p = seqpart(low, high);
+          seqquick(low, p);
+          low = p + 1;
+          if (__apac_count_ok) {
+#pragma omp atomic
+            __apac_count--;
+          }
+        }
+      }
       if (__apac_count_ok) {
 #pragma omp atomic
         __apac_count++;
       }
-#pragma omp task default(shared) depend(in : high, low) depend(inout : high[0], low[0], p, p[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+#pragma omp task default(shared) depend(in : high, high[0]) depend(inout : p) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
       {
         if (__apac_count_ok || __apac_depth_ok) {
           __apac_depth = __apac_depth_local + 1;
         }
-        p = seqpart(low, high);
-        seqquick(low, p);
-        low = p + 1;
+        insertion_sort(low, high);
         if (__apac_count_ok) {
 #pragma omp atomic
           __apac_count--;
         }
       }
+    __apac_exit:;
     }
-    if (__apac_count_ok) {
-#pragma omp atomic
-      __apac_count++;
-    }
-#pragma omp task default(shared) depend(in : high, high[0]) depend(inout : p) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
-    {
-      if (__apac_count_ok || __apac_depth_ok) {
-        __apac_depth = __apac_depth_local + 1;
-      }
-      insertion_sort(low, high);
-      if (__apac_count_ok) {
-#pragma omp atomic
-        __apac_count--;
-      }
-    }
-  __apac_exit:;
+  } else {
+    __apac_sequential_seqquick(low, high);
   }
 }
 
@@ -166,138 +180,207 @@ ELM* binsplit(ELM val, ELM* low, ELM* high) {
     return low;
 }
 
+void __apac_sequential_cilkmerge(ELM* low1, ELM* high1, ELM* low2, ELM* high2, ELM* lowdest) {
+  ELM* split1;
+  ELM* split2;
+  ELM* tmp;
+  long int lowsize;
+  if (high2 - low2 > high1 - low1) {
+    tmp = low1;
+    low1 = low2;
+    low2 = tmp;
+    tmp = high1;
+    high1 = high2;
+    high2 = tmp;
+  }
+  if (high2 < low2) {
+    memcpy(lowdest, low1, sizeof(ELM) * (high1 - low1));
+    return;
+  }
+  if (high2 - low2 < bots_app_cutoff_value) {
+    seqmerge(low1, high1, low2, high2, lowdest);
+    return;
+  }
+  split1 = (high1 - low1 + 1) / 2 + low1;
+  split2 = binsplit(split1[0], low2, high2);
+  lowsize = split1 - low1 + split2 - low2;
+  lowdest[lowsize + 1] = split1[0];
+  __apac_sequential_cilkmerge(low1, split1 - 1, low2, split2, lowdest);
+  __apac_sequential_cilkmerge(split1 + 1, high1, split2 + 1, high2, lowdest + lowsize + 2);
+  return;
+}
+
 void cilkmerge(ELM* low1, ELM* high1, ELM* low2, ELM* high2, ELM* lowdest) {
+  int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
+  int __apac_depth_local = __apac_depth;
+  int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
+  if (__apac_depth_ok) {
 #pragma omp taskgroup
-  {
-    int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
-    int __apac_depth_local = __apac_depth;
-    int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
-    ELM* split1;
-    ELM* split2;
-    ELM* tmp;
-    long int lowsize;
-    if (high2 - low2 > high1 - low1) {
-      tmp = low1;
-      low2 = tmp;
-      low1 = low2;
-      tmp = high1;
-      high2 = tmp;
-      high1 = high2;
-    }
-    if (high2 < low2) {
-      memcpy(lowdest, low1, sizeof(ELM) * (high1 - low1));
-      goto __apac_exit;
-    }
-    if (high2 - low2 < bots_app_cutoff_value) {
+    {
+      ELM* split1;
+      ELM* split2;
+      ELM* tmp;
+      long int lowsize;
+      if (high2 - low2 > high1 - low1) {
+        tmp = low1;
+        low2 = tmp;
+        low1 = low2;
+        tmp = high1;
+        high2 = tmp;
+        high1 = high2;
+      }
+      if (high2 < low2) {
+        memcpy(lowdest, low1, sizeof(ELM) * (high1 - low1));
+        goto __apac_exit;
+      }
+      if (high2 - low2 < bots_app_cutoff_value) {
+        if (__apac_count_ok) {
+#pragma omp atomic
+          __apac_count++;
+        }
+#pragma omp task default(shared) depend(in : lowdest) depend(inout : high1, high2, low1, low2, lowdest[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+        {
+          if (__apac_count_ok || __apac_depth_ok) {
+            __apac_depth = __apac_depth_local + 1;
+          }
+          seqmerge(low1, high1, low2, high2, lowdest);
+          if (__apac_count_ok) {
+#pragma omp atomic
+            __apac_count--;
+          }
+        }
+#pragma omp taskwait
+        goto __apac_exit;
+      }
+#pragma omp taskwait depend(in : high2) depend(inout : low2)
+      split1 = (high1 - low1 + 1) / 2 + low1;
       if (__apac_count_ok) {
 #pragma omp atomic
         __apac_count++;
       }
-#pragma omp task default(shared) depend(in : lowdest) depend(inout : high1, high2, low1, low2, lowdest[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+#pragma omp task default(shared) depend(in : high2, lowdest) depend(inout : high1, low1, low2, lowdest[0], lowdest[lowsize + 1], split2, split2[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
       {
         if (__apac_count_ok || __apac_depth_ok) {
           __apac_depth = __apac_depth_local + 1;
         }
-        seqmerge(low1, high1, low2, high2, lowdest);
+        split2 = binsplit(split1[0], low2, high2);
+        lowsize = split1 - low1 + split2 - low2;
+        lowdest[lowsize + 1] = split1[0];
+        cilkmerge(low1, split1 - 1, low2, split2, lowdest);
+        cilkmerge(split1 + 1, high1, split2 + 1, high2, lowdest + lowsize + 2);
         if (__apac_count_ok) {
 #pragma omp atomic
           __apac_count--;
         }
       }
-#pragma omp taskwait
       goto __apac_exit;
+    __apac_exit:;
     }
-#pragma omp taskwait depend(in : high2) depend(inout : low2)
-    split1 = (high1 - low1 + 1) / 2 + low1;
-    if (__apac_count_ok) {
-#pragma omp atomic
-      __apac_count++;
-    }
-#pragma omp task default(shared) depend(in : high2, lowdest) depend(inout : high1, low1, low2, lowdest[0], lowdest[lowsize + 1], split2, split2[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
-    {
-      if (__apac_count_ok || __apac_depth_ok) {
-        __apac_depth = __apac_depth_local + 1;
-      }
-      split2 = binsplit(split1[0], low2, high2);
-      lowsize = split1 - low1 + split2 - low2;
-      lowdest[lowsize + 1] = split1[0];
-      cilkmerge(low1, split1 - 1, low2, split2, lowdest);
-      cilkmerge(split1 + 1, high1, split2 + 1, high2, lowdest + lowsize + 2);
-      if (__apac_count_ok) {
-#pragma omp atomic
-        __apac_count--;
-      }
-    }
-    goto __apac_exit;
-  __apac_exit:;
+  } else {
+    __apac_sequential_cilkmerge(low1, high1, low2, high2, lowdest);
   }
 }
 
+void __apac_sequential_cilksort(ELM* low, ELM* tmp, long int size) {
+  long int quarter = size / 4;
+  ELM* A;
+  ELM* B;
+  ELM* C;
+  ELM* D;
+  ELM* tmpA;
+  ELM* tmpB;
+  ELM* tmpC;
+  ELM* tmpD;
+  if (size < bots_app_cutoff_value_1) {
+    __apac_sequential_seqquick(low, low + size - 1);
+    return;
+  }
+  A = low;
+  tmpA = tmp;
+  B = A + quarter;
+  tmpB = tmpA + quarter;
+  C = B + quarter;
+  tmpC = tmpB + quarter;
+  D = C + quarter;
+  tmpD = tmpC + quarter;
+  __apac_sequential_cilksort(A, tmpA, quarter);
+  __apac_sequential_cilksort(B, tmpB, quarter);
+  __apac_sequential_cilksort(C, tmpC, quarter);
+  __apac_sequential_cilksort(D, tmpD, size - 3 * quarter);
+  __apac_sequential_cilkmerge(A, A + quarter - 1, B, B + quarter - 1, tmpA);
+  __apac_sequential_cilkmerge(C, C + quarter - 1, D, low + size - 1, tmpC);
+  __apac_sequential_cilkmerge(tmpA, tmpC - 1, tmpC, tmpA + size - 1, A);
+}
+
 void cilksort(ELM* low, ELM* tmp, long int size) {
+  int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
+  int __apac_depth_local = __apac_depth;
+  int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
+  if (__apac_depth_ok) {
 #pragma omp taskgroup
-  {
-    int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
-    int __apac_depth_local = __apac_depth;
-    int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
-    long int quarter = size / 4;
-    ELM* A;
-    ELM* B;
-    ELM* C;
-    ELM* D;
-    ELM* tmpA;
-    ELM* tmpB;
-    ELM* tmpC;
-    ELM* tmpD;
-    if (size < bots_app_cutoff_value_1) {
+    {
+      long int quarter = size / 4;
+      ELM* A;
+      ELM* B;
+      ELM* C;
+      ELM* D;
+      ELM* tmpA;
+      ELM* tmpB;
+      ELM* tmpC;
+      ELM* tmpD;
+      if (size < bots_app_cutoff_value_1) {
+        if (__apac_count_ok) {
+#pragma omp atomic
+          __apac_count++;
+        }
+#pragma omp task default(shared) depend(in : low, size) depend(inout : low[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+        {
+          if (__apac_count_ok || __apac_depth_ok) {
+            __apac_depth = __apac_depth_local + 1;
+          }
+          seqquick(low, low + size - 1);
+          if (__apac_count_ok) {
+#pragma omp atomic
+            __apac_count--;
+          }
+        }
+#pragma omp taskwait
+        goto __apac_exit;
+      }
+#pragma omp taskwait depend(inout : low)
+      A = low;
+      tmpA = tmp;
+      B = A + quarter;
+      C = B + quarter;
+      D = C + quarter;
+      tmpB = tmpA + quarter;
+      tmpC = tmpB + quarter;
+      tmpD = tmpC + quarter;
       if (__apac_count_ok) {
 #pragma omp atomic
         __apac_count++;
       }
-#pragma omp task default(shared) depend(in : low, size) depend(inout : low[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+#pragma omp task default(shared) depend(in : low[0], quarter, size) depend(inout : low, tmp) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
       {
         if (__apac_count_ok || __apac_depth_ok) {
           __apac_depth = __apac_depth_local + 1;
         }
-        seqquick(low, low + size - 1);
+        cilksort(A, tmpA, quarter);
+        cilksort(B, tmpB, quarter);
+        cilksort(C, tmpC, quarter);
+        cilksort(D, tmpD, size - 3 * quarter);
+        cilkmerge(A, A + quarter - 1, B, B + quarter - 1, tmpA);
+        cilkmerge(C, C + quarter - 1, D, low + size - 1, tmpC);
+        cilkmerge(tmpA, tmpC - 1, tmpC, tmpA + size - 1, A);
         if (__apac_count_ok) {
 #pragma omp atomic
           __apac_count--;
         }
       }
-#pragma omp taskwait
-      goto __apac_exit;
+    __apac_exit:;
     }
-#pragma omp taskwait depend(inout : low)
-    A = low;
-    tmpA = tmp;
-    B = A + quarter;
-    C = B + quarter;
-    D = C + quarter;
-    tmpB = tmpA + quarter;
-    tmpC = tmpB + quarter;
-    tmpD = tmpC + quarter;
-    if (__apac_count_ok) {
-#pragma omp atomic
-      __apac_count++;
-    }
-#pragma omp task default(shared) depend(in : low[0], quarter, size) depend(inout : low, tmp) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
-    {
-      if (__apac_count_ok || __apac_depth_ok) {
-        __apac_depth = __apac_depth_local + 1;
-      }
-      cilksort(A, tmpA, quarter);
-      cilksort(B, tmpB, quarter);
-      cilksort(C, tmpC, quarter);
-      cilksort(D, tmpD, size - 3 * quarter);
-      cilkmerge(A, A + quarter - 1, B, B + quarter - 1, tmpA);
-      cilkmerge(C, C + quarter - 1, D, low + size - 1, tmpC);
-      cilkmerge(tmpA, tmpC - 1, tmpC, tmpA + size - 1, A);
-      if (__apac_count_ok) {
-#pragma omp atomic
-        __apac_count--;
-      }
-    }
-  __apac_exit:;
+  } else {
+    __apac_sequential_cilksort(low, tmp, size);
   }
 }
 
@@ -346,43 +429,16 @@ void sort_init() {
     bots_message("%s can not be greather than %s, using %d as a parameter.\n", "Sequential Insertion cutoff value", "Sequential Quicksort cutoff value", bots_app_cutoff_value_1);
     bots_app_cutoff_value_2 = bots_app_cutoff_value_1;
   }
-#pragma omp critical
-  {
-    array = (ELM*)malloc(bots_arg_size * sizeof(ELM));
-    tmp = (ELM*)malloc(bots_arg_size * sizeof(ELM));
-    fill_array(array);
-    scramble_array(array);
-  }
+  array = (ELM*)malloc(bots_arg_size * sizeof(ELM));
+  tmp = (ELM*)malloc(bots_arg_size * sizeof(ELM));
+  fill_array(array);
+  scramble_array(array);
 }
 
 void sort() {
-#pragma omp parallel
-#pragma omp master
-#pragma omp taskgroup
-  {
-    int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
-    int __apac_depth_local = __apac_depth;
-    int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
-    bots_message("Computing multisort algorithm (n=%d) ", bots_arg_size);
-    if (__apac_count_ok) {
-#pragma omp atomic
-      __apac_count++;
-    }
-#pragma omp task default(shared) depend(in : array, tmp) depend(inout : array[0], tmp[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
-    {
-      if (__apac_count_ok || __apac_depth_ok) {
-        __apac_depth = __apac_depth_local + 1;
-      }
-#pragma omp critical
-      cilksort(array, tmp, bots_arg_size);
-      if (__apac_count_ok) {
-#pragma omp atomic
-        __apac_count--;
-      }
-    }
-    bots_message(" completed!\n");
-  __apac_exit:;
-  }
+  bots_message("Computing multisort algorithm (n=%d) ", bots_arg_size);
+  cilksort(array, tmp, bots_arg_size);
+  bots_message(" completed!\n");
 }
 
 int sort_verify() {

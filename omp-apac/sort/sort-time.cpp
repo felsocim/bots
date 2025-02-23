@@ -173,7 +173,7 @@ void cilksort(ELM* low, ELM* tmp, long int size) {
     tmpB = tmpA + quarter;
     tmpC = tmpB + quarter;
     tmpD = tmpC + quarter;
-#pragma omp task default(shared) depend(in : low[0], quarter, size) depend(inout : low, tmp) if (0.00334156574174 + quarter * 4.59302571021e-06 > __apac_cutoff)
+#pragma omp task default(shared) depend(in : low[0], quarter, size) depend(inout : low, tmp) if (0.00139350296213 + quarter * 2.77451946668e-06 > __apac_cutoff)
     {
       cilksort(A, tmpA, quarter);
       cilksort(B, tmpB, quarter);

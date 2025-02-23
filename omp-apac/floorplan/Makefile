@@ -18,10 +18,7 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA            #
 ##############################################################################################
 
-#LIBS = 
-#PROGRAM_OBJS=
-
-CUTOFF_VERSIONS = counters #model both
+DISABLE_CUTOFF = %time
 SKIP = read_integer,read_inputs,write_outputs,floorplan_init
 MAIN = compute_floorplan
 

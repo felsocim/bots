@@ -18,10 +18,6 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA            #
 ##############################################################################################
 
-#LIBS = 
-#PROGRAM_OBJS=
-
-CUTOFF_VERSIONS = counters model both
 SKIP = checkmat,genmat,print_structure,allocate_clean_block,sparselu_init,sparselu_fini,sparselu_check,prealloc_sparselu
 MAIN = sparselu
 

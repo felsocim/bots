@@ -20,7 +20,7 @@
 
 LIBS = -lm
 OTHER_OBJS=brg_sha1.o
-CUTOFF_VERSIONS = counters #model both
+DISABLE_CUTOFF = %time
 SKIP = uts_read_file,uts_show_stats,uts_check_result
 MAIN = parallel_uts
 

@@ -18,10 +18,7 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA            #
 ##############################################################################################
 
-#LIBS = 
-#PROGRAM_OBJS=
 OTHER_OBJS = atomic.o
-CUTOFF_VERSIONS = counters model both
 SKIP = initialize,write_outputs,cc_init,cc_check
 MAIN = cc
 

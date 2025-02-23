@@ -19,9 +19,6 @@
 ##############################################################################################
 
 LIBS = -lm
-#PROGRAM_OBJS=
-
-CUTOFF_VERSIONS = counters model both
 SKIP = test_correctness
 MAIN = fft
 

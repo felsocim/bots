@@ -18,10 +18,7 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA            #
 ##############################################################################################
 
-#LIBS = 
-#PROGRAM_OBJS=
-
-CUTOFF_VERSIONS = counters #model both
+DISABLE_CUTOFF = %time
 SKIP = init_matrix,compare_matrix,alloc_matrix
 MAIN = strassen_main
 

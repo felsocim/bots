@@ -110,12 +110,39 @@ PROFILING_PROGRAM_OBJS := $(PROGRAM_OBJS:%.o=%.in_profiling.o)
 TARGETS  = $(BIN_DIR)/$(PROGRAM).$(LABEL).$(SUB)$(VERSION) 
 TARGETS += $(BIN_DIR)/$(PROGRAM).$(LABEL).$(SUB)$(VERSION)_seq
 
-ifdef CUTOFF_VERSIONS
+CUTOFFS = count depth count-depth time count-time depth-time count-depth-time
+CUTOFF_count = --cutoff-count
+CUTOFF_depth = --cutoff-depth
+CUTOFF_count-depth = $(CUTOFF_count) $(CUTOFF_depth)
+CUTOFF_time = --profile --run-with-custom='bash $(BASE_DIR)/run/run-$(PROGRAM).sh -c 1 -l $(CC) -v omp-apac_profiling'
+CUTOFF_count-time = $(CUTOFF_count) $(CUTOFF_time)
+CUTOFF_depth-time = $(CUTOFF_depth) $(CUTOFF_time)
+CUTOFF_count-depth-time = $(CUTOFF_count) $(CUTOFF_depth) $(CUTOFF_time)
+
+define CUTOFF_template =
+$(1)_PROGRAM_OBJS := $$(PROGRAM_OBJS:%.o=%-$(1).o)
+
+$$(PROGRAM)-$(1).o: $$(PROGRAM)-$(1).cpp Makefile $$(COMMON_DIR)/Makefile.common
+	$$(OMPCXX) $$(OMPCXX_ALL_FLAGS) -o $$@ $$<
+
+$$(PROGRAM)-$(1).cpp: $$(PROGRAM).in.cpp Makefile $$(COMMON_DIR)/Makefile.common 
+	$$(APAC) $$(APAC_ALL_FLAGS) $$(CUTOFF_$(1)) -o $$@ $$<
+
+main-$(1).o: $$(COMMON_DIR)/bots_main_cxx.cpp app-desc.hpp Makefile $$(COMMON_DIR)/Makefile.common
+	$$(OMPCXX) $$(OMPCXX_ALL_FLAGS) -I. -o $$@ $$< $$(INFO_FLAGS_OMP) -DAPACFLAGS="\"$$(APAC_ALL_FLAGS) $$(CUTOFF_$(1))\""
+
+$$(BIN_DIR)/$$(PROGRAM).$$(LABEL).$$(SUB)$$(VERSION)-$(1): main-$(1).o $$($(1)_PROGRAM_OBJS) Makefile $$(COMMON_DIR)/Makefile.common $$(OTHER_OBJS) $$(COMMON_OBJS) 
+	$$(OMPCXXLINK) $$(OMPCXXLINK_ALL_FLAGS) -o $$@ main-$(1).o $$($(1)_PROGRAM_OBJS) $$(LIBS) $$(OTHER_OBJS) $$(COMMON_OBJS)
+endef
+
+ifdef DISABLE_CUTOFF
+	CUTOFF_VERSIONS = $(filter-out $(DISABLE_CUTOFF),$(CUTOFFS))
+else
+	CUTOFF_VERSIONS = $(CUTOFFS)
+endif
+
+ifneq ($(strip $(CUTOFF_VERSIONS)),)
 	TARGETS += $(CUTOFF_VERSIONS:%=$(BIN_DIR)/$(PROGRAM).$(LABEL).$(SUB)$(VERSION)-%)
-	
-	COUNTERS_PROGRAM_OBJS := $(PROGRAM_OBJS:%.o=%-counters.o)
-	MODEL_PROGRAM_OBJS := $(PROGRAM_OBJS:%.o=%-model.o)
-	BOTH_PROGRAM_OBJS := $(PROGRAM_OBJS:%.o=%-both.o)
 endif
 
 all: $(TARGETS)
@@ -131,50 +158,23 @@ $(PROGRAM).in.o: $(PROGRAM).in.cpp Makefile $(COMMON_DIR)/Makefile.common
 $(PROGRAM).in_profiling.o: $(PROGRAM).in_profiling.cpp Makefile $(COMMON_DIR)/Makefile.common
 	$(CXX) $(CXX_ALL_FLAGS) -o $@ $<
 
-$(PROGRAM)-counters.o: $(PROGRAM)-counters.cpp Makefile $(COMMON_DIR)/Makefile.common
-	$(OMPCXX) $(OMPCXX_ALL_FLAGS) -o $@ $<
-
-$(PROGRAM)-model.o: $(PROGRAM)-model.cpp Makefile $(COMMON_DIR)/Makefile.common
-	$(OMPCXX) $(OMPCXX_ALL_FLAGS) -o $@ $<
-
-$(PROGRAM)-both.o: $(PROGRAM)-both.cpp Makefile $(COMMON_DIR)/Makefile.common
-	$(OMPCXX) $(OMPCXX_ALL_FLAGS) -o $@ $<
-
 $(PROGRAM).cpp: $(PROGRAM).in.cpp $(COMMON_DIR)/Makefile.common 
 	$(APAC) $(APAC_ALL_FLAGS) -o $@ $<
 
-$(PROGRAM)-counters.cpp: $(PROGRAM).in.cpp Makefile $(COMMON_DIR)/Makefile.common 
-	$(APAC) $(APAC_ALL_FLAGS) --cutoff-count --cutoff-depth -o $@ $<
-
-$(PROGRAM)-model.cpp: $(PROGRAM).in.cpp Makefile $(COMMON_DIR)/Makefile.common 
-	$(APAC) $(APAC_ALL_FLAGS) --profile --run-with-custom="bash $(BASE_DIR)/run/run-$(PROGRAM).sh -c 1 -l $(CC) -v omp-apac_profiling" -o $@ $<
-
-$(PROGRAM)-both.cpp: $(PROGRAM).in.cpp Makefile $(COMMON_DIR)/Makefile.common 
-	$(APAC) $(APAC_ALL_FLAGS) --cutoff-count --cutoff-depth --profile --run-with-custom="bash $(BASE_DIR)/run/run-$(PROGRAM).sh -c 1 -l $(CC) -v omp-apac_profiling" -o $@ $<
-
 INFO_FLAGS_OMP=-DCDATE="\"$(TODAY)\"" -DCC="\"$(OMPCXX)\"" -DLD="\"$(OMPCXXLINK)\"" -DCMESSAGE="\"$(CMESSAGE)\"" \
-               -DLDFLAGS="\"$(OMPCXXLINK_ALL_FLAGS) $(LIBS)\"" -DCFLAGS="\"$(OMPCXX_ALL_FLAGS) -I.\"" -DAPACFLAGS="\"$(APAC_ALL_FLAGS)\""
+               -DLDFLAGS="\"$(OMPCXXLINK_ALL_FLAGS) $(LIBS)\"" -DCFLAGS="\"$(OMPCXX_ALL_FLAGS) -I.\""
 
 INFO_FLAGS_CXX=-DCDATE="\"$(TODAY)\"" -DCC="\"$(CXX)\"" -DLD="\"$(CXXLINK)\"" -DCMESSAGE="\"$(CMESSAGE)\"" \
                -DLDFLAGS="\"$(CXXLINK_ALL_FLAGS) $(LIBS)\"" -DCFLAGS="\"$(CXX_ALL_FLAGS) -I.\""
 
 main.o: $(COMMON_DIR)/bots_main_cxx.cpp app-desc.hpp Makefile $(COMMON_DIR)/Makefile.common
-	$(OMPCXX) $(OMPCXX_ALL_FLAGS) -I. -o $@ $< $(INFO_FLAGS_OMP)
+	$(OMPCXX) $(OMPCXX_ALL_FLAGS) -I. -o $@ $< $(INFO_FLAGS_OMP) -DAPACFLAGS="\"$(APAC_ALL_FLAGS)\""
 
 main_seq.o: $(COMMON_DIR)/bots_main_cxx.cpp app-desc.hpp Makefile $(COMMON_DIR)/Makefile.common
 	$(CXX) $(CXX_ALL_FLAGS) -I. -o $@ $< $(INFO_FLAGS_CXX)
 
 main_profiling.o: $(COMMON_DIR)/bots_main_cxx.cpp app-desc.hpp Makefile $(COMMON_DIR)/Makefile.common
 	$(CXX) $(CXX_ALL_FLAGS) -I. -o $@ $< $(INFO_FLAGS_CXX) -DAPACFLAGS="\"$(APAC_ALL_FLAGS)\""
-
-main-counters.o: $(COMMON_DIR)/bots_main_cxx.cpp app-desc.hpp Makefile $(COMMON_DIR)/Makefile.common
-	$(OMPCXX) $(OMPCXX_ALL_FLAGS) -I. -o $@ $< $(INFO_FLAGS_OMP)
-
-main-model.o: $(COMMON_DIR)/bots_main_cxx.cpp app-desc.hpp Makefile $(COMMON_DIR)/Makefile.common
-	$(OMPCXX) $(OMPCXX_ALL_FLAGS) -I. -o $@ $< $(INFO_FLAGS_OMP)
-
-main-both.o: $(COMMON_DIR)/bots_main_cxx.cpp app-desc.hpp Makefile $(COMMON_DIR)/Makefile.common
-	$(OMPCXX) $(OMPCXX_ALL_FLAGS) -I. -o $@ $< $(INFO_FLAGS_OMP)
 
 $(BIN_DIR)/$(PROGRAM).$(LABEL).$(SUB)$(VERSION): main.o $(PROGRAM_OBJS) Makefile $(COMMON_DIR)/Makefile.common $(OTHER_OBJS) $(COMMON_OBJS)
 	$(OMPCXXLINK) $(OMPCXXLINK_ALL_FLAGS) -o $@ main.o $(PROGRAM_OBJS) $(LIBS) $(OTHER_OBJS) $(COMMON_OBJS)
@@ -185,14 +185,7 @@ $(BIN_DIR)/$(PROGRAM).$(LABEL).$(SUB)$(VERSION)_seq: main_seq.o $(PROGRAM).in.o 
 $(BIN_DIR)/$(PROGRAM).$(LABEL).$(SUB)$(VERSION)_profiling: main_profiling.o $(PROFILING_PROGRAM_OBJS) Makefile $(COMMON_DIR)/Makefile.common $(OTHER_OBJS) $(COMMON_OBJS)
 	$(CXXLINK) $(CXXLINK_ALL_FLAGS) -o $@ main_profiling.o $(PROFILING_PROGRAM_OBJS) $(LIBS) $(OTHER_OBJS) $(COMMON_OBJS)
 
-$(BIN_DIR)/$(PROGRAM).$(LABEL).$(SUB)$(VERSION)-counters: main-counters.o $(COUNTERS_PROGRAM_OBJS) Makefile $(COMMON_DIR)/Makefile.common $(OTHER_OBJS) $(COMMON_OBJS) 
-	$(OMPCXXLINK) $(OMPCXXLINK_ALL_FLAGS) -o $@ main-counters.o $(COUNTERS_PROGRAM_OBJS) $(LIBS) $(OTHER_OBJS) $(COMMON_OBJS)
-
-$(BIN_DIR)/$(PROGRAM).$(LABEL).$(SUB)$(VERSION)-model: main-model.o $(MODEL_PROGRAM_OBJS) Makefile $(COMMON_DIR)/Makefile.common $(OTHER_OBJS) $(COMMON_OBJS)
-	$(OMPCXXLINK) $(OMPCXXLINK_ALL_FLAGS) -o $@ main-model.o $(MODEL_PROGRAM_OBJS) $(LIBS) $(OTHER_OBJS) $(COMMON_OBJS)
-
-$(BIN_DIR)/$(PROGRAM).$(LABEL).$(SUB)$(VERSION)-both: main-both.o $(BOTH_PROGRAM_OBJS) Makefile $(COMMON_DIR)/Makefile.common $(OTHER_OBJS) $(COMMON_OBJS)
-	$(OMPCXXLINK) $(OMPCXXLINK_ALL_FLAGS) -o $@ main-both.o $(BOTH_PROGRAM_OBJS) $(LIBS) $(OTHER_OBJS) $(COMMON_OBJS)
+$(foreach cutoff,$(CUTOFF_VERSIONS),$(eval $(call CUTOFF_template,$(cutoff))))
 
 endif
 
@@ -459,7 +452,7 @@ endif
 
 ifeq ($(VERSION),omp-apac)
 clean:
-	rm -fr $(PROGRAM).cpp $(PROGRAM)-counters.cpp $(PROGRAM)-model.cpp $(PROGRAM)-both.cpp *.o *.log apac_profiling.hpp *.in_profiling.cpp *.profile *.model
+	rm -fr $(PROGRAM).cpp $(foreach cutoff,$(CUTOFF_VERSIONS),$(PROGRAM)-$(cutoff).cpp) *.o *.log apac_profiling.hpp *.in_profiling.cpp *.profile *.model
 else
 clean:
 	rm -fr *.o

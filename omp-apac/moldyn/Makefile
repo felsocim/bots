@@ -19,7 +19,6 @@
 ##############################################################################################
 
 OTHER_OBJS = tools.o
-CUTOFF_VERSIONS = counters model both
 SKIP = check,check_symb,check_force
 MAIN = compute
 

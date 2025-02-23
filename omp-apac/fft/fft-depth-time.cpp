@@ -8,12 +8,6 @@
 #include "bots.h"
 const double __apac_cutoff = getenv("APAC_EXECUTION_TIME_CUTOFF") ? atof(getenv("APAC_EXECUTION_TIME_CUTOFF")) : 2.22100e-6;
 
-const static int __apac_count_infinite = getenv("APAC_TASK_COUNT_INFINITE") ? 1 : 0;
-
-const static int __apac_count_max = getenv("APAC_TASK_COUNT_MAX") ? atoi(getenv("APAC_TASK_COUNT_MAX")) : omp_get_max_threads() * 10;
-
-int __apac_count = 0;
-
 const static int __apac_depth_infinite = getenv("APAC_TASK_DEPTH_INFINITE") ? 1 : 0;
 
 const static int __apac_depth_max = getenv("APAC_TASK_DEPTH_MAX") ? atoi(getenv("APAC_TASK_DEPTH_MAX")) : 5;
@@ -23,23 +17,46 @@ int __apac_depth = 0;
 #pragma omp threadprivate(__apac_depth)
 
 void compute_w_coefficients(int n, int a, int b, COMPLEX* W) {
-  double twoPiOverN;
-  int k;
-  REAL s;
-  REAL c;
-  if (b - a < 128) {
-    twoPiOverN = 2. * 3.14159265359 / n;
-    for (k = a; k <= b; ++k) {
-      c = cos(twoPiOverN * k);
-      W[k].re = W[n - k].re = c;
-      s = sin(twoPiOverN * k);
-      W[k].im = -s;
-      W[n - k].im = s;
+  int __apac_depth_local = __apac_depth;
+  int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
+  if (__apac_depth_ok) {
+#pragma omp taskgroup
+    {
+      double twoPiOverN;
+      int k;
+      REAL s;
+      REAL c;
+      if (b - a < 128) {
+        twoPiOverN = 2. * 3.14159265359 / n;
+        for (k = a; k <= b; ++k) {
+          c = cos(twoPiOverN * k);
+          W[k].re = W[n - k].re = c;
+          s = sin(twoPiOverN * k);
+          W[k].im = -s;
+          W[n - k].im = s;
+        }
+      } else {
+        int* ab = new int((a + b) / 2);
+#pragma omp task default(shared) depend(in : W, a, ab[0], b, n, ab) depend(inout : W[0]) firstprivate(__apac_depth_local) if (__apac_depth_ok)
+        {
+          if (__apac_depth_ok) {
+            __apac_depth = __apac_depth_local + 1;
+          }
+          compute_w_coefficients(n, a, *ab, W);
+          compute_w_coefficients(n, *ab + 1, b, W);
+        }
+#pragma omp task default(shared) depend(inout : ab) firstprivate(__apac_depth_local) if (__apac_depth_ok)
+        {
+          if (__apac_depth_ok) {
+            __apac_depth = __apac_depth_local + 1;
+          }
+          delete ab;
+        }
+      }
+    __apac_exit:;
     }
   } else {
-    int ab = (a + b) / 2;
-    compute_w_coefficients(n, a, ab, W);
-    compute_w_coefficients(n, ab + 1, b, W);
+    compute_w_coefficients_seq(n, a, b, W);
   }
 }
 
@@ -5056,7 +5073,6 @@ void fft_unshuffle_32_seq(int a, int b, COMPLEX* in, COMPLEX* out, int m) {
 }
 
 void fft_aux(int n, COMPLEX* in, COMPLEX* out, int* factors, COMPLEX* W, int nW) {
-  int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
   int __apac_depth_local = __apac_depth;
   int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
   if (__apac_depth_ok) {
@@ -5110,20 +5126,12 @@ void fft_aux(int n, COMPLEX* in, COMPLEX* out, int* factors, COMPLEX* W, int nW)
           }
         }
         for (k = 0; k < n; k += m) {
-          if (__apac_count_ok) {
-#pragma omp atomic
-            __apac_count++;
-          }
-#pragma omp task default(shared) depend(in : W, factors, factors[0], in, in[0], nW, out, out[0]) depend(inout : W[0]) firstprivate(__apac_depth_local, m, k) if ((__apac_count_ok || __apac_depth_ok) && -0.000734288933397 + nW * 4.99774993468e-07 > __apac_cutoff)
+#pragma omp task default(shared) depend(in : W, factors, factors[0], in, in[0], nW, out, out[0]) depend(inout : W[0]) firstprivate(__apac_depth_local, m, k) if (__apac_depth_ok && -0.000647697553515 + nW * 3.3577197919e-07 > __apac_cutoff)
           {
-            if (__apac_count_ok || __apac_depth_ok) {
+            if (__apac_depth_ok) {
               __apac_depth = __apac_depth_local + 1;
             }
             fft_aux(m, out + k, in + k, factors + 1, W, nW);
-            if (__apac_count_ok) {
-#pragma omp atomic
-              __apac_count--;
-            }
           }
         }
       }
@@ -5216,7 +5224,6 @@ void fft_aux_seq(int n, COMPLEX* in, COMPLEX* out, int* factors, COMPLEX* W, int
 }
 
 void fft(int n, COMPLEX* in, COMPLEX* out) {
-  int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
   int __apac_depth_local = __apac_depth;
   int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
   if (__apac_depth_ok) {
@@ -5231,8 +5238,14 @@ void fft(int n, COMPLEX* in, COMPLEX* out) {
       int s = 1;
       COMPLEX* W;
       bots_message("Computing coefficients ");
-      W = (COMPLEX*)malloc((n + 1) * sizeof(COMPLEX));
-      compute_w_coefficients(n, 0, n / 2, W);
+#pragma omp task default(shared) depend(in : n) depend(inout : W, W[0]) firstprivate(__apac_depth_local) if (__apac_depth_ok)
+      {
+        if (__apac_depth_ok) {
+          __apac_depth = __apac_depth_local + 1;
+        }
+        W = (COMPLEX*)malloc((n + 1) * sizeof(COMPLEX));
+        compute_w_coefficients(n, 0, n / 2, W);
+      }
       bots_message(" completed!\n");
       while (l > 1 || s) {
         r = factor(l);
@@ -5242,21 +5255,13 @@ void fft(int n, COMPLEX* in, COMPLEX* out) {
         s = 0;
       }
       bots_message("Computing FFT ");
-      if (__apac_count_ok) {
-#pragma omp atomic
-        __apac_count++;
-      }
-#pragma omp task default(shared) depend(in : W, factors, in, n, out) depend(inout : W[0], factors[0], in[0], out[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+#pragma omp task default(shared) depend(in : W, factors, in, n, out) depend(inout : W[0], factors[0], in[0], out[0]) firstprivate(__apac_depth_local) if (__apac_depth_ok)
       {
-        if (__apac_count_ok || __apac_depth_ok) {
+        if (__apac_depth_ok) {
           __apac_depth = __apac_depth_local + 1;
         }
         fft_aux(n, in, out, factors, W, n);
         free(W);
-        if (__apac_count_ok) {
-#pragma omp atomic
-          __apac_count--;
-        }
       }
       bots_message(" completed!\n");
       goto __apac_exit;

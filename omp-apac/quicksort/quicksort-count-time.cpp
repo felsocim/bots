@@ -1,12 +1,18 @@
 #include <errno.h>
+#include <omp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 
 #include "bots.h"
 #include "quicksort.hpp"
-
 const double __apac_cutoff = getenv("APAC_EXECUTION_TIME_CUTOFF") ? atof(getenv("APAC_EXECUTION_TIME_CUTOFF")) : 2.22100e-6;
+
+const static int __apac_count_infinite = getenv("APAC_TASK_COUNT_INFINITE") ? 1 : 0;
+
+const static int __apac_count_max = getenv("APAC_TASK_COUNT_MAX") ? atoi(getenv("APAC_TASK_COUNT_MAX")) : omp_get_max_threads() * 10;
+
+int __apac_count = 0;
 
 void partition(int* out_pivot, int* arr, int right_limit) {
   int pivot = arr[right_limit - 1];
@@ -43,6 +49,7 @@ void insertion_sort(int* arr, int right_limit) {
 }
 
 void sort_core(int* in_out_data, int right_limit) {
+  int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
 #pragma omp taskgroup
   {
     if (0 >= right_limit) {
@@ -53,24 +60,65 @@ void sort_core(int* in_out_data, int right_limit) {
     } else {
       int* pivot = new int();
       partition(pivot, in_out_data, right_limit);
-#pragma omp task default(shared) depend(in : in_out_data, pivot[0], pivot) depend(inout : in_out_data[0]) if (-0.000737093374081 + *pivot * 3.6562530483e-07 > __apac_cutoff)
-      sort_core(&in_out_data[0], *pivot);
-#pragma omp task default(shared) depend(in : in_out_data, pivot[0], right_limit, pivot) depend(inout : in_out_data[*pivot + 1]) if (-0.0010016770895 + (right_limit - (*pivot + 1)) * 3.77927754024e-07 > __apac_cutoff)
-      sort_core(&in_out_data[*pivot + 1], right_limit - (*pivot + 1));
-#pragma omp task default(shared) depend(inout : pivot)
-      delete pivot;
+      if (__apac_count_ok) {
+#pragma omp atomic
+        __apac_count++;
+      }
+#pragma omp task default(shared) depend(in : in_out_data, pivot[0], pivot) depend(inout : in_out_data[0]) if (__apac_count_ok && -0.000254154499806 + *pivot * 2.19019303339e-07 > __apac_cutoff)
+      {
+        sort_core(&in_out_data[0], *pivot);
+        if (__apac_count_ok) {
+#pragma omp atomic
+          __apac_count--;
+        }
+      }
+      if (__apac_count_ok) {
+#pragma omp atomic
+        __apac_count++;
+      }
+#pragma omp task default(shared) depend(in : in_out_data, pivot[0], right_limit, pivot) depend(inout : in_out_data[*pivot + 1]) if (__apac_count_ok && -0.000503567567426 + (right_limit - (*pivot + 1)) * 2.32037291869e-07 > __apac_cutoff)
+      {
+        sort_core(&in_out_data[*pivot + 1], right_limit - (*pivot + 1));
+        if (__apac_count_ok) {
+#pragma omp atomic
+          __apac_count--;
+        }
+      }
+      if (__apac_count_ok) {
+#pragma omp atomic
+        __apac_count++;
+      }
+#pragma omp task default(shared) depend(inout : pivot) if (__apac_count_ok)
+      {
+        delete pivot;
+        if (__apac_count_ok) {
+#pragma omp atomic
+          __apac_count--;
+        }
+      }
     }
   __apac_exit:;
   }
 }
 
 void sort(int* in_out_data, int in_size) {
+  int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
 #pragma omp parallel
 #pragma omp master
 #pragma omp taskgroup
   {
-#pragma omp task default(shared) depend(in : in_out_data, in_size) depend(inout : in_out_data[0])
-    sort_core(in_out_data, in_size);
+    if (__apac_count_ok) {
+#pragma omp atomic
+      __apac_count++;
+    }
+#pragma omp task default(shared) depend(in : in_out_data, in_size) depend(inout : in_out_data[0]) if (__apac_count_ok)
+    {
+      sort_core(in_out_data, in_size);
+      if (__apac_count_ok) {
+#pragma omp atomic
+        __apac_count--;
+      }
+    }
   __apac_exit:;
   }
 }

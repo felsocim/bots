@@ -104,7 +104,7 @@ COMMON_OBJS = $(COMMON_DIR)/bots_common_cxx.o
 LIBCLANG := $(shell clang --version | head -n 1 | cut -d ' ' -f 3)
 LIBCLANG := $(shell echo $$LIBRARY_PATH)/clang/$(LIBCLANG)/include
 
-APAC_ALL_FLAGS  = $(APAC_FLAGS) -I $(COMMON_DIR),$(LIBCLANG) --skip=$(SKIP) --main=$(MAIN)
+APAC_ALL_FLAGS = $(APAC_FLAGS) -I $(COMMON_DIR),$(LIBCLANG) --skip=$(SKIP) --main=$(MAIN)
 PROFILING_PROGRAM_OBJS := $(PROGRAM_OBJS:%.o=%.in_profiling.o)
 
 TARGETS  = $(BIN_DIR)/$(PROGRAM).$(LABEL).$(SUB)$(VERSION) 

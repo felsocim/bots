@@ -34,5 +34,5 @@ int check(int *, int);
 
 #define KERNEL_INIT int * data = NULL; data = init(bots_arg_size);
 #define KERNEL_CALL sort(data, bots_arg_size);
-#define KERNEL_FINI free(data);
 #define KERNEL_CHECK check(data, bots_arg_size);
+#define BOTS_APP_FINI free(data);

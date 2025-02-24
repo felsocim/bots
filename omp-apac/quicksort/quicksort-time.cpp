@@ -53,9 +53,9 @@ void sort_core(int* in_out_data, int right_limit) {
     } else {
       int* pivot = new int();
       partition(pivot, in_out_data, right_limit);
-#pragma omp task default(shared) depend(in : in_out_data, pivot[0], pivot) depend(inout : in_out_data[0]) if (-0.000477863846005 + *pivot * 2.16004500567e-07 > __apac_cutoff)
+#pragma omp task default(shared) depend(in : in_out_data, pivot[0], pivot) depend(inout : in_out_data[0]) if (-0.000391192599772 + *pivot * 1.61065492244e-07 > __apac_cutoff)
       sort_core(&in_out_data[0], *pivot);
-#pragma omp task default(shared) depend(in : in_out_data, pivot[0], right_limit, pivot) depend(inout : in_out_data[*pivot + 1]) if (-0.000313054193721 + (right_limit - (*pivot + 1)) * 2.13747035814e-07 > __apac_cutoff)
+#pragma omp task default(shared) depend(in : in_out_data, pivot[0], right_limit, pivot) depend(inout : in_out_data[*pivot + 1]) if (-0.000493888134108 + (right_limit - (*pivot + 1)) * 1.63462556224e-07 > __apac_cutoff)
       sort_core(&in_out_data[*pivot + 1], right_limit - (*pivot + 1));
 #pragma omp task default(shared) depend(inout : pivot)
       delete pivot;

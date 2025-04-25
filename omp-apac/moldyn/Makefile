@@ -19,7 +19,7 @@
 ##############################################################################################
 
 OTHER_OBJS = tools.o
-SKIP = check,check_symb,check_force
+SKIP = fill_cell_with_rand_particles,check,check_symb,check_force
 MAIN = compute
 
 BASE_DIR = ../../

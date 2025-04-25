@@ -39,20 +39,20 @@ void grid_destroy(const int, int**, Particle_symb***, Particle_forces***);
 void grid_compute(const int, int*, Particle_symb**, Particle_forces**);
 void grid_compute_seq(const int, int*, Particle_symb**, Particle_forces**);
 void grid_update(
-  const int, const int, const double, const double, double, int**,
+  const int, const double, const double, double, int**,
   Particle_symb***, Particle_forces***
 );
 void grid_update_seq(
-  const int, const int, const double, const double, double, int**,
+  const int, const double, const double, double, int**,
   Particle_symb***, Particle_forces***
 );
 void fill_cell_with_rand_particles(Cell*, double, int);
 void compute(
-  const int, const int, const int, const double, const double, double, int**,
+  const int, const int, const double, const double, double, int**,
   Particle_symb***, Particle_forces***
 );
 void compute_seq(
-  const int, const int, const int, const double, const double, double, int**,
+  const int, const int, const double, const double, double, int**,
   Particle_symb***, Particle_forces***
 );
 int check(

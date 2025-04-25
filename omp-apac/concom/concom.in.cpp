@@ -139,11 +139,12 @@ void cc_init()
 void cc(int *cc)
 {
    int i;
+   int expected = 0;
    (*cc) = 0;
    /* for all nodes ... unvisited nodes start a new component */
    for (i = 0; i < bots_arg_size; i++)
    {
-      if (visited[i] == 0)
+      if (atomic_compare(&visited[i], &expected))
       {
          cc_core(i, *cc);
          (*cc)++;

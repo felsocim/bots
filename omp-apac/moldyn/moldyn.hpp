@@ -31,9 +31,18 @@ int grid_create(
   double, double, const Particle_symb*, const Particle_forces*, const int,
   int**, Particle_symb***, Particle_forces***
 );
+int grid_create_seq(
+  double, double, const Particle_symb*, const Particle_forces*, const int,
+  int**, Particle_symb***, Particle_forces***
+);
 void grid_destroy(const int, int**, Particle_symb***, Particle_forces***);
 void grid_compute(const int, int*, Particle_symb**, Particle_forces**);
+void grid_compute_seq(const int, int*, Particle_symb**, Particle_forces**);
 void grid_update(
+  const int, const int, const double, const double, double, int**,
+  Particle_symb***, Particle_forces***
+);
+void grid_update_seq(
   const int, const int, const double, const double, double, int**,
   Particle_symb***, Particle_forces***
 );
@@ -42,8 +51,12 @@ void compute(
   const int, const int, const int, const double, const double, double, int**,
   Particle_symb***, Particle_forces***
 );
+void compute_seq(
+  const int, const int, const int, const double, const double, double, int**,
+  Particle_symb***, Particle_forces***
+);
 int check(
-  const int, int*, Particle_symb**, Particle_forces**, Particle_symb**, 
+  const int, const int, int*, Particle_symb**, Particle_forces**, Particle_symb**, 
   Particle_forces**
 );
 

@@ -58,14 +58,27 @@ int grid_create(
   double, double, const Particle_symb*, const Particle_forces*, const int,
   int**, Particle_symb***, Particle_forces***
 );
+int grid_create_seq(
+  double, double, const Particle_symb*, const Particle_forces*, const int,
+  int**, Particle_symb***, Particle_forces***
+);
 void cell_destroy(Cell*);
 void grid_compute(const int, int*, Particle_symb**, Particle_forces**);
+void grid_compute_seq(const int, int*, Particle_symb**, Particle_forces**);
 void grid_update(
+  const int, const int, const double, const double, double, int**,
+  Particle_symb***, Particle_forces***
+);
+void grid_update_seq(
   const int, const int, const double, const double, double, int**,
   Particle_symb***, Particle_forces***
 );
 void grid_destroy(const int, int**, Particle_symb***, Particle_forces***);
 void compute(
+  const int, const int, const int, const double, const double, double, int**,
+  Particle_symb***, Particle_forces***
+);
+void compute_seq(
   const int, const int, const int, const double, const double, double, int**,
   Particle_symb***, Particle_forces***
 );
@@ -91,12 +104,12 @@ int check(
 
 #define KERNEL_SEQ_INIT\
   nb_cells_per_dim_seq =\
-    grid_create(\
+    grid_create_seq(\
       box_width, cell_width,\
       cell.particles_symb, cell.particles_forces, cell.size,\
       &sizes_seq, &particles_symb_seq, &particles_forces_seq\
     )
-#define KERNEL_SEQ_CALL compute(size, steps, nb_cells_per_dim_seq, box_width,\
+#define KERNEL_SEQ_CALL compute_seq(steps, size, nb_cells_per_dim_seq, box_width,\
   cell_width, time_step, &sizes_seq, &particles_symb_seq, &particles_forces_seq)
 
 #define KERNEL_INIT\
@@ -106,7 +119,7 @@ int check(
       cell.particles_symb, cell.particles_forces, cell.size,\
       &sizes_par, &particles_symb_par, &particles_forces_par\
     )
-#define KERNEL_CALL compute(size, steps, nb_cells_per_dim_par, box_width,\
+#define KERNEL_CALL compute(steps, size, nb_cells_per_dim_par, box_width,\
   cell_width, time_step, &sizes_par, &particles_symb_par, &particles_forces_par) 
 
 #define BOTS_APP_CHECK_USES_SEQ_RESULT

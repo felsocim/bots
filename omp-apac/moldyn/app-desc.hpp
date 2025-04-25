@@ -98,11 +98,6 @@ int check(
     )
 #define KERNEL_SEQ_CALL compute(size, steps, nb_cells_per_dim_seq, box_width,\
   cell_width, time_step, &sizes_seq, &particles_symb_seq, &particles_forces_seq)
-#define KERNEL_SEQ_FINI\
-  grid_destroy(\
-    nb_cells_per_dim_seq, &sizes_seq, &particles_symb_seq,\
-    &particles_forces_seq\
-  )
 
 #define KERNEL_INIT\
   nb_cells_per_dim_par =\
@@ -112,12 +107,7 @@ int check(
       &sizes_par, &particles_symb_par, &particles_forces_par\
     )
 #define KERNEL_CALL compute(size, steps, nb_cells_per_dim_par, box_width,\
-  cell_width, time_step, &sizes_par, &particles_symb_par, &particles_forces_par)
-#define KERNEL_FINI\
-  grid_destroy(\
-    nb_cells_per_dim_par,\
-    &sizes_par, &particles_symb_par, &particles_forces_par\
-  )
+  cell_width, time_step, &sizes_par, &particles_symb_par, &particles_forces_par) 
 
 #define BOTS_APP_CHECK_USES_SEQ_RESULT
 #define KERNEL_CHECK\
@@ -127,4 +117,13 @@ int check(
     particles_symb_par, particles_forces_par\
   )
 
-#define BOTS_APP_FINI cell_destroy(&cell)
+#define BOTS_APP_FINI\
+  grid_destroy(\
+    nb_cells_per_dim_seq, &sizes_seq, &particles_symb_seq,\
+    &particles_forces_seq\
+  );\
+  grid_destroy(\
+    nb_cells_per_dim_par,\
+    &sizes_par, &particles_symb_par, &particles_forces_par\
+  );\
+  cell_destroy(&cell)

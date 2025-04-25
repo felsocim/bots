@@ -68,7 +68,7 @@ void nqueens(int n, int j, char* a, int* solutions) {
       memset(csols, 0, n * sizeof(int));
       for (i = 0; i < n; i++) {
         char* b;
-        b = (char*)__builtin_alloca(n * sizeof(char));
+        b = (char*)malloc(n * sizeof(char));
         memcpy(b, a, j * sizeof(char));
         b[j] = (char)i;
 #pragma omp taskwait depend(in : b, j) depend(inout : b[0])
@@ -81,6 +81,8 @@ void nqueens(int n, int j, char* a, int* solutions) {
             nqueens(n, j + 1, b, &csols[i]);
           }
         }
+#pragma omp taskwait depend(in : b) depend(inout : b[0])
+        free(b);
       }
 #pragma omp taskwait
       for (i = 0; i < n; i++) {

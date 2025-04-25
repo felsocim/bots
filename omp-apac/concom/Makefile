@@ -19,7 +19,7 @@
 ##############################################################################################
 
 OTHER_OBJS = atomic.o
-SKIP = initialize,write_outputs,cc_init,cc_check
+SKIP = initialize,write_outputs,cc_init,cc_check,cc
 MAIN = cc
 
 BASE_DIR = ../../

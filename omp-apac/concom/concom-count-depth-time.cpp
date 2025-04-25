@@ -75,43 +75,16 @@ void write_outputs(int n, int cc) {
 }
 
 void cc_core(int i, int cc) {
-  int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
-  int __apac_depth_local = __apac_depth;
-  int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
-  if (__apac_depth_ok) {
-#pragma omp taskgroup
-    {
-      int j;
-      int n;
-      int expected = 0;
-      if (atomic_compare(&visited[i], &expected)) {
-        if (bots_verbose_mode) {
-          printf("Adding node %d to component %d\n", i, cc);
-        }
-        atomic_add(&components[cc], 1);
-        for (j = 0; j < nodes[i].n; j++) {
-          if (__apac_count_ok) {
-#pragma omp atomic
-            __apac_count++;
-          }
-#pragma omp task default(shared) depend(in : cc, i, nodes) depend(inout : n) firstprivate(__apac_depth_local, j) if (__apac_count_ok || __apac_depth_ok)
-          {
-            if (__apac_count_ok || __apac_depth_ok) {
-              __apac_depth = __apac_depth_local + 1;
-            }
-            n = nodes[i].neighbor[j];
-            cc_core(n, cc);
-            if (__apac_count_ok) {
-#pragma omp atomic
-              __apac_count--;
-            }
-          }
-        }
-      }
-    __apac_exit:;
+  int j;
+  int n;
+  int expected = 0;
+  if (atomic_compare(&visited[i], &expected)) {
+    if (bots_verbose_mode) printf("Adding node %d to component %d\n", i, cc);
+    atomic_add(&components[cc], 1);
+    for (j = 0; j < nodes[i].n; j++) {
+      n = nodes[i].neighbor[j];
+      cc_core(n, cc);
     }
-  } else {
-    cc_core_seq(i, cc);
   }
 }
 
@@ -147,9 +120,10 @@ void cc(int* cc) {
 #pragma omp taskgroup
     {
       int i;
+      int expected = 0;
       *cc = 0;
       for (i = 0; i < bots_arg_size; i++) {
-        if (visited[i] == 0) {
+        if (atomic_compare(&visited[i], &expected)) {
           if (__apac_count_ok) {
 #pragma omp atomic
             __apac_count++;

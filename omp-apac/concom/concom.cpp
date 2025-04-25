@@ -111,9 +111,10 @@ void cc(int* cc) {
 #pragma omp taskgroup
   {
     int i;
+    int expected = 0;
     *cc = 0;
     for (i = 0; i < bots_arg_size; i++) {
-      if (visited[i] == 0) {
+      if (atomic_compare(&visited[i], &expected)) {
 #pragma omp task default(shared) depend(in : cc) depend(inout : cc[0]) firstprivate(i)
         {
           cc_core(i, *cc);

@@ -147,9 +147,10 @@ void cc(int* cc) {
 #pragma omp taskgroup
     {
       int i;
+      int expected = 0;
       *cc = 0;
       for (i = 0; i < bots_arg_size; i++) {
-        if (visited[i] == 0) {
+        if (atomic_compare(&visited[i], &expected)) {
           if (__apac_count_ok) {
 #pragma omp atomic
             __apac_count++;

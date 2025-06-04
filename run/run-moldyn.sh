@@ -1,7 +1,7 @@
 #!/bin/bash
 #defaults
 
-DEF_INPUTS=1000x10
+DEF_INPUTS=20000x1
 
 #don't modify from here
 

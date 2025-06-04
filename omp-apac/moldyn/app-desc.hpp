@@ -33,7 +33,7 @@
 #define BOTS_APP_DESC_ARG_SIZE_1 "Time step (s)"
 
 #define BOTS_APP_USES_ARG_SIZE_2
-#define BOTS_APP_DEF_ARG_SIZE_2 5
+#define BOTS_APP_DEF_ARG_SIZE_2 50
 #define BOTS_APP_DESC_ARG_SIZE_2 "Number of steps"
 
 typedef struct {

@@ -22,8 +22,8 @@ void cell_destroy(Cell*);
 void cell_add_particle(Cell*, Particle_symb, Particle_forces);
 void cell_self_compute(const Particle_symb*, Particle_forces*, const int);
 void cell_neighbor_compute(
-  const Particle_symb*, Particle_forces*, const int, const Particle_symb*, 
-  const int
+  const Particle_symb*, Particle_forces*, const int, const Particle_symb* const*, 
+  const int*, const int, const int, const int, const int
 );
 void cell_update(Particle_symb*, Particle_forces*, const int, double);
 int grid_cell_idx_from_position(const double, const int, Particle_symb);

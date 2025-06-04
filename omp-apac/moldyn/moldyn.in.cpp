@@ -84,27 +84,44 @@ void cell_self_compute(const Particle_symb* particles_symb, Particle_forces* par
   }
 }
 
-void cell_neighbor_compute(const Particle_symb* particles_symb, Particle_forces* particles_forces, const int size,
-                             const Particle_symb* particles_symbNeigh, const int sizeNeighbor) {  
-  for(int idxTgt = 0; idxTgt < size; idxTgt++) {
-    for(int idxSrc = 0; idxSrc < sizeNeighbor; idxSrc++) {
-      const double dx = particles_symbNeigh[idxSrc].x - particles_symb[idxTgt].x;
-      const double dy = particles_symbNeigh[idxSrc].y - particles_symb[idxTgt].y;
-      const double dz = particles_symbNeigh[idxSrc].z - particles_symb[idxTgt].z;
+void cell_neighbor_compute(
+  const Particle_symb* particles_symb, Particle_forces* particles_forces, const int size,
+  const Particle_symb* const * particles_symbNeigh, const int * sizeNeighbor,
+  const int x, const int y, const int z, const int nb_cells_per_dim
+) {
+  for(int idx_x_neigh = -1; idx_x_neigh <= 1; idx_x_neigh++) {
+    for(int idx_y_neigh = -1; idx_y_neigh <= 1; idx_y_neigh++) {
+      for(int idx_z_neigh = -1; idx_z_neigh <= 1; idx_z_neigh++) {
+        int neighbor = 
+          (((x + idx_x_neigh + nb_cells_per_dim) 
+              % nb_cells_per_dim) * nb_cells_per_dim
+          + ((y + idx_y_neigh + nb_cells_per_dim) 
+              % nb_cells_per_dim)) * nb_cells_per_dim
+          + ((z + idx_z_neigh + nb_cells_per_dim) 
+              % nb_cells_per_dim);   
 
-      const double square_distance = (dx * dx + dy * dy + dz * dz + 0.00001);
-      const double distance = sqrt(square_distance);
-      const double cube_distance = square_distance * distance;
+        for(int idxTgt = 0; idxTgt < size; idxTgt++) {
+          for(int idxSrc = 0; idxSrc < sizeNeighbor[neighbor]; idxSrc++) {
+            const double dx = particles_symbNeigh[neighbor][idxSrc].x - particles_symb[idxTgt].x;
+            const double dy = particles_symbNeigh[neighbor][idxSrc].y - particles_symb[idxTgt].y;
+            const double dz = particles_symbNeigh[neighbor][idxSrc].z - particles_symb[idxTgt].z;
 
-      const double coef = particles_symb[idxTgt].weight * particles_symbNeigh[idxSrc].weight / cube_distance;
+            const double square_distance = (dx * dx + dy * dy + dz * dz + 0.00001);
+            const double distance = sqrt(square_distance);
+            const double cube_distance = square_distance * distance;
 
-      const double fx = dx * coef;
-      const double fy = dy * coef;
-      const double fz = dz * coef;
+            const double coef = particles_symb[idxTgt].weight * particles_symbNeigh[neighbor][idxSrc].weight / cube_distance;
 
-      particles_forces[idxTgt].fx += fx;
-      particles_forces[idxTgt].fy += fy;
-      particles_forces[idxTgt].fz += fz;
+            const double fx = dx * coef;
+            const double fy = dy * coef;
+            const double fz = dz * coef;
+
+            particles_forces[idxTgt].fx += fx;
+            particles_forces[idxTgt].fy += fy;
+            particles_forces[idxTgt].fz += fz;
+          }
+        }
+      }
     }
   }
 }
@@ -240,31 +257,13 @@ void grid_destroy(const int nb_cells_per_dim, int** sizes, Particle_symb*** part
 void grid_compute(const int nb_cells_per_dim, int* sizes, Particle_symb** particles_symb, Particle_forces** particles_forces) {
   if(!sizes || !particles_symb || !particles_forces ) { return; }
 
-  int me, neighbor;
   for(int idx_x = 0; idx_x < nb_cells_per_dim; idx_x++) {
     for(int idx_y = 0; idx_y < nb_cells_per_dim; idx_y++) {
       for(int idx_z = 0; idx_z < nb_cells_per_dim; idx_z++) {
-        me = (idx_x * nb_cells_per_dim + idx_y)
+        int me = (idx_x * nb_cells_per_dim + idx_y)
               * nb_cells_per_dim + idx_z;
-        
         cell_self_compute(particles_symb[me], particles_forces[me], sizes[me]);
-
-        for(int idx_x_neigh = -1; idx_x_neigh <= 1; idx_x_neigh++) {
-          for(int idx_y_neigh = -1; idx_y_neigh <= 1; idx_y_neigh++) {
-            for(int idx_z_neigh = -1; idx_z_neigh <= 1; idx_z_neigh++) {
-              neighbor = 
-                (((idx_x + idx_x_neigh + nb_cells_per_dim) 
-                    % nb_cells_per_dim) * nb_cells_per_dim
-                + ((idx_y + idx_y_neigh + nb_cells_per_dim) 
-                    % nb_cells_per_dim)) * nb_cells_per_dim
-                + ((idx_z + idx_z_neigh + nb_cells_per_dim) 
-                    % nb_cells_per_dim);   
-
-              cell_neighbor_compute(particles_symb[me], particles_forces[me], sizes[me],
-                                    particles_symb[neighbor], sizes[neighbor]);
-            }
-          }
-        }
+        cell_neighbor_compute(particles_symb[me], particles_forces[me], sizes[me], particles_symb, sizes, idx_x, idx_y, idx_z, nb_cells_per_dim);
       }
     }
   }
@@ -273,31 +272,13 @@ void grid_compute(const int nb_cells_per_dim, int* sizes, Particle_symb** partic
 void grid_compute_seq(const int nb_cells_per_dim, int* sizes, Particle_symb** particles_symb, Particle_forces** particles_forces) {
   if(!sizes || !particles_symb || !particles_forces ) { return; }
 
-  int me, neighbor;
   for(int idx_x = 0; idx_x < nb_cells_per_dim; idx_x++) {
     for(int idx_y = 0; idx_y < nb_cells_per_dim; idx_y++) {
       for(int idx_z = 0; idx_z < nb_cells_per_dim; idx_z++) {
-        me = (idx_x * nb_cells_per_dim + idx_y)
+        int me = (idx_x * nb_cells_per_dim + idx_y)
               * nb_cells_per_dim + idx_z;
-        
         cell_self_compute(particles_symb[me], particles_forces[me], sizes[me]);
-
-        for(int idx_x_neigh = -1; idx_x_neigh <= 1; idx_x_neigh++) {
-          for(int idx_y_neigh = -1; idx_y_neigh <= 1; idx_y_neigh++) {
-            for(int idx_z_neigh = -1; idx_z_neigh <= 1; idx_z_neigh++) {
-              neighbor = 
-                (((idx_x + idx_x_neigh + nb_cells_per_dim) 
-                    % nb_cells_per_dim) * nb_cells_per_dim
-                + ((idx_y + idx_y_neigh + nb_cells_per_dim) 
-                    % nb_cells_per_dim)) * nb_cells_per_dim
-                + ((idx_z + idx_z_neigh + nb_cells_per_dim) 
-                    % nb_cells_per_dim);   
-
-              cell_neighbor_compute(particles_symb[me], particles_forces[me], sizes[me],
-                                    particles_symb[neighbor], sizes[neighbor]);
-            }
-          }
-        }
+        cell_neighbor_compute(particles_symb[me], particles_forces[me], sizes[me], particles_symb, sizes, idx_x, idx_y, idx_z, nb_cells_per_dim);
       }
     }
   }

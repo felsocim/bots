@@ -1,0 +1,12 @@
+[test]
+inputs=5000x1
+
+[small]
+inputs=10000x1
+
+[medium]
+inputs=20000x1
+
+[large]
+inputs=40000x1
+

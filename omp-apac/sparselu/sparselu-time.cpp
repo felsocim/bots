@@ -185,13 +185,13 @@ void sparselu(float** BENCH, int* timestamp) {
       lu0(BENCH[kk * bots_arg_size + kk]);
       for (int jj = kk + 1; jj < bots_arg_size; jj++) {
         if (BENCH[kk * bots_arg_size + jj] && timestamp[kk * bots_arg_size + jj] < kk) {
-#pragma omp taskwait depend(in : BENCH, BENCH[kk * bots_arg_size + jj], BENCH[kk * bots_arg_size + kk], BENCH[kk * bots_arg_size + kk][0], jj, kk) depend(inout : BENCH[kk * bots_arg_size + jj][0])
+#pragma omp task default(shared) depend(in : BENCH, BENCH[kk * bots_arg_size + jj], BENCH[kk * bots_arg_size + kk], BENCH[kk * bots_arg_size + kk][0]) depend(inout : BENCH[kk * bots_arg_size + jj][0]) firstprivate(kk, jj)
           fwd(BENCH[kk * bots_arg_size + kk], BENCH[kk * bots_arg_size + jj]);
         }
       }
       for (int ii = kk + 1; ii < bots_arg_size; ii++) {
         if (BENCH[ii * bots_arg_size + kk] && timestamp[ii * bots_arg_size + kk] < kk) {
-#pragma omp taskwait depend(in : BENCH, BENCH[ii * bots_arg_size + kk], BENCH[kk * bots_arg_size + kk], BENCH[kk * bots_arg_size + kk][0], ii, kk) depend(inout : BENCH[ii * bots_arg_size + kk][0])
+#pragma omp task default(shared) depend(in : BENCH, BENCH[ii * bots_arg_size + kk], BENCH[kk * bots_arg_size + kk], BENCH[kk * bots_arg_size + kk][0]) depend(inout : BENCH[ii * bots_arg_size + kk][0]) firstprivate(kk, ii)
           bdiv(BENCH[kk * bots_arg_size + kk], BENCH[ii * bots_arg_size + kk]);
         }
       }

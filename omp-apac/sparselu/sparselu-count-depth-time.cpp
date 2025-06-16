@@ -199,38 +199,12 @@ void sparselu(float** BENCH, int* timestamp) {
     {
       bots_message("Computing SparseLU Factorization (%dx%d matrix with %dx%d blocks) ", bots_arg_size, bots_arg_size, bots_arg_size_1, bots_arg_size_1);
       for (int kk = 0; kk < bots_arg_size; kk++) {
-        if (__apac_count_ok) {
-#pragma omp atomic
-          __apac_count++;
-        }
-#pragma omp task default(shared) depend(in : BENCH, BENCH[kk * bots_arg_size + kk]) depend(inout : BENCH[kk * bots_arg_size + kk][0]) firstprivate(__apac_depth_local, kk) if (__apac_count_ok || __apac_depth_ok)
-        {
-          if (__apac_count_ok || __apac_depth_ok) {
-            __apac_depth = __apac_depth_local + 1;
-          }
-          lu0(BENCH[kk * bots_arg_size + kk]);
-          if (__apac_count_ok) {
-#pragma omp atomic
-            __apac_count--;
-          }
-        }
+#pragma omp taskwait depend(in : BENCH, BENCH[kk * bots_arg_size + kk], kk) depend(inout : BENCH[kk * bots_arg_size + kk][0])
+        lu0(BENCH[kk * bots_arg_size + kk]);
         for (int jj = kk + 1; jj < bots_arg_size; jj++) {
           if (BENCH[kk * bots_arg_size + jj] && timestamp[kk * bots_arg_size + jj] < kk) {
-            if (__apac_count_ok) {
-#pragma omp atomic
-              __apac_count++;
-            }
-#pragma omp task default(shared) depend(in : BENCH, BENCH[kk * bots_arg_size + jj], BENCH[kk * bots_arg_size + kk], BENCH[kk * bots_arg_size + kk][0]) depend(inout : BENCH[kk * bots_arg_size + jj][0]) firstprivate(__apac_depth_local, kk, jj) if (__apac_count_ok || __apac_depth_ok)
-            {
-              if (__apac_count_ok || __apac_depth_ok) {
-                __apac_depth = __apac_depth_local + 1;
-              }
-              fwd(BENCH[kk * bots_arg_size + kk], BENCH[kk * bots_arg_size + jj]);
-              if (__apac_count_ok) {
-#pragma omp atomic
-                __apac_count--;
-              }
-            }
+#pragma omp taskwait depend(in : BENCH, BENCH[kk * bots_arg_size + jj], BENCH[kk * bots_arg_size + kk], BENCH[kk * bots_arg_size + kk][0], jj, kk) depend(inout : BENCH[kk * bots_arg_size + jj][0])
+            fwd(BENCH[kk * bots_arg_size + kk], BENCH[kk * bots_arg_size + jj]);
           }
         }
         for (int ii = kk + 1; ii < bots_arg_size; ii++) {

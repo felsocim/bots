@@ -7,6 +7,8 @@
 #include "moldyn.hpp"
 #include "tools.hpp"
 
+const double __apac_cutoff = getenv("APAC_EXECUTION_TIME_CUTOFF") ? atof(getenv("APAC_EXECUTION_TIME_CUTOFF")) : 2.22100e-6;
+
 Cell cell_create(int capacity) {
   Cell new_cell;
   memset(&new_cell, 0, sizeof(Cell));
@@ -81,22 +83,29 @@ void cell_self_compute(const Particle_symb* particles_symb, Particle_forces* par
   }
 }
 
-void cell_neighbor_compute(const Particle_symb* particles_symb, Particle_forces* particles_forces, const int size, const Particle_symb* particles_symbNeigh, const int sizeNeighbor) {
-  for (int idxTgt = 0; idxTgt < size; idxTgt++) {
-    for (int idxSrc = 0; idxSrc < sizeNeighbor; idxSrc++) {
-      const double dx = particles_symbNeigh[idxSrc].x - particles_symb[idxTgt].x;
-      const double dy = particles_symbNeigh[idxSrc].y - particles_symb[idxTgt].y;
-      const double dz = particles_symbNeigh[idxSrc].z - particles_symb[idxTgt].z;
-      const double square_distance = dx * dx + dy * dy + dz * dz + 1e-05;
-      const double distance = sqrt(square_distance);
-      const double cube_distance = square_distance * distance;
-      const double coef = particles_symb[idxTgt].weight * particles_symbNeigh[idxSrc].weight / cube_distance;
-      const double fx = dx * coef;
-      const double fy = dy * coef;
-      const double fz = dz * coef;
-      particles_forces[idxTgt].fx += fx;
-      particles_forces[idxTgt].fy += fy;
-      particles_forces[idxTgt].fz += fz;
+void cell_neighbor_compute(const Particle_symb* particles_symb, Particle_forces* particles_forces, const int size, const Particle_symb* const* particles_symbNeigh, const int* sizeNeighbor, const int x, const int y, const int z, const int nb_cells_per_dim) {
+  for (int idx_x_neigh = -1; idx_x_neigh <= 1; idx_x_neigh++) {
+    for (int idx_y_neigh = -1; idx_y_neigh <= 1; idx_y_neigh++) {
+      for (int idx_z_neigh = -1; idx_z_neigh <= 1; idx_z_neigh++) {
+        int neighbor = ((x + idx_x_neigh + nb_cells_per_dim) % nb_cells_per_dim * nb_cells_per_dim + (y + idx_y_neigh + nb_cells_per_dim) % nb_cells_per_dim) * nb_cells_per_dim + (z + idx_z_neigh + nb_cells_per_dim) % nb_cells_per_dim;
+        for (int idxTgt = 0; idxTgt < size; idxTgt++) {
+          for (int idxSrc = 0; idxSrc < sizeNeighbor[neighbor]; idxSrc++) {
+            const double dx = particles_symbNeigh[neighbor][idxSrc].x - particles_symb[idxTgt].x;
+            const double dy = particles_symbNeigh[neighbor][idxSrc].y - particles_symb[idxTgt].y;
+            const double dz = particles_symbNeigh[neighbor][idxSrc].z - particles_symb[idxTgt].z;
+            const double square_distance = dx * dx + dy * dy + dz * dz + 1e-05;
+            const double distance = sqrt(square_distance);
+            const double cube_distance = square_distance * distance;
+            const double coef = particles_symb[idxTgt].weight * particles_symbNeigh[neighbor][idxSrc].weight / cube_distance;
+            const double fx = dx * coef;
+            const double fy = dy * coef;
+            const double fz = dz * coef;
+            particles_forces[idxTgt].fx += fx;
+            particles_forces[idxTgt].fy += fy;
+            particles_forces[idxTgt].fz += fz;
+          }
+        }
+      }
     }
   }
 }
@@ -149,6 +158,36 @@ int grid_create(double box_width, double cell_width, const Particle_symb* src_pa
   return nb_cells_per_dim;
 }
 
+int grid_create_seq(double box_width, double cell_width, const Particle_symb* src_particles_symb, const Particle_forces* src_particles_forces, const int src_size, int** sizes, Particle_symb*** particles_symb, Particle_forces*** particles_forces) {
+  const int nb_cells_per_dim = (int)(box_width / cell_width);
+  const int capacity = nb_cells_per_dim * nb_cells_per_dim * nb_cells_per_dim;
+  *sizes = (int*)calloc(capacity, sizeof(int));
+  *particles_symb = (Particle_symb**)calloc(capacity, sizeof(Particle_symb*));
+  *particles_forces = (Particle_forces**)calloc(capacity, sizeof(Particle_forces*));
+  for (int idxPart = 0; idxPart < src_size; idxPart++) {
+    int cell_idx = grid_cell_idx_from_position(cell_width, nb_cells_per_dim, src_particles_symb[idxPart]);
+    (*sizes)[cell_idx]++;
+  }
+  for (int idx_x = 0; idx_x < nb_cells_per_dim; idx_x++) {
+    for (int idx_y = 0; idx_y < nb_cells_per_dim; idx_y++) {
+      for (int idx_z = 0; idx_z < nb_cells_per_dim; idx_z++) {
+        const int cell_idx = (idx_x * nb_cells_per_dim + idx_y) * nb_cells_per_dim + idx_z;
+        (*particles_symb)[cell_idx] = (Particle_symb*)calloc((*sizes)[cell_idx], sizeof(Particle_symb));
+        (*particles_forces)[cell_idx] = (Particle_forces*)calloc((*sizes)[cell_idx], sizeof(Particle_forces));
+      }
+    }
+  }
+  int* cpt = (int*)calloc(capacity, sizeof(int));
+  for (int idxPart = 0; idxPart < src_size; idxPart++) {
+    int cell_idx = grid_cell_idx_from_position(cell_width, nb_cells_per_dim, src_particles_symb[idxPart]);
+    (*particles_symb)[cell_idx][cpt[cell_idx]] = src_particles_symb[idxPart];
+    (*particles_forces)[cell_idx][cpt[cell_idx]] = src_particles_forces[idxPart];
+    cpt[cell_idx]++;
+  }
+  free(cpt);
+  return nb_cells_per_dim;
+}
+
 void grid_destroy(const int nb_cells_per_dim, int** sizes, Particle_symb*** particles_symb, Particle_forces*** particles_forces) {
   for (int idx_x = 0; idx_x < nb_cells_per_dim; idx_x++) {
     for (int idx_y = 0; idx_y < nb_cells_per_dim; idx_y++) {
@@ -168,33 +207,115 @@ void grid_destroy(const int nb_cells_per_dim, int** sizes, Particle_symb*** part
 }
 
 void grid_compute(const int nb_cells_per_dim, int* sizes, Particle_symb** particles_symb, Particle_forces** particles_forces) {
+#pragma omp taskgroup
+  {
+    if (!sizes || !particles_symb || !particles_forces) {
+      goto __apac_exit;
+    }
+    for (int idx_x = 0; idx_x < nb_cells_per_dim; idx_x++) {
+      for (int idx_y = 0; idx_y < nb_cells_per_dim; idx_y++) {
+        for (int idx_z = 0; idx_z < nb_cells_per_dim; idx_z++) {
+          int* me = new int((idx_x * nb_cells_per_dim + idx_y) * nb_cells_per_dim + idx_z);
+#pragma omp task default(shared) depend(in : me[0], nb_cells_per_dim, particles_forces, particles_forces[*me], particles_symb, particles_symb[0], particles_symb[0][0], particles_symb[*me], particles_symb[*me][0], sizes, sizes[0], sizes[*me]) depend(inout : particles_forces[*me][0]) firstprivate(idx_z, idx_y, idx_x) if (-0.00071934973929 + nb_cells_per_dim * 1.82995658433e-05 > __apac_cutoff) firstprivate(me)
+          {
+            cell_self_compute(particles_symb[*me], particles_forces[*me], sizes[*me]);
+            cell_neighbor_compute(particles_symb[*me], particles_forces[*me], sizes[*me], particles_symb, sizes, idx_x, idx_y, idx_z, nb_cells_per_dim);
+          }
+#pragma omp task default(shared) depend(inout : me[0]) firstprivate(me)
+          delete me;
+        }
+      }
+    }
+  __apac_exit:;
+  }
+}
+
+void grid_compute_seq(const int nb_cells_per_dim, int* sizes, Particle_symb** particles_symb, Particle_forces** particles_forces) {
   if (!sizes || !particles_symb || !particles_forces) {
     return;
   }
-  int me;
-  int neighbor;
   for (int idx_x = 0; idx_x < nb_cells_per_dim; idx_x++) {
     for (int idx_y = 0; idx_y < nb_cells_per_dim; idx_y++) {
       for (int idx_z = 0; idx_z < nb_cells_per_dim; idx_z++) {
-        me = (idx_x * nb_cells_per_dim + idx_y) * nb_cells_per_dim + idx_z;
-        const Particle_symb* me_particles_symb = particles_symb[me];
-        Particle_forces* me_particles_forces = particles_forces[me];
-        cell_self_compute(me_particles_symb, me_particles_forces, sizes[me]);
-        for (int idx_x_neigh = -1; idx_x_neigh <= 1; idx_x_neigh++) {
-          for (int idx_y_neigh = -1; idx_y_neigh <= 1; idx_y_neigh++) {
-            for (int idx_z_neigh = -1; idx_z_neigh <= 1; idx_z_neigh++) {
-              neighbor = ((idx_x + idx_x_neigh + nb_cells_per_dim) % nb_cells_per_dim * nb_cells_per_dim + (idx_y + idx_y_neigh + nb_cells_per_dim) % nb_cells_per_dim) * nb_cells_per_dim + (idx_z + idx_z_neigh + nb_cells_per_dim) % nb_cells_per_dim;
-              const Particle_symb* neighbor_particles_symb = particles_symb[neighbor];
-              cell_neighbor_compute(me_particles_symb, me_particles_forces, sizes[me], neighbor_particles_symb, sizes[neighbor]);
-            }
-          }
-        }
+        int me = (idx_x * nb_cells_per_dim + idx_y) * nb_cells_per_dim + idx_z;
+        cell_self_compute(particles_symb[me], particles_forces[me], sizes[me]);
+        cell_neighbor_compute(particles_symb[me], particles_forces[me], sizes[me], particles_symb, sizes, idx_x, idx_y, idx_z, nb_cells_per_dim);
       }
     }
   }
 }
 
-void grid_update(const int nb_particles, const int nb_cells_per_dim, const double box_width, const double cell_width, double time_step, int** sizes, Particle_symb*** particles_symb, Particle_forces*** particles_forces) {
+void grid_update(const int nb_cells_per_dim, const double box_width, const double cell_width, double time_step, int** sizes, Particle_symb*** particles_symb, Particle_forces*** particles_forces) {
+  int* src_sizes = *sizes;
+  Particle_symb** src_particles_symb = *particles_symb;
+  Particle_forces** src_particles_forces = *particles_forces;
+  const int capacity = nb_cells_per_dim * nb_cells_per_dim * nb_cells_per_dim;
+  *sizes = (int*)calloc(capacity, sizeof(int));
+  *particles_symb = (Particle_symb**)calloc(capacity, sizeof(Particle_symb*));
+  *particles_forces = (Particle_forces**)calloc(capacity, sizeof(Particle_forces*));
+  for (int idx_x = 0; idx_x < nb_cells_per_dim; idx_x++) {
+    for (int idx_y = 0; idx_y < nb_cells_per_dim; idx_y++) {
+      for (int idx_z = 0; idx_z < nb_cells_per_dim; idx_z++) {
+        const int cell_idx = (idx_x * nb_cells_per_dim + idx_y) * nb_cells_per_dim + idx_z;
+        for (int idxPart = 0; idxPart < src_sizes[cell_idx]; idxPart++) {
+          src_particles_symb[cell_idx][idxPart].vx += src_particles_forces[cell_idx][idxPart].fx / src_particles_symb[cell_idx][idxPart].weight * time_step;
+          src_particles_symb[cell_idx][idxPart].vy += src_particles_forces[cell_idx][idxPart].fy / src_particles_symb[cell_idx][idxPart].weight * time_step;
+          src_particles_symb[cell_idx][idxPart].vz += src_particles_forces[cell_idx][idxPart].fz / src_particles_symb[cell_idx][idxPart].weight * time_step;
+          src_particles_symb[cell_idx][idxPart].x += src_particles_symb[cell_idx][idxPart].vx * time_step;
+          src_particles_symb[cell_idx][idxPart].y += src_particles_symb[cell_idx][idxPart].vy * time_step;
+          src_particles_symb[cell_idx][idxPart].z += src_particles_symb[cell_idx][idxPart].vz * time_step;
+          while (src_particles_symb[cell_idx][idxPart].x < 0) {
+            src_particles_symb[cell_idx][idxPart].x += box_width;
+          }
+          while (src_particles_symb[cell_idx][idxPart].x >= box_width) {
+            src_particles_symb[cell_idx][idxPart].x -= box_width;
+          }
+          while (src_particles_symb[cell_idx][idxPart].y < 0) {
+            src_particles_symb[cell_idx][idxPart].y += box_width;
+          }
+          while (src_particles_symb[cell_idx][idxPart].y >= box_width) {
+            src_particles_symb[cell_idx][idxPart].y -= box_width;
+          }
+          while (src_particles_symb[cell_idx][idxPart].z < 0) {
+            src_particles_symb[cell_idx][idxPart].z += box_width;
+          }
+          while (src_particles_symb[cell_idx][idxPart].z >= box_width) {
+            src_particles_symb[cell_idx][idxPart].z -= box_width;
+          }
+          int up_cell_idx = grid_cell_idx_from_position(cell_width, nb_cells_per_dim, src_particles_symb[cell_idx][idxPart]);
+          (*sizes)[up_cell_idx]++;
+        }
+      }
+    }
+  }
+  for (int idx_x = 0; idx_x < nb_cells_per_dim; idx_x++) {
+    for (int idx_y = 0; idx_y < nb_cells_per_dim; idx_y++) {
+      for (int idx_z = 0; idx_z < nb_cells_per_dim; idx_z++) {
+        const int cell_idx = (idx_x * nb_cells_per_dim + idx_y) * nb_cells_per_dim + idx_z;
+        (*particles_symb)[cell_idx] = (Particle_symb*)calloc((*sizes)[cell_idx], sizeof(Particle_symb));
+        (*particles_forces)[cell_idx] = (Particle_forces*)calloc((*sizes)[cell_idx], sizeof(Particle_forces));
+      }
+    }
+  }
+  int* cpt = (int*)calloc(capacity, sizeof(int));
+  for (int idx_x = 0; idx_x < nb_cells_per_dim; idx_x++) {
+    for (int idx_y = 0; idx_y < nb_cells_per_dim; idx_y++) {
+      for (int idx_z = 0; idx_z < nb_cells_per_dim; idx_z++) {
+        const int cell_idx = (idx_x * nb_cells_per_dim + idx_y) * nb_cells_per_dim + idx_z;
+        for (int idxPart = 0; idxPart < src_sizes[cell_idx]; idxPart++) {
+          int up_cell_idx = grid_cell_idx_from_position(cell_width, nb_cells_per_dim, src_particles_symb[cell_idx][idxPart]);
+          (*particles_symb)[up_cell_idx][cpt[up_cell_idx]] = src_particles_symb[cell_idx][idxPart];
+          (*particles_forces)[up_cell_idx][cpt[up_cell_idx]] = src_particles_forces[cell_idx][idxPart];
+          cpt[up_cell_idx]++;
+        }
+      }
+    }
+  }
+  free(cpt);
+  grid_destroy(nb_cells_per_dim, &src_sizes, &src_particles_symb, &src_particles_forces);
+}
+
+void grid_update_seq(const int nb_cells_per_dim, const double box_width, const double cell_width, double time_step, int** sizes, Particle_symb*** particles_symb, Particle_forces*** particles_forces) {
   int* src_sizes = *sizes;
   Particle_symb** src_particles_symb = *particles_symb;
   Particle_forces** src_particles_forces = *particles_forces;
@@ -283,19 +404,26 @@ void fill_cell_with_rand_particles(Cell* inCell, double box_width, int size) {
   }
 }
 
-void compute(const int steps, const int nb_particles, const int nb_cells_per_dim, const double box_width, const double cell_width, double time_step, int** sizes, Particle_symb*** particles_symb, Particle_forces*** particles_forces) {
+void compute(const int steps, const int nb_cells_per_dim, const double box_width, const double cell_width, double time_step, int** sizes, Particle_symb*** particles_symb, Particle_forces*** particles_forces) {
 #pragma omp parallel
 #pragma omp master
 #pragma omp taskgroup
   {
     for (int idx = 0; idx < steps; idx++) {
-#pragma omp task default(shared) depend(in : box_width, cell_width, nb_cells_per_dim, nb_particles, particles_forces, particles_symb, sizes, time_step) depend(inout : particles_forces[0], particles_forces[0][0], particles_forces[0][0][0], particles_symb[0], particles_symb[0][0], particles_symb[0][0][0], sizes[0], sizes[0][0])
+#pragma omp task default(shared) depend(in : box_width, cell_width, nb_cells_per_dim, particles_forces, particles_symb, sizes, time_step) depend(inout : particles_forces[0], particles_forces[0][0], particles_forces[0][0][0], particles_symb[0], particles_symb[0][0], particles_symb[0][0][0], sizes[0], sizes[0][0])
       {
         grid_compute(nb_cells_per_dim, *sizes, *particles_symb, *particles_forces);
-        grid_update(nb_particles, nb_cells_per_dim, box_width, cell_width, time_step, sizes, particles_symb, particles_forces);
+        grid_update(nb_cells_per_dim, box_width, cell_width, time_step, sizes, particles_symb, particles_forces);
       }
     }
   __apac_exit:;
+  }
+}
+
+void compute_seq(const int steps, const int nb_cells_per_dim, const double box_width, const double cell_width, double time_step, int** sizes, Particle_symb*** particles_symb, Particle_forces*** particles_forces) {
+  for (int idx = 0; idx < steps; idx++) {
+    grid_compute_seq(nb_cells_per_dim, *sizes, *particles_symb, *particles_forces);
+    grid_update_seq(nb_cells_per_dim, box_width, cell_width, time_step, sizes, particles_symb, particles_forces);
   }
 }
 

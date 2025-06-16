@@ -138,12 +138,12 @@ int grid_create(double box_width, double cell_width, const Particle_symb* src_pa
     *particles_forces = (Particle_forces**)calloc(capacity, sizeof(Particle_forces*));
     for (int idxPart = 0; idxPart < src_size; idxPart++) {
       int* cell_idx = new int();
-#pragma omp task default(shared) depend(in : *sizes, cell_width, nb_cells_per_dim, sizes, src_particles_symb, src_particles_symb[idxPart], cell_idx) depend(inout : (*sizes)[*cell_idx], cell_idx[0]) firstprivate(idxPart)
-      {
-        *cell_idx = grid_cell_idx_from_position(cell_width, nb_cells_per_dim, src_particles_symb[idxPart]);
-        (*sizes)[*cell_idx]++;
-      }
-#pragma omp task default(shared) depend(inout : cell_idx)
+#pragma omp task default(shared) depend(in : cell_width, nb_cells_per_dim, src_particles_symb, src_particles_symb[idxPart]) depend(inout : cell_idx[0]) firstprivate(idxPart) firstprivate(cell_idx)
+      *cell_idx = grid_cell_idx_from_position(cell_width, nb_cells_per_dim, src_particles_symb[idxPart]);
+#pragma omp taskwait depend(in : cell_idx[0])
+#pragma omp taskwait depend(in : *sizes, cell_idx[0], sizes) depend(inout : (*sizes)[*cell_idx])
+      (*sizes)[*cell_idx]++;
+#pragma omp task default(shared) depend(inout : cell_idx[0]) firstprivate(cell_idx)
       delete cell_idx;
     }
     for (int idx_x = 0; idx_x < nb_cells_per_dim; idx_x++) {
@@ -161,16 +161,16 @@ int grid_create(double box_width, double cell_width, const Particle_symb* src_pa
     cpt = (int*)calloc(capacity, sizeof(int));
     for (int idxPart = 0; idxPart < src_size; idxPart++) {
       int* cell_idx = new int();
-#pragma omp task default(shared) depend(in : cell_width, nb_cells_per_dim, src_particles_symb, src_particles_symb[idxPart], cell_idx) depend(inout : cell_idx[0]) firstprivate(idxPart)
+#pragma omp task default(shared) depend(in : cell_width, nb_cells_per_dim, src_particles_symb, src_particles_symb[idxPart]) depend(inout : cell_idx[0]) firstprivate(idxPart) firstprivate(cell_idx)
       *cell_idx = grid_cell_idx_from_position(cell_width, nb_cells_per_dim, src_particles_symb[idxPart]);
-#pragma omp taskwait depend(in : cell_idx[0], cell_idx)
-#pragma omp taskwait depend(in : (*particles_symb)[*cell_idx], *particles_symb, cell_idx[0], cpt, cpt[*cell_idx], idxPart, particles_symb, src_particles_symb, src_particles_symb[idxPart], cell_idx) depend(inout : (*particles_symb)[*cell_idx][cpt[*cell_idx]])
+#pragma omp taskwait depend(in : cell_idx[0])
+#pragma omp taskwait depend(in : (*particles_symb)[*cell_idx], *particles_symb, cell_idx[0], cpt, cpt[*cell_idx], idxPart, particles_symb, src_particles_symb, src_particles_symb[idxPart]) depend(inout : (*particles_symb)[*cell_idx][cpt[*cell_idx]])
       (*particles_symb)[*cell_idx][cpt[*cell_idx]] = src_particles_symb[idxPart];
-#pragma omp taskwait depend(in : (*particles_forces)[*cell_idx], *particles_forces, cell_idx[0], cpt, cpt[*cell_idx], idxPart, particles_forces, src_particles_forces, src_particles_forces[idxPart], cell_idx) depend(inout : (*particles_forces)[*cell_idx][cpt[*cell_idx]])
+#pragma omp taskwait depend(in : (*particles_forces)[*cell_idx], *particles_forces, cell_idx[0], cpt, cpt[*cell_idx], idxPart, particles_forces, src_particles_forces, src_particles_forces[idxPart]) depend(inout : (*particles_forces)[*cell_idx][cpt[*cell_idx]])
       (*particles_forces)[*cell_idx][cpt[*cell_idx]] = src_particles_forces[idxPart];
-#pragma omp taskwait depend(in : cell_idx[0], cpt, cell_idx) depend(inout : cpt[*cell_idx])
+#pragma omp taskwait depend(in : cell_idx[0], cpt) depend(inout : cpt[*cell_idx])
       cpt[*cell_idx]++;
-#pragma omp task default(shared) depend(inout : cell_idx)
+#pragma omp task default(shared) depend(inout : cell_idx[0]) firstprivate(cell_idx)
       delete cell_idx;
     }
     free(cpt);
@@ -239,12 +239,12 @@ void grid_compute(const int nb_cells_per_dim, int* sizes, Particle_symb** partic
       for (int idx_y = 0; idx_y < nb_cells_per_dim; idx_y++) {
         for (int idx_z = 0; idx_z < nb_cells_per_dim; idx_z++) {
           int* me = new int((idx_x * nb_cells_per_dim + idx_y) * nb_cells_per_dim + idx_z);
-#pragma omp task default(shared) depend(in : me[0], nb_cells_per_dim, particles_forces, particles_forces[*me], particles_symb, particles_symb[0], particles_symb[0][0], particles_symb[*me], particles_symb[*me][0], sizes, sizes[0], sizes[*me], me) depend(inout : particles_forces[*me][0]) firstprivate(idx_z, idx_y, idx_x)
+#pragma omp task default(shared) depend(in : me[0], nb_cells_per_dim, particles_forces, particles_forces[*me], particles_symb, particles_symb[0], particles_symb[0][0], particles_symb[*me], particles_symb[*me][0], sizes, sizes[0], sizes[*me]) depend(inout : particles_forces[*me][0]) firstprivate(idx_z, idx_y, idx_x) firstprivate(me)
           {
             cell_self_compute(particles_symb[*me], particles_forces[*me], sizes[*me]);
             cell_neighbor_compute(particles_symb[*me], particles_forces[*me], sizes[*me], particles_symb, sizes, idx_x, idx_y, idx_z, nb_cells_per_dim);
           }
-#pragma omp task default(shared) depend(inout : me)
+#pragma omp task default(shared) depend(inout : me[0]) firstprivate(me)
           delete me;
         }
       }
@@ -283,52 +283,53 @@ void grid_update(const int nb_cells_per_dim, const double box_width, const doubl
         for (int idx_z = 0; idx_z < nb_cells_per_dim; idx_z++) {
           const int* const cell_idx = new const int((idx_x * nb_cells_per_dim + idx_y) * nb_cells_per_dim + idx_z);
           for (int idxPart = 0; idxPart < src_sizes[*cell_idx]; idxPart++) {
+#pragma omp taskwait depend(in : cell_idx[0], idxPart, particles_forces, time_step) depend(inout : particles_symb)
             src_particles_symb[*cell_idx][idxPart].vx += src_particles_forces[*cell_idx][idxPart].fx / src_particles_symb[*cell_idx][idxPart].weight * time_step;
             src_particles_symb[*cell_idx][idxPart].vy += src_particles_forces[*cell_idx][idxPart].fy / src_particles_symb[*cell_idx][idxPart].weight * time_step;
             src_particles_symb[*cell_idx][idxPart].vz += src_particles_forces[*cell_idx][idxPart].fz / src_particles_symb[*cell_idx][idxPart].weight * time_step;
             src_particles_symb[*cell_idx][idxPart].x += src_particles_symb[*cell_idx][idxPart].vx * time_step;
             src_particles_symb[*cell_idx][idxPart].y += src_particles_symb[*cell_idx][idxPart].vy * time_step;
             src_particles_symb[*cell_idx][idxPart].z += src_particles_symb[*cell_idx][idxPart].vz * time_step;
-#pragma omp taskwait depend(in : cell_idx) depend(inout : particles_symb)
+#pragma omp taskwait depend(in : cell_idx[0]) depend(inout : particles_symb)
             while (src_particles_symb[*cell_idx][idxPart].x < 0) {
-#pragma omp taskwait depend(in : box_width, cell_idx, idxPart) depend(inout : particles_symb)
+#pragma omp taskwait depend(in : box_width, cell_idx[0], idxPart) depend(inout : particles_symb)
               src_particles_symb[*cell_idx][idxPart].x += box_width;
             }
-#pragma omp taskwait depend(in : box_width, cell_idx) depend(inout : particles_symb)
+#pragma omp taskwait depend(in : box_width, cell_idx[0]) depend(inout : particles_symb)
             while (src_particles_symb[*cell_idx][idxPart].x >= box_width) {
-#pragma omp taskwait depend(in : box_width, cell_idx, idxPart) depend(inout : particles_symb)
+#pragma omp taskwait depend(in : box_width, cell_idx[0], idxPart) depend(inout : particles_symb)
               src_particles_symb[*cell_idx][idxPart].x -= box_width;
             }
-#pragma omp taskwait depend(in : cell_idx) depend(inout : particles_symb)
+#pragma omp taskwait depend(in : cell_idx[0]) depend(inout : particles_symb)
             while (src_particles_symb[*cell_idx][idxPart].y < 0) {
-#pragma omp taskwait depend(in : box_width, cell_idx, idxPart) depend(inout : particles_symb)
+#pragma omp taskwait depend(in : box_width, cell_idx[0], idxPart) depend(inout : particles_symb)
               src_particles_symb[*cell_idx][idxPart].y += box_width;
             }
-#pragma omp taskwait depend(in : box_width, cell_idx) depend(inout : particles_symb)
+#pragma omp taskwait depend(in : box_width, cell_idx[0]) depend(inout : particles_symb)
             while (src_particles_symb[*cell_idx][idxPart].y >= box_width) {
-#pragma omp taskwait depend(in : box_width, cell_idx, idxPart) depend(inout : particles_symb)
+#pragma omp taskwait depend(in : box_width, cell_idx[0], idxPart) depend(inout : particles_symb)
               src_particles_symb[*cell_idx][idxPart].y -= box_width;
             }
-#pragma omp taskwait depend(in : cell_idx) depend(inout : particles_symb)
+#pragma omp taskwait depend(in : cell_idx[0]) depend(inout : particles_symb)
             while (src_particles_symb[*cell_idx][idxPart].z < 0) {
-#pragma omp taskwait depend(in : box_width, cell_idx, idxPart) depend(inout : particles_symb)
+#pragma omp taskwait depend(in : box_width, cell_idx[0], idxPart) depend(inout : particles_symb)
               src_particles_symb[*cell_idx][idxPart].z += box_width;
             }
-#pragma omp taskwait depend(in : box_width, cell_idx) depend(inout : particles_symb)
+#pragma omp taskwait depend(in : box_width, cell_idx[0]) depend(inout : particles_symb)
             while (src_particles_symb[*cell_idx][idxPart].z >= box_width) {
-#pragma omp taskwait depend(in : box_width, cell_idx, idxPart) depend(inout : particles_symb)
+#pragma omp taskwait depend(in : box_width, cell_idx[0], idxPart) depend(inout : particles_symb)
               src_particles_symb[*cell_idx][idxPart].z -= box_width;
             }
             int* up_cell_idx = new int();
-#pragma omp task default(shared) depend(in : *sizes, cell_width, nb_cells_per_dim, particles_symb, sizes, up_cell_idx) depend(inout : (*sizes)[*up_cell_idx], up_cell_idx[0])
-            {
-              *up_cell_idx = grid_cell_idx_from_position(cell_width, nb_cells_per_dim, src_particles_symb[*cell_idx][idxPart]);
-              (*sizes)[*up_cell_idx]++;
-            }
-#pragma omp task default(shared) depend(inout : up_cell_idx)
+#pragma omp task default(shared) depend(in : cell_width, nb_cells_per_dim, particles_symb) depend(inout : up_cell_idx[0]) firstprivate(up_cell_idx)
+            *up_cell_idx = grid_cell_idx_from_position(cell_width, nb_cells_per_dim, src_particles_symb[*cell_idx][idxPart]);
+#pragma omp taskwait depend(in : up_cell_idx[0])
+#pragma omp taskwait depend(in : *sizes, sizes, up_cell_idx[0]) depend(inout : (*sizes)[*up_cell_idx])
+            (*sizes)[*up_cell_idx]++;
+#pragma omp task default(shared) depend(inout : up_cell_idx[0]) firstprivate(up_cell_idx)
             delete up_cell_idx;
           }
-#pragma omp task default(shared) depend(inout : cell_idx)
+#pragma omp task default(shared) depend(inout : cell_idx[0]) firstprivate(cell_idx)
           delete cell_idx;
         }
       }
@@ -337,9 +338,7 @@ void grid_update(const int nb_cells_per_dim, const double box_width, const doubl
       for (int idx_y = 0; idx_y < nb_cells_per_dim; idx_y++) {
         for (int idx_z = 0; idx_z < nb_cells_per_dim; idx_z++) {
           const int cell_idx = (idx_x * nb_cells_per_dim + idx_y) * nb_cells_per_dim + idx_z;
-#pragma omp taskwait depend(in : (*sizes)[cell_idx], *particles_symb, *sizes, cell_idx, particles_symb, sizes) depend(inout : (*particles_symb)[cell_idx])
           (*particles_symb)[cell_idx] = (Particle_symb*)calloc((*sizes)[cell_idx], sizeof(Particle_symb));
-#pragma omp taskwait depend(in : (*sizes)[cell_idx], *particles_forces, *sizes, cell_idx, particles_forces, sizes) depend(inout : (*particles_forces)[cell_idx])
           (*particles_forces)[cell_idx] = (Particle_forces*)calloc((*sizes)[cell_idx], sizeof(Particle_forces));
         }
       }
@@ -352,19 +351,19 @@ void grid_update(const int nb_cells_per_dim, const double box_width, const doubl
           const int* const cell_idx = new const int((idx_x * nb_cells_per_dim + idx_y) * nb_cells_per_dim + idx_z);
           for (int idxPart = 0; idxPart < src_sizes[*cell_idx]; idxPart++) {
             int* up_cell_idx = new int();
-#pragma omp task default(shared) depend(in : cell_width, nb_cells_per_dim, particles_symb, up_cell_idx) depend(inout : up_cell_idx[0])
+#pragma omp task default(shared) depend(in : cell_width, nb_cells_per_dim, particles_symb) depend(inout : up_cell_idx[0]) firstprivate(up_cell_idx)
             *up_cell_idx = grid_cell_idx_from_position(cell_width, nb_cells_per_dim, src_particles_symb[*cell_idx][idxPart]);
-#pragma omp taskwait depend(in : up_cell_idx[0], up_cell_idx)
-#pragma omp taskwait depend(in : (*particles_symb)[*up_cell_idx], *particles_symb, cpt, cpt[*up_cell_idx], particles_symb, up_cell_idx[0], up_cell_idx) depend(inout : (*particles_symb)[*up_cell_idx][cpt[*up_cell_idx]])
+#pragma omp taskwait depend(in : up_cell_idx[0])
+#pragma omp taskwait depend(in : (*particles_symb)[*up_cell_idx], *particles_symb, cpt, cpt[*up_cell_idx], particles_symb, up_cell_idx[0]) depend(inout : (*particles_symb)[*up_cell_idx][cpt[*up_cell_idx]])
             (*particles_symb)[*up_cell_idx][cpt[*up_cell_idx]] = src_particles_symb[*cell_idx][idxPart];
-#pragma omp taskwait depend(in : (*particles_forces)[*up_cell_idx], *particles_forces, cpt, cpt[*up_cell_idx], particles_forces, up_cell_idx[0], up_cell_idx) depend(inout : (*particles_forces)[*up_cell_idx][cpt[*up_cell_idx]])
+#pragma omp taskwait depend(in : (*particles_forces)[*up_cell_idx], *particles_forces, cpt, cpt[*up_cell_idx], particles_forces, up_cell_idx[0]) depend(inout : (*particles_forces)[*up_cell_idx][cpt[*up_cell_idx]])
             (*particles_forces)[*up_cell_idx][cpt[*up_cell_idx]] = src_particles_forces[*cell_idx][idxPart];
-#pragma omp taskwait depend(in : cpt, up_cell_idx[0], up_cell_idx) depend(inout : cpt[*up_cell_idx])
+#pragma omp taskwait depend(in : cpt, up_cell_idx[0]) depend(inout : cpt[*up_cell_idx])
             cpt[*up_cell_idx]++;
-#pragma omp task default(shared) depend(inout : up_cell_idx)
+#pragma omp task default(shared) depend(inout : up_cell_idx[0]) firstprivate(up_cell_idx)
             delete up_cell_idx;
           }
-#pragma omp task default(shared) depend(inout : cell_idx)
+#pragma omp task default(shared) depend(inout : cell_idx[0]) firstprivate(cell_idx)
           delete cell_idx;
         }
       }

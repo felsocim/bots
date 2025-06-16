@@ -454,9 +454,12 @@ endif
 endif
 
 ifeq ($(VERSION),omp-apac)
+wipe: clean
+	rm -fr $(PROGRAM).cpp $(foreach cutoff,$(CUTOFF_VERSIONS),$(PROGRAM)-$(cutoff).cpp) *.log apac_profiling.hpp *.in_profiling.cpp *.profile *.model
 clean:
-	rm -fr $(PROGRAM).cpp $(foreach cutoff,$(CUTOFF_VERSIONS),$(PROGRAM)-$(cutoff).cpp) *.o *.log apac_profiling.hpp *.in_profiling.cpp *.profile *.model
+	rm -fr *.o
 else
+wipe: clean
 clean:
 	rm -fr *.o
 endif

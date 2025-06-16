@@ -44,14 +44,8 @@ void fib0(int n) {
 #pragma omp master
 #pragma omp taskgroup
   {
-#pragma omp task default(shared) depend(in : n) depend(inout : par_res)
-    {
-#pragma omp critical
-      {
-        par_res = fib(n);
-        bots_message("Fibonacci result for %d is %lld\n", n, par_res);
-      }
-    }
+    par_res = fib(n);
+    bots_message("Fibonacci result for %d is %lld\n", n, par_res);
   __apac_exit:;
   }
 }
@@ -69,14 +63,12 @@ long long int fib_verify_value(int n) {
 int fib_verify(int n) {
   int result;
   if (bots_sequential_flag) {
-#pragma omp critical
     if (par_res == seq_res)
       result = 1;
     else
       result = 2;
   } else {
     seq_res = fib_verify_value(n);
-#pragma omp critical
     if (par_res == seq_res)
       result = 1;
     else

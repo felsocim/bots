@@ -88,37 +88,13 @@ long long int par_res;
 long long int seq_res;
 
 void fib0(int n) {
-  int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
-  int __apac_depth_local = __apac_depth;
-  int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
-  if (__apac_depth_ok) {
 #pragma omp parallel
 #pragma omp master
 #pragma omp taskgroup
-    {
-      if (__apac_count_ok) {
-#pragma omp atomic
-        __apac_count++;
-      }
-#pragma omp task default(shared) depend(in : n) depend(inout : par_res) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
-      {
-        if (__apac_count_ok || __apac_depth_ok) {
-          __apac_depth = __apac_depth_local + 1;
-        }
-#pragma omp critical
-        {
-          par_res = fib(n);
-          bots_message("Fibonacci result for %d is %lld\n", n, par_res);
-        }
-        if (__apac_count_ok) {
-#pragma omp atomic
-          __apac_count--;
-        }
-      }
-    __apac_exit:;
-    }
-  } else {
-    fib0_seq(n);
+  {
+    par_res = fib(n);
+    bots_message("Fibonacci result for %d is %lld\n", n, par_res);
+  __apac_exit:;
   }
 }
 
@@ -135,14 +111,12 @@ long long int fib_verify_value(int n) {
 int fib_verify(int n) {
   int result;
   if (bots_sequential_flag) {
-#pragma omp critical
     if (par_res == seq_res)
       result = 1;
     else
       result = 2;
   } else {
     seq_res = fib_verify_value(n);
-#pragma omp critical
     if (par_res == seq_res)
       result = 1;
     else

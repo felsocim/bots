@@ -20,7 +20,7 @@
 
 SKIP = checkmat,genmat,print_structure,allocate_clean_block,sparselu_init,sparselu_fini,sparselu_check,prealloc_sparselu
 MAIN = sparselu
-
+APAC_MODELIZER_ADDENDUM = --loop-centric
 BASE_DIR = ../../
 
 #

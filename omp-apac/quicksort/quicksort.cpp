@@ -52,13 +52,14 @@ void sort_core(int* in_out_data, int right_limit) {
       insertion_sort(in_out_data, right_limit);
     } else {
       int* pivot = new int();
-#pragma omp task default(shared) depend(in : in_out_data, right_limit, pivot) depend(inout : in_out_data[0], pivot[0])
+#pragma omp task default(shared) depend(in : in_out_data, right_limit) depend(inout : in_out_data[0], pivot[0]) firstprivate(pivot)
       partition(pivot, in_out_data, right_limit);
-#pragma omp task default(shared) depend(in : in_out_data, pivot[0], pivot) depend(inout : in_out_data[0])
+#pragma omp taskwait depend(in : pivot[0])
+#pragma omp task default(shared) depend(in : in_out_data, pivot[0]) depend(inout : in_out_data[0]) firstprivate(pivot)
       sort_core(&in_out_data[0], *pivot);
-#pragma omp task default(shared) depend(in : in_out_data, pivot[0], right_limit, pivot) depend(inout : in_out_data[*pivot + 1])
+#pragma omp task default(shared) depend(in : in_out_data, pivot[0], right_limit) depend(inout : in_out_data[*pivot + 1]) firstprivate(pivot)
       sort_core(&in_out_data[*pivot + 1], right_limit - (*pivot + 1));
-#pragma omp task default(shared) depend(inout : pivot)
+#pragma omp task default(shared) depend(inout : pivot[0]) firstprivate(pivot)
       delete pivot;
     }
   __apac_exit:;
@@ -70,7 +71,6 @@ void sort(int* in_out_data, int in_size) {
 #pragma omp master
 #pragma omp taskgroup
   {
-#pragma omp task default(shared) depend(in : in_out_data, in_size) depend(inout : in_out_data[0])
     sort_core(in_out_data, in_size);
   __apac_exit:;
   }

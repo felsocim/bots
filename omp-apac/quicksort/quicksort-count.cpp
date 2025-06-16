@@ -72,7 +72,7 @@ void sort_core(int* in_out_data, int right_limit) {
 #pragma omp atomic
         __apac_count++;
       }
-#pragma omp task default(shared) depend(in : in_out_data, right_limit, pivot) depend(inout : in_out_data[0], pivot[0]) if (__apac_count_ok)
+#pragma omp task default(shared) depend(in : in_out_data, right_limit) depend(inout : in_out_data[0], pivot[0]) if (__apac_count_ok) firstprivate(pivot)
       {
         partition(pivot, in_out_data, right_limit);
         if (__apac_count_ok) {
@@ -84,7 +84,8 @@ void sort_core(int* in_out_data, int right_limit) {
 #pragma omp atomic
         __apac_count++;
       }
-#pragma omp task default(shared) depend(in : in_out_data, pivot[0], pivot) depend(inout : in_out_data[0]) if (__apac_count_ok)
+#pragma omp taskwait depend(in : pivot[0])
+#pragma omp task default(shared) depend(in : in_out_data, pivot[0]) depend(inout : in_out_data[0]) if (__apac_count_ok) firstprivate(pivot)
       {
         sort_core(&in_out_data[0], *pivot);
         if (__apac_count_ok) {
@@ -96,7 +97,7 @@ void sort_core(int* in_out_data, int right_limit) {
 #pragma omp atomic
         __apac_count++;
       }
-#pragma omp task default(shared) depend(in : in_out_data, pivot[0], right_limit, pivot) depend(inout : in_out_data[*pivot + 1]) if (__apac_count_ok)
+#pragma omp task default(shared) depend(in : in_out_data, pivot[0], right_limit) depend(inout : in_out_data[*pivot + 1]) if (__apac_count_ok) firstprivate(pivot)
       {
         sort_core(&in_out_data[*pivot + 1], right_limit - (*pivot + 1));
         if (__apac_count_ok) {
@@ -108,7 +109,7 @@ void sort_core(int* in_out_data, int right_limit) {
 #pragma omp atomic
         __apac_count++;
       }
-#pragma omp task default(shared) depend(inout : pivot) if (__apac_count_ok)
+#pragma omp task default(shared) depend(inout : pivot[0]) if (__apac_count_ok) firstprivate(pivot)
       {
         delete pivot;
         if (__apac_count_ok) {
@@ -122,23 +123,11 @@ void sort_core(int* in_out_data, int right_limit) {
 }
 
 void sort(int* in_out_data, int in_size) {
-  int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
 #pragma omp parallel
 #pragma omp master
 #pragma omp taskgroup
   {
-    if (__apac_count_ok) {
-#pragma omp atomic
-      __apac_count++;
-    }
-#pragma omp task default(shared) depend(in : in_out_data, in_size) depend(inout : in_out_data[0]) if (__apac_count_ok)
-    {
-      sort_core(in_out_data, in_size);
-      if (__apac_count_ok) {
-#pragma omp atomic
-        __apac_count--;
-      }
-    }
+    sort_core(in_out_data, in_size);
   __apac_exit:;
   }
 }

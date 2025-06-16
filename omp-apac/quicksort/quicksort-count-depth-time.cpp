@@ -89,7 +89,7 @@ void sort_core(int* in_out_data, int right_limit) {
 #pragma omp atomic
           __apac_count++;
         }
-#pragma omp task default(shared) depend(in : in_out_data, pivot[0], pivot) depend(inout : in_out_data[0]) firstprivate(__apac_depth_local) if ((__apac_count_ok || __apac_depth_ok) && -0.000413948398029 + *pivot * 1.71833531475e-07 > __apac_cutoff)
+#pragma omp task default(shared) depend(in : in_out_data, pivot[0]) depend(inout : in_out_data[0]) firstprivate(__apac_depth_local) if ((__apac_count_ok || __apac_depth_ok) && -0.000709967816622 + *pivot * 2.33371747841e-07 > __apac_cutoff) firstprivate(pivot)
         {
           if (__apac_count_ok || __apac_depth_ok) {
             __apac_depth = __apac_depth_local + 1;
@@ -104,7 +104,7 @@ void sort_core(int* in_out_data, int right_limit) {
 #pragma omp atomic
           __apac_count++;
         }
-#pragma omp task default(shared) depend(in : in_out_data, pivot[0], right_limit, pivot) depend(inout : in_out_data[*pivot + 1]) firstprivate(__apac_depth_local) if ((__apac_count_ok || __apac_depth_ok) && -0.000619655014041 + (right_limit - (*pivot + 1)) * 1.7487391201e-07 > __apac_cutoff)
+#pragma omp task default(shared) depend(in : in_out_data, pivot[0], right_limit) depend(inout : in_out_data[*pivot + 1]) firstprivate(__apac_depth_local) if ((__apac_count_ok || __apac_depth_ok) && -0.00086655529814 + (right_limit - (*pivot + 1)) * 2.35936383707e-07 > __apac_cutoff) firstprivate(pivot)
         {
           if (__apac_count_ok || __apac_depth_ok) {
             __apac_depth = __apac_depth_local + 1;
@@ -119,7 +119,7 @@ void sort_core(int* in_out_data, int right_limit) {
 #pragma omp atomic
           __apac_count++;
         }
-#pragma omp task default(shared) depend(inout : pivot) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+#pragma omp task default(shared) depend(inout : pivot[0]) if (__apac_count_ok || __apac_depth_ok) firstprivate(pivot, __apac_depth_local)
         {
           if (__apac_count_ok || __apac_depth_ok) {
             __apac_depth = __apac_depth_local + 1;
@@ -138,36 +138,13 @@ void sort_core(int* in_out_data, int right_limit) {
   }
 }
 
-void __apac_sequential_sort(int* in_out_data, int in_size) { __apac_sequential_sort_core(in_out_data, in_size); }
-
 void sort(int* in_out_data, int in_size) {
-  int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
-  int __apac_depth_local = __apac_depth;
-  int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
-  if (__apac_depth_ok) {
 #pragma omp parallel
 #pragma omp master
 #pragma omp taskgroup
-    {
-      if (__apac_count_ok) {
-#pragma omp atomic
-        __apac_count++;
-      }
-#pragma omp task default(shared) depend(in : in_out_data, in_size) depend(inout : in_out_data[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
-      {
-        if (__apac_count_ok || __apac_depth_ok) {
-          __apac_depth = __apac_depth_local + 1;
-        }
-        sort_core(in_out_data, in_size);
-        if (__apac_count_ok) {
-#pragma omp atomic
-          __apac_count--;
-        }
-      }
-    __apac_exit:;
-    }
-  } else {
-    __apac_sequential_sort(in_out_data, in_size);
+  {
+    sort_core(in_out_data, in_size);
+  __apac_exit:;
   }
 }
 

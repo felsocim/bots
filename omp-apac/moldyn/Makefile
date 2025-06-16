@@ -22,6 +22,7 @@ OTHER_OBJS = tools.o
 SKIP = fill_cell_with_rand_particles,check,check_symb,check_force
 MAIN = compute
 # DISABLE_CUTOFF = %time %depth %count
+APAC_MODELIZER_ADDENDUM = --loop-centric
 
 BASE_DIR = ../../
 

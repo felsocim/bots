@@ -163,8 +163,10 @@ $(PROGRAM).in.o: $(PROGRAM).in.cpp Makefile $(COMMON_DIR)/Makefile.common
 $(PROGRAM).in_profiling.o: $(PROGRAM).in_profiling.cpp Makefile $(COMMON_DIR)/Makefile.common
 	$(CXX) $(CXX_ALL_FLAGS) -o $@ $<
 
+ifndef INHIBIT_APAC
 $(PROGRAM).cpp: $(PROGRAM).in.cpp $(COMMON_DIR)/Makefile.common 
 	$(APAC) $(APAC_ALL_FLAGS) -o $@ $<
+endif
 
 INFO_FLAGS_OMP=-DCDATE="\"$(TODAY)\"" -DCC="\"$(OMPCXX)\"" -DLD="\"$(OMPCXXLINK)\"" -DCMESSAGE="\"$(CMESSAGE)\"" \
                -DLDFLAGS="\"$(OMPCXXLINK_ALL_FLAGS) $(LIBS)\"" -DCFLAGS="\"$(OMPCXX_ALL_FLAGS) -I.\""

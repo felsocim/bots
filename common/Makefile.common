@@ -128,8 +128,10 @@ $(1)_PROGRAM_OBJS := $$(PROGRAM_OBJS:%.o=%-$(1).o)
 $$(PROGRAM)-$(1).o: $$(PROGRAM)-$(1).cpp Makefile $$(COMMON_DIR)/Makefile.common
 	$$(OMPCXX) $$(OMPCXX_ALL_FLAGS) -o $$@ $$<
 
+ifndef INHIBIT_APAC
 $$(PROGRAM)-$(1).cpp: $$(PROGRAM).in.cpp Makefile $$(COMMON_DIR)/Makefile.common 
 	$$(APAC) $$(APAC_ALL_FLAGS) $$(CUTOFF_$(1)) -o $$@ $$<
+endif
 
 main-$(1).o: $$(COMMON_DIR)/bots_main_cxx.cpp app-desc.hpp Makefile $$(COMMON_DIR)/Makefile.common
 	$$(OMPCXX) $$(OMPCXX_ALL_FLAGS) -I. -o $$@ $$< $$(INFO_FLAGS_OMP) -DAPACFLAGS="\"$$(APAC_ALL_FLAGS) $$(CUTOFF_$(1))\""

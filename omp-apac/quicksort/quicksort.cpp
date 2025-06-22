@@ -66,6 +66,20 @@ void sort_core(int* in_out_data, int right_limit) {
   }
 }
 
+void sort_core_seq(int* in_out_data, int right_limit) {
+  if (0 >= right_limit) {
+    return;
+  }
+  if (right_limit <= 256) {
+    insertion_sort(in_out_data, right_limit);
+  } else {
+    int pivot;
+    partition(&pivot, in_out_data, right_limit);
+    sort_core_seq(&in_out_data[0], pivot);
+    sort_core_seq(&in_out_data[pivot + 1], right_limit - (pivot + 1));
+  }
+}
+
 void sort(int* in_out_data, int in_size) {
 #pragma omp parallel
 #pragma omp master
@@ -75,6 +89,8 @@ void sort(int* in_out_data, int in_size) {
   __apac_exit:;
   }
 }
+
+void sort_seq(int* in_out_data, int in_size) { sort_core_seq(in_out_data, in_size); }
 
 int* init(int in_size) {
   int* data = (int*)malloc((size_t)in_size * sizeof(int));

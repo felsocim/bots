@@ -30,9 +30,21 @@
 
 int * init(int);
 void sort(int *, int);
+void sort_seq(int *, int);
 int check(int *, int);
 
-#define KERNEL_INIT int * data = NULL; data = init(bots_arg_size);
-#define KERNEL_CALL sort(data, bots_arg_size);
-#define KERNEL_CHECK check(data, bots_arg_size);
-#define BOTS_APP_FINI free(data);
+#define BOTS_APP_INIT \
+  int * data_par = NULL, * data_seq = NULL; \
+  data_par = init(bots_arg_size); \
+  data_seq = (int*) malloc((size_t) bots_arg_size * sizeof(int)); \
+  for(int i = 0; i < bots_arg_size; i++) data_seq[i] = data_par[i]
+#define KERNEL_SEQ_CALL sort_seq(data_seq, bots_arg_size)
+#define KERNEL_CALL sort(data_par, bots_arg_size)
+#define KERNEL_CHECK \
+  ((bots_sequential_flag && \
+    check(data_par, bots_arg_size) == BOTS_RESULT_SUCCESSFUL && \
+    check(data_seq, bots_arg_size) == BOTS_RESULT_SUCCESSFUL) || \
+   (!bots_sequential_flag && \
+    check(data_par, bots_arg_size) == BOTS_RESULT_SUCCESSFUL)) ? \
+   BOTS_RESULT_SUCCESSFUL : BOTS_RESULT_UNSUCCESSFUL
+#define BOTS_APP_FINI free(data_seq); free(data_par)

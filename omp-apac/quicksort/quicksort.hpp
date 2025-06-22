@@ -23,7 +23,9 @@
 void partition(int *, int *, int);
 void insertion_sort(int *, int);
 void sort_core(int *, int);
+void sort_core_seq(int *, int);
 void sort(int *, int);
+void sort_seq(int *, int);
 int * init(int);
 int check(int *, int);
 #endif

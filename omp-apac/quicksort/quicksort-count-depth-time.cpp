@@ -56,20 +56,6 @@ void insertion_sort(int* arr, int right_limit) {
   }
 }
 
-void __apac_sequential_sort_core(int* in_out_data, int right_limit) {
-  if (0 >= right_limit) {
-    return;
-  }
-  if (right_limit <= 256) {
-    insertion_sort(in_out_data, right_limit);
-  } else {
-    int pivot;
-    partition(&pivot, in_out_data, right_limit);
-    __apac_sequential_sort_core(&in_out_data[0], pivot);
-    __apac_sequential_sort_core(&in_out_data[pivot + 1], right_limit - (pivot + 1));
-  }
-}
-
 void sort_core(int* in_out_data, int right_limit) {
   int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
   int __apac_depth_local = __apac_depth;
@@ -134,7 +120,21 @@ void sort_core(int* in_out_data, int right_limit) {
     __apac_exit:;
     }
   } else {
-    __apac_sequential_sort_core(in_out_data, right_limit);
+    sort_core_seq(in_out_data, right_limit);
+  }
+}
+
+void sort_core_seq(int* in_out_data, int right_limit) {
+  if (0 >= right_limit) {
+    return;
+  }
+  if (right_limit <= 256) {
+    insertion_sort(in_out_data, right_limit);
+  } else {
+    int pivot;
+    partition(&pivot, in_out_data, right_limit);
+    sort_core_seq(&in_out_data[0], pivot);
+    sort_core_seq(&in_out_data[pivot + 1], right_limit - (pivot + 1));
   }
 }
 
@@ -147,6 +147,8 @@ void sort(int* in_out_data, int in_size) {
   __apac_exit:;
   }
 }
+
+void sort_seq(int* in_out_data, int in_size) { sort_core_seq(in_out_data, in_size); }
 
 int* init(int in_size) {
   int* data = (int*)malloc((size_t)in_size * sizeof(int));

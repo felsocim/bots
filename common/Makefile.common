@@ -114,7 +114,8 @@ CUTOFFS = count depth count-depth time count-time depth-time count-depth-time
 CUTOFF_count = --cutoff-count
 CUTOFF_depth = --cutoff-depth
 CUTOFF_count-depth = $(CUTOFF_count) $(CUTOFF_depth)
-CUTOFF_time = --profile --run-with-custom='bash $(BASE_DIR)/run/run-$(PROGRAM).sh -c 1 -l $(CC) -v omp-apac_profiling'
+PROFILING_PROBLEM_SIZE ?= medium
+CUTOFF_time = --profile --run-with-custom='bash $(BASE_DIR)/run/run-$(PROGRAM).sh -C $(PROFILING_PROBLEM_SIZE) -c 1 -l $(CC) -v omp-apac_profiling'
 ifdef APAC_MODELIZER_ADDENDUM
 	CUTOFF_time += --model-with="$(APAC_MODELIZER_ADDENDUM)"
 endif

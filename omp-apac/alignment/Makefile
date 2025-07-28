@@ -24,6 +24,7 @@ DISABLE_CUTOFF = %time
 OTHER_OBJS=sequence.o
 SKIP = init_matrix,pairalign_init,align_init,align_end,align_verify
 MAIN = align
+PROFILING_PROBLEM_SIZE = small
 
 #
 # Don't change below here 

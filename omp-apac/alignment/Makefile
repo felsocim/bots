@@ -20,7 +20,7 @@
 
 BASE_DIR = ../../
 LIBS= -lm
-DISABLE_CUTOFF = %time
+DISABLE_CUTOFF = %depth %depth-time %count %count-time %count-depth %count-depth-time
 OTHER_OBJS=sequence.o
 SKIP = init_matrix,pairalign_init,align_init,align_end,align_verify
 MAIN = align

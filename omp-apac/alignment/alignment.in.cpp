@@ -35,7 +35,7 @@
 int ktup, window, signif;
 int prot_ktup, prot_window, prot_signif;
 
-int gap_pos1, gap_pos2, mat_avscore;
+int gap_pos1, gap_pos2;
 int nseqs, max_aa;
 #define MAX_ALN_LENGTH 5000
 
@@ -49,8 +49,6 @@ double pw_go_penalty, pw_ge_penalty;
 double prot_pw_go_penalty, prot_pw_ge_penalty;
 
 char **args, **names, **seq_array;
-
-int matrix[NUMRES][NUMRES];
 
 double gap_open_scale;
 double gap_extend_scale;
@@ -93,7 +91,7 @@ void add(int v, int *print_ptr, int *last_print, int *displ)
 /***********************************************************************
  * : 
  **********************************************************************/
-int calc_score(int iat, int jat, int v1, int v2, int seq1, int seq2)
+int calc_score(int iat, int jat, int v1, int v2, int seq1, int seq2, int **matrix)
 {
    int i, j, ipos, jpos;
 
@@ -108,7 +106,7 @@ int calc_score(int iat, int jat, int v1, int v2, int seq1, int seq2)
 /***********************************************************************
  * : 
  **********************************************************************/
-int get_matrix(int *matptr, int *xref, int scale)
+int get_matrix(int *matptr, int *xref, int scale, int **matrix, int *mat_avscore)
 {
    int gg_score = 0;
    int gr_score = 0;
@@ -153,7 +151,7 @@ int get_matrix(int *matptr, int *xref, int scale)
    av1 /= (maxres*maxres)/2;
    av2 /= maxres;
    av3 /= (int) (((double)(maxres*maxres-maxres))/2);
-   mat_avscore = -av3;
+   *mat_avscore = -av3;
 
    min = max = matrix[0][0];
 
@@ -183,7 +181,7 @@ int get_matrix(int *matptr, int *xref, int scale)
 /***********************************************************************
  * : 
  **********************************************************************/
-void forward_pass(char *ia, char *ib, int n, int m, int *se1, int *se2, int *maxscore, int g, int gh)
+void forward_pass(char *ia, char *ib, int n, int m, int *se1, int *se2, int *maxscore, int g, int gh, int **matrix)
 { 
    int i, j, f, p, t, hh;
    int HH[MAX_ALN_LENGTH];
@@ -225,7 +223,7 @@ void forward_pass(char *ia, char *ib, int n, int m, int *se1, int *se2, int *max
 /***********************************************************************
  * : 
  **********************************************************************/
-void reverse_pass(char *ia, char *ib, int se1, int se2, int *sb1, int *sb2, int maxscore, int g, int gh)
+void reverse_pass(char *ia, char *ib, int se1, int se2, int *sb1, int *sb2, int maxscore, int g, int gh, int **matrix)
 { 
    int i, j, f, p, t, hh, cost;
    int HH[MAX_ALN_LENGTH];
@@ -270,7 +268,7 @@ void reverse_pass(char *ia, char *ib, int se1, int se2, int *sb1, int *sb2, int 
 /***********************************************************************
  * : 
  **********************************************************************/
-int diff (int A, int B, int M, int N, int tb, int te, int *print_ptr, int *last_print, int *displ, int seq1, int seq2, int g, int gh)
+int diff (int A, int B, int M, int N, int tb, int te, int *print_ptr, int *last_print, int *displ, int seq1, int seq2, int g, int gh, int **matrix)
 {
    int i, j, f, e, s, t, hh;
    int midi, midj, midh, type;
@@ -292,7 +290,7 @@ int diff (int A, int B, int M, int N, int tb, int te, int *print_ptr, int *last_
       midj = 0;
 
       for (j = 1; j <= N; j++) {
-         hh = calc_score(1,j,A,B,seq1,seq2) - tegap(N-j) - tbgap(j-1);
+         hh = calc_score(1,j,A,B,seq1,seq2,matrix) - tegap(N-j) - tbgap(j-1);
          if (hh > midh) {midh = hh; midj = j;}
       }
 
@@ -326,7 +324,7 @@ int diff (int A, int B, int M, int N, int tb, int te, int *print_ptr, int *last_
       for (j = 1; j <= N; j++) {
          if ((hh = hh - g - gh)    > (f = f - gh))    f = hh;
          if ((hh = HH[j] - g - gh) > (e = DD[j]- gh)) e = hh;
-         hh = s + calc_score(i,j,A,B,seq1,seq2);
+         hh = s + calc_score(i,j,A,B,seq1,seq2,matrix);
          if (f > hh) hh = f;
          if (e > hh) hh = e;
 
@@ -351,7 +349,7 @@ int diff (int A, int B, int M, int N, int tb, int te, int *print_ptr, int *last_
       for (j = N - 1; j >= 0; j--) {
          if ((hh = hh - g - gh)    > (f = f - gh))     f = hh;
          if ((hh = RR[j] - g - gh) > (e = SS[j] - gh)) e = hh;
-         hh = s + calc_score(i+1,j+1,A,B,seq1,seq2);
+         hh = s + calc_score(i+1,j+1,A,B,seq1,seq2,matrix);
          if (f > hh) hh = f;
          if (e > hh) hh = e;
 
@@ -381,19 +379,19 @@ int diff (int A, int B, int M, int N, int tb, int te, int *print_ptr, int *last_
 
 
    if (type == 1) {
-      diff(A, B, midi, midj, tb, g, print_ptr, last_print, displ, seq1, seq2, g, gh);
-      diff(A+midi, B+midj, M-midi, N-midj, g, te, print_ptr, last_print, displ, seq1, seq2, g, gh);
+      diff(A, B, midi, midj, tb, g, print_ptr, last_print, displ, seq1, seq2, g, gh, matrix);
+      diff(A+midi, B+midj, M-midi, N-midj, g, te, print_ptr, last_print, displ, seq1, seq2, g, gh, matrix);
    } else {
-      diff(A, B, midi-1, midj, tb, 0.0, print_ptr, last_print, displ, seq1, seq2, g, gh);
+      diff(A, B, midi-1, midj, tb, 0.0, print_ptr, last_print, displ, seq1, seq2, g, gh, matrix);
       del(2, print_ptr, last_print, displ);
-      diff(A+midi+1, B+midj, M-midi-1, N-midj, 0.0, te, print_ptr, last_print, displ, seq1, seq2, g, gh);
+      diff(A+midi+1, B+midj, M-midi-1, N-midj, 0.0, te, print_ptr, last_print, displ, seq1, seq2, g, gh, matrix);
    }
 
    return midh;
 }
 
 
-int diff_seq (int A, int B, int M, int N, int tb, int te, int *print_ptr, int *last_print, int *displ, int seq1, int seq2, int g, int gh)
+int diff_seq (int A, int B, int M, int N, int tb, int te, int *print_ptr, int *last_print, int *displ, int seq1, int seq2, int g, int gh, int **matrix)
 {
    int i, j, f, e, s, t, hh;
    int midi, midj, midh, type;
@@ -415,7 +413,7 @@ int diff_seq (int A, int B, int M, int N, int tb, int te, int *print_ptr, int *l
       midj = 0;
 
       for (j = 1; j <= N; j++) {
-         hh = calc_score(1,j,A,B,seq1,seq2) - tegap(N-j) - tbgap(j-1);
+         hh = calc_score(1,j,A,B,seq1,seq2,matrix) - tegap(N-j) - tbgap(j-1);
          if (hh > midh) {midh = hh; midj = j;}
       }
 
@@ -449,7 +447,7 @@ int diff_seq (int A, int B, int M, int N, int tb, int te, int *print_ptr, int *l
       for (j = 1; j <= N; j++) {
          if ((hh = hh - g - gh)    > (f = f - gh))    f = hh;
          if ((hh = HH[j] - g - gh) > (e = DD[j]- gh)) e = hh;
-         hh = s + calc_score(i,j,A,B,seq1,seq2);
+         hh = s + calc_score(i,j,A,B,seq1,seq2,matrix);
          if (f > hh) hh = f;
          if (e > hh) hh = e;
 
@@ -474,7 +472,7 @@ int diff_seq (int A, int B, int M, int N, int tb, int te, int *print_ptr, int *l
       for (j = N - 1; j >= 0; j--) {
          if ((hh = hh - g - gh)    > (f = f - gh))     f = hh;
          if ((hh = RR[j] - g - gh) > (e = SS[j] - gh)) e = hh;
-         hh = s + calc_score(i+1,j+1,A,B,seq1,seq2);
+         hh = s + calc_score(i+1,j+1,A,B,seq1,seq2,matrix);
          if (f > hh) hh = f;
          if (e > hh) hh = e;
 
@@ -504,12 +502,12 @@ int diff_seq (int A, int B, int M, int N, int tb, int te, int *print_ptr, int *l
 
 
    if (type == 1) {
-      diff_seq(A, B, midi, midj, tb, g, print_ptr, last_print, displ, seq1, seq2, g, gh);
-      diff_seq(A+midi, B+midj, M-midi, N-midj, g, te, print_ptr, last_print, displ, seq1, seq2, g, gh);
+      diff_seq(A, B, midi, midj, tb, g, print_ptr, last_print, displ, seq1, seq2, g, gh, matrix);
+      diff_seq(A+midi, B+midj, M-midi, N-midj, g, te, print_ptr, last_print, displ, seq1, seq2, g, gh, matrix);
    } else {
-      diff_seq(A, B, midi-1, midj, tb, 0.0, print_ptr, last_print, displ, seq1, seq2, g, gh);
+      diff_seq(A, B, midi-1, midj, tb, 0.0, print_ptr, last_print, displ, seq1, seq2, g, gh, matrix);
       del(2, print_ptr, last_print, displ);
-      diff_seq(A+midi+1, B+midj, M-midi-1, N-midj, 0.0, te, print_ptr, last_print, displ, seq1, seq2, g, gh);
+      diff_seq(A+midi+1, B+midj, M-midi-1, N-midj, 0.0, te, print_ptr, last_print, displ, seq1, seq2, g, gh, matrix);
    }
 
    return midh;
@@ -551,13 +549,17 @@ double tracepath(int tsb1, int tsb2, int *print_ptr, int *displ, int seq1, int s
 int pairalign()
 {
    int i, n, m, si, sj;
-   int len1, len2, maxres;
+   int len1, len2, maxres, mat_avscore;
    double gg, mm_score;
-   int    *mat_xref, *matptr;
+   int **matrix;
+   int *mat_xref, *matptr;
 
    matptr   = gon250mt;
    mat_xref = def_aa_xref;
-   maxres = get_matrix(matptr, mat_xref, 10);
+   matrix = (int **) malloc(NUMRES * sizeof(int *));
+   for(int a = 0; a < NUMRES; a++)
+      matrix[a] = (int *) malloc(NUMRES * sizeof(int));
+   maxres = get_matrix(matptr, mat_xref, 10, matrix, &mat_avscore);
    if (maxres == 0) return(-1);
 
    bots_message("Start aligning ");
@@ -597,13 +599,13 @@ int pairalign()
             seq1 = si + 1;
             seq2 = sj + 1;
 
-            forward_pass(&seq_array[seq1][0], &seq_array[seq2][0], n, m, &se1, &se2, &maxscore, g, gh);
-            reverse_pass(&seq_array[seq1][0], &seq_array[seq2][0], se1, se2, &sb1, &sb2, maxscore, g, gh);
+            forward_pass(&seq_array[seq1][0], &seq_array[seq2][0], n, m, &se1, &se2, &maxscore, g, gh, matrix);
+            reverse_pass(&seq_array[seq1][0], &seq_array[seq2][0], se1, se2, &sb1, &sb2, maxscore, g, gh, matrix);
 
             print_ptr  = 1;
             last_print = 0;
 
-            diff(sb1-1, sb2-1, se1-sb1+1, se2-sb2+1, 0, 0, &print_ptr, &last_print, displ, seq1, seq2, g, gh);
+            diff(sb1-1, sb2-1, se1-sb1+1, se2-sb2+1, 0, 0, &print_ptr, &last_print, displ, seq1, seq2, g, gh, matrix);
             mm_score = tracepath(sb1, sb2, &print_ptr, displ, seq1, seq2);
 
             if (len1 == 0 || len2 == 0) mm_score  = 0.0;
@@ -613,6 +615,9 @@ int pairalign()
          }
       }
    }
+   for(int a = 0; a < NUMRES; a++)
+      free(matrix[a]);
+   free(matrix);
    bots_message(" completed!\n");
    return 0;
 }
@@ -620,14 +625,20 @@ int pairalign()
 int pairalign_seq()
 {
    int i, n, m, si, sj;
-   int len1, len2, maxres;
+   int len1, len2, maxres, mat_avscore;
    double gg, mm_score;
-   int    *mat_xref, *matptr;
+   int **matrix;
+   int *mat_xref, *matptr;
 
    matptr   = gon250mt;
    mat_xref = def_aa_xref;
-   maxres = get_matrix(matptr, mat_xref, 10);
+   matrix = (int **) malloc(NUMRES * sizeof(int *));
+   for(int a = 0; a < NUMRES; a++)
+      matrix[a] = (int *) malloc(NUMRES * sizeof(int));
+   maxres = get_matrix(matptr, mat_xref, 10, matrix, &mat_avscore);
    if (maxres == 0) return(-1);
+
+   bots_message("Start aligning ");
 
    for (si = 0; si < nseqs; si++) {
       n = seqlen_array[si+1];
@@ -664,13 +675,13 @@ int pairalign_seq()
             seq1 = si + 1;
             seq2 = sj + 1;
 
-            forward_pass(&seq_array[seq1][0], &seq_array[seq2][0], n, m, &se1, &se2, &maxscore, g, gh);
-            reverse_pass(&seq_array[seq1][0], &seq_array[seq2][0], se1, se2, &sb1, &sb2, maxscore, g, gh);
+            forward_pass(&seq_array[seq1][0], &seq_array[seq2][0], n, m, &se1, &se2, &maxscore, g, gh, matrix);
+            reverse_pass(&seq_array[seq1][0], &seq_array[seq2][0], se1, se2, &sb1, &sb2, maxscore, g, gh, matrix);
 
             print_ptr  = 1;
             last_print = 0;
 
-            diff_seq(sb1-1, sb2-1, se1-sb1+1, se2-sb2+1, 0, 0, &print_ptr, &last_print, displ, seq1, seq2, g, gh);
+            diff_seq(sb1-1, sb2-1, se1-sb1+1, se2-sb2+1, 0, 0, &print_ptr, &last_print, displ, seq1, seq2, g, gh, matrix);
             mm_score = tracepath(sb1, sb2, &print_ptr, displ, seq1, seq2);
 
             if (len1 == 0 || len2 == 0) mm_score  = 0.0;
@@ -680,6 +691,10 @@ int pairalign_seq()
          }
       }
    }
+   for(int a = 0; a < NUMRES; a++)
+      free(matrix[a]);
+   free(matrix);
+   bots_message(" completed!\n");
    return 0;
 }
 

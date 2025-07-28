@@ -27,8 +27,6 @@ int gap_pos1;
 
 int gap_pos2;
 
-int mat_avscore;
-
 int nseqs;
 
 int max_aa;
@@ -99,7 +97,7 @@ int calc_score(int iat, int jat, int v1, int v2, int seq1, int seq2, int** matri
   return matrix[i][j];
 }
 
-int get_matrix(int* matptr, int* xref, int scale, int** matrix) {
+int get_matrix(int* matptr, int* xref, int scale, int** matrix, int* mat_avscore) {
   int gg_score = 0;
   int gr_score = 0;
   int i;
@@ -149,8 +147,7 @@ int get_matrix(int* matptr, int* xref, int scale, int** matrix) {
   av1 /= maxres * maxres / 2;
   av2 /= maxres;
   av3 /= (int)((double)(maxres * maxres - maxres) / 2);
-#pragma omp critical
-  mat_avscore = -av3;
+  *mat_avscore = -av3;
   min = max = matrix[0][0];
   for (i = 0; i <= max_aa; i++)
     for (j = 1; j <= i; j++) {
@@ -636,6 +633,7 @@ int pairalign() {
     int len1;
     int len2;
     int maxres;
+    int mat_avscore;
     double gg;
     double mm_score;
     int** matrix;
@@ -647,8 +645,8 @@ int pairalign() {
     for (int a = 0; a < 32; a++) {
       matrix[a] = (int*)malloc(32 * sizeof(int));
     }
-#pragma omp task default(shared) depend(in : def_aa_xref, matrix) depend(inout : matrix[0], matrix[0][0], maxres)
-    maxres = get_matrix(matptr, mat_xref, 10, matrix);
+#pragma omp task default(shared) depend(in : def_aa_xref, matrix) depend(inout : mat_avscore, matrix[0], matrix[0][0], maxres)
+    maxres = get_matrix(matptr, mat_xref, 10, matrix, &mat_avscore);
 #pragma omp taskwait depend(in : maxres)
     if (maxres == 0) {
 #pragma omp taskwait
@@ -699,7 +697,6 @@ int pairalign() {
           } else {
 #pragma omp taskwait depend(in : gap_open_scale, m, mat_avscore, n, pw_go_penalty) depend(inout : g[0], gg)
             gg = pw_go_penalty + log((double)((n < m ? n : m)));
-#pragma omp critical
             *g = (int)((mat_avscore <= 0 ? 2 * 100 * gg : 2 * mat_avscore * gg * gap_open_scale));
 #pragma omp taskwait depend(in : pw_ge_penalty) depend(inout : gh[0])
             *gh = (int)(100 * pw_ge_penalty);
@@ -779,6 +776,7 @@ int pairalign_seq() {
   int len1;
   int len2;
   int maxres;
+  int mat_avscore;
   double gg;
   double mm_score;
   int** matrix;
@@ -788,7 +786,7 @@ int pairalign_seq() {
   mat_xref = def_aa_xref;
   matrix = (int**)malloc(32 * sizeof(int*));
   for (int a = 0; a < 32; a++) matrix[a] = (int*)malloc(32 * sizeof(int));
-  maxres = get_matrix(matptr, mat_xref, 10, matrix);
+  maxres = get_matrix(matptr, mat_xref, 10, matrix, &mat_avscore);
   if (maxres == 0) return -1;
   bots_message("Start aligning ");
   for (si = 0; si < nseqs; si++) {
@@ -825,7 +823,6 @@ int pairalign_seq() {
           gh = (int)(100 * pw_ge_penalty * gap_extend_scale);
         } else {
           gg = pw_go_penalty + log((double)((n < m ? n : m)));
-#pragma omp critical
           g = (int)((mat_avscore <= 0 ? 2 * 100 * gg : 2 * mat_avscore * gg * gap_open_scale));
           gh = (int)(100 * pw_ge_penalty);
         }

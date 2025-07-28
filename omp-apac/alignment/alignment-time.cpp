@@ -1,6 +1,5 @@
 #include <libgen.h>
 #include <math.h>
-#include <omp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,11 +9,23 @@
 #include "bots.h"
 #include "param.hpp"
 #include "sequence.hpp"
-const static int __apac_count_infinite = getenv("APAC_TASK_COUNT_INFINITE") ? 1 : 0;
 
-const static int __apac_count_max = getenv("APAC_TASK_COUNT_MAX") ? atoi(getenv("APAC_TASK_COUNT_MAX")) : omp_get_max_threads() * 10;
+const double __apac_cutoff = getenv("APAC_EXECUTION_TIME_CUTOFF") ? atof(getenv("APAC_EXECUTION_TIME_CUTOFF")) : 2.22100e-6;
 
-int __apac_count = 0;
+template <class T>
+T apac_fpow(int exp, const T& base) {
+  T result = T(1);
+  T pow = base;
+  int i = exp;
+  while (i) {
+    if (i & 1) {
+      result *= pow;
+    }
+    pow *= pow;
+    i /= 2;
+  }
+  return result;
+}
 
 int ktup;
 
@@ -259,7 +270,6 @@ void reverse_pass(char* ia, char* ib, int se1, int se2, int* sb1, int* sb2, int 
 }
 
 int diff(int A, int B, int M, int N, int tb, int te, int* print_ptr, int* last_print, int* displ, int seq1, int seq2, int g, int gh, int** matrix) {
-  int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
   int __apac_result;
 #pragma omp taskgroup
   {
@@ -280,38 +290,14 @@ int diff(int A, int B, int M, int N, int tb, int te, int* print_ptr, int* last_p
     int SS[5000];
     if (N <= 0) {
       if (M > 0) {
-        if (__apac_count_ok) {
-#pragma omp atomic
-          __apac_count++;
-        }
-#pragma omp task default(shared) depend(in : M, displ, last_print, print_ptr) depend(inout : displ[0], last_print[0], print_ptr[0]) if (__apac_count_ok)
-        {
-          del(M, print_ptr, last_print, displ);
-          if (__apac_count_ok) {
-#pragma omp atomic
-            __apac_count--;
-          }
-        }
+        del(M, print_ptr, last_print, displ);
       }
-#pragma omp taskwait
       __apac_result = -((int)((M <= 0 ? 0 : tb + gh * M)));
       goto __apac_exit;
     }
     if (M <= 1) {
       if (M <= 0) {
-        if (__apac_count_ok) {
-#pragma omp atomic
-          __apac_count++;
-        }
-#pragma omp task default(shared) depend(in : N, displ, last_print, print_ptr) depend(inout : displ[0], last_print[0], print_ptr[0]) if (__apac_count_ok)
-        {
-          add(N, print_ptr, last_print, displ);
-          if (__apac_count_ok) {
-#pragma omp atomic
-            __apac_count--;
-          }
-        }
-#pragma omp taskwait
+        add(N, print_ptr, last_print, displ);
         __apac_result = -((int)((N <= 0 ? 0 : tb + gh * N)));
         goto __apac_exit;
       }
@@ -322,126 +308,54 @@ int diff(int A, int B, int M, int N, int tb, int te, int* print_ptr, int* last_p
       }
       midj = 0;
       for (j = 1; j <= N; j++) {
-        if (__apac_count_ok) {
-#pragma omp atomic
-          __apac_count++;
-        }
-#pragma omp task default(shared) depend(in : A, B, N, gh, matrix, matrix[0], matrix[0][0], seq1, seq2, tb, te) depend(inout : hh) firstprivate(j) if (__apac_count_ok)
-        {
-          hh = calc_score(1, j, A, B, seq1, seq2, matrix) - ((N - j <= 0 ? 0 : te + gh * (N - j))) - ((j - 1 <= 0 ? 0 : tb + gh * (j - 1)));
-          if (__apac_count_ok) {
-#pragma omp atomic
-            __apac_count--;
-          }
-        }
-#pragma omp taskwait depend(in : hh) depend(inout : midh)
+        hh = calc_score(1, j, A, B, seq1, seq2, matrix) - ((N - j <= 0 ? 0 : te + gh * (N - j))) - ((j - 1 <= 0 ? 0 : tb + gh * (j - 1)));
         if (hh > midh) {
-#pragma omp taskwait depend(in : hh) depend(inout : midh)
           midh = hh;
           midj = j;
         }
       }
       if (midj == 0) {
-        if (__apac_count_ok) {
-#pragma omp atomic
-          __apac_count++;
-        }
-#pragma omp task default(shared) depend(in : N, displ, last_print, print_ptr) depend(inout : displ[0], last_print[0], print_ptr[0]) if (__apac_count_ok)
-        {
-          del(1, print_ptr, last_print, displ);
-          add(N, print_ptr, last_print, displ);
-          if (__apac_count_ok) {
-#pragma omp atomic
-            __apac_count--;
-          }
-        }
+        del(1, print_ptr, last_print, displ);
+        add(N, print_ptr, last_print, displ);
       } else {
         if (midj > 1) {
-          if (__apac_count_ok) {
-#pragma omp atomic
-            __apac_count++;
-          }
-#pragma omp task default(shared) depend(in : displ, last_print, midj, print_ptr) depend(inout : displ[0], last_print[0], print_ptr[0]) if (__apac_count_ok)
-          {
-            add(midj - 1, print_ptr, last_print, displ);
-            if (__apac_count_ok) {
-#pragma omp atomic
-              __apac_count--;
-            }
-          }
+          add(midj - 1, print_ptr, last_print, displ);
         }
-#pragma omp taskwait depend(in : displ, last_print, print_ptr) depend(inout : displ[(*print_ptr)++], last_print[0], print_ptr[0])
         displ[(*print_ptr)++] = *last_print = 0;
         if (midj < N) {
-          if (__apac_count_ok) {
-#pragma omp atomic
-            __apac_count++;
-          }
-#pragma omp task default(shared) depend(in : N, displ, last_print, midj, print_ptr) depend(inout : displ[0], last_print[0], print_ptr[0]) if (__apac_count_ok)
-          {
-            add(N - midj, print_ptr, last_print, displ);
-            if (__apac_count_ok) {
-#pragma omp atomic
-              __apac_count--;
-            }
-          }
+          add(N - midj, print_ptr, last_print, displ);
         }
       }
-#pragma omp taskwait
       __apac_result = midh;
       goto __apac_exit;
     }
     midi = M / 2;
     HH[0] = 0.;
     t = -tb;
-#pragma omp taskwait depend(in : N) depend(inout : j)
     for (j = 1; j <= N; j++) {
       HH[j] = t = t - gh;
       DD[j] = t - g;
     }
     t = -tb;
     for (i = 1; i <= midi; i++) {
-#pragma omp taskwait depend(in : HH, g, gh) depend(inout : HH[0], f, hh, s, t)
       s = HH[0];
       HH[0] = hh = t = t - gh;
       f = t - g;
-#pragma omp taskwait depend(in : N) depend(inout : j)
       for (j = 1; j <= N; j++) {
-#pragma omp taskwait depend(in : g, gh) depend(inout : f, hh)
         if ((hh = hh - g - gh) > (f = f - gh)) {
-#pragma omp taskwait depend(in : hh) depend(inout : f)
           f = hh;
         }
-#pragma omp taskwait depend(in : DD, DD[j], HH, HH[j], g, gh) depend(inout : e, hh)
         if ((hh = HH[j] - g - gh) > (e = DD[j] - gh)) {
-#pragma omp taskwait depend(in : hh) depend(inout : e)
           e = hh;
         }
-        if (__apac_count_ok) {
-#pragma omp atomic
-          __apac_count++;
-        }
-#pragma omp task default(shared) depend(in : A, B, matrix, matrix[0], matrix[0][0], s, seq1, seq2) depend(inout : hh) firstprivate(j, i) if (__apac_count_ok)
-        {
-          hh = s + calc_score(i, j, A, B, seq1, seq2, matrix);
-          if (__apac_count_ok) {
-#pragma omp atomic
-            __apac_count--;
-          }
-        }
-#pragma omp taskwait depend(in : f) depend(inout : hh)
+        hh = s + calc_score(i, j, A, B, seq1, seq2, matrix);
         if (f > hh) {
-#pragma omp taskwait depend(in : f) depend(inout : hh)
           hh = f;
         }
-#pragma omp taskwait depend(in : e) depend(inout : hh)
         if (e > hh) {
-#pragma omp taskwait depend(in : e) depend(inout : hh)
           hh = e;
         }
-#pragma omp taskwait depend(in : HH, HH[j], j) depend(inout : s)
         s = HH[j];
-#pragma omp taskwait depend(in : HH, hh, j) depend(inout : HH[j])
         HH[j] = hh;
         DD[j] = e;
       }
@@ -449,120 +363,67 @@ int diff(int A, int B, int M, int N, int tb, int te, int* print_ptr, int* last_p
     DD[0] = HH[0];
     RR[N] = 0;
     t = -te;
-#pragma omp taskwait depend(inout : j)
     for (j = N - 1; j >= 0; j--) {
       RR[j] = t = t - gh;
       SS[j] = t - g;
     }
     t = -te;
-#pragma omp taskwait depend(in : midi) depend(inout : i)
     for (i = M - 1; i >= midi; i--) {
-#pragma omp taskwait depend(in : N, RR, g, gh) depend(inout : RR[N], f, hh, s, t)
       s = RR[N];
       RR[N] = hh = t = t - gh;
       f = t - g;
-#pragma omp taskwait depend(inout : j)
       for (j = N - 1; j >= 0; j--) {
-#pragma omp taskwait depend(in : g, gh) depend(inout : f, hh)
         if ((hh = hh - g - gh) > (f = f - gh)) {
-#pragma omp taskwait depend(in : hh) depend(inout : f)
           f = hh;
         }
-#pragma omp taskwait depend(in : RR, RR[j], SS, SS[j], g, gh) depend(inout : e, hh)
         if ((hh = RR[j] - g - gh) > (e = SS[j] - gh)) {
-#pragma omp taskwait depend(in : hh) depend(inout : e)
           e = hh;
         }
-        if (__apac_count_ok) {
-#pragma omp atomic
-          __apac_count++;
-        }
-#pragma omp task default(shared) depend(in : A, B, matrix, matrix[0], matrix[0][0], s, seq1, seq2) depend(inout : hh) firstprivate(j, i) if (__apac_count_ok)
-        {
-          hh = s + calc_score(i + 1, j + 1, A, B, seq1, seq2, matrix);
-          if (__apac_count_ok) {
-#pragma omp atomic
-            __apac_count--;
-          }
-        }
-#pragma omp taskwait depend(in : f) depend(inout : hh)
+        hh = s + calc_score(i + 1, j + 1, A, B, seq1, seq2, matrix);
         if (f > hh) {
-#pragma omp taskwait depend(in : f) depend(inout : hh)
           hh = f;
         }
-#pragma omp taskwait depend(in : e) depend(inout : hh)
         if (e > hh) {
-#pragma omp taskwait depend(in : e) depend(inout : hh)
           hh = e;
         }
-#pragma omp taskwait depend(in : RR, RR[j], j) depend(inout : s)
         s = RR[j];
-#pragma omp taskwait depend(in : RR, hh, j) depend(inout : RR[j])
         RR[j] = hh;
         SS[j] = e;
       }
     }
     SS[N] = RR[N];
     midh = HH[0] + RR[0];
-#pragma omp taskwait depend(inout : midj)
     midj = 0;
     type = 1;
-#pragma omp taskwait depend(in : N) depend(inout : j)
     for (j = 0; j <= N; j++) {
-#pragma omp taskwait depend(in : HH, HH[j], RR, RR[j], j) depend(inout : hh)
       hh = HH[j] + RR[j];
-#pragma omp taskwait depend(in : hh) depend(inout : midh)
       if (hh >= midh) {
-#pragma omp taskwait depend(in : DD, DD[j], HH, HH[j], RR, RR[j], SS, SS[j], hh) depend(inout : midh)
         if (hh > midh || HH[j] != DD[j] && RR[j] == SS[j]) {
-#pragma omp taskwait depend(in : hh) depend(inout : midh)
           midh = hh;
-#pragma omp taskwait depend(in : j) depend(inout : midj)
           midj = j;
         }
       }
     }
-#pragma omp taskwait depend(inout : j)
     for (j = N; j >= 0; j--) {
-#pragma omp taskwait depend(in : DD, DD[j], SS, SS[j], g, j) depend(inout : hh)
       hh = DD[j] + SS[j] + g;
-#pragma omp taskwait depend(in : hh) depend(inout : midh)
       if (hh > midh) {
-#pragma omp taskwait depend(in : hh) depend(inout : midh)
         midh = hh;
-#pragma omp taskwait depend(in : j) depend(inout : midj)
         midj = j;
         type = 2;
       }
     }
     if (type == 1) {
-      if (__apac_count_ok) {
-#pragma omp atomic
-        __apac_count++;
-      }
-#pragma omp task default(shared) depend(in : A, B, M, N, displ, g, gh, last_print, matrix, matrix[0], matrix[0][0], midi, midj, print_ptr, seq1, seq2, tb, te) depend(inout : displ[0], last_print[0], print_ptr[0]) if (__apac_count_ok)
+#pragma omp task default(shared) depend(in : A, B, M, N, displ, g, gh, last_print, matrix, matrix[0], matrix[0][0], midi, midj, print_ptr, seq1, seq2, tb, te) depend(inout : displ[0], last_print[0], print_ptr[0]) if (-0.000818395991992 + seq1 * (A + midi) * 1.54805401949e-05 > __apac_cutoff)
       {
         diff(A, B, midi, midj, tb, g, print_ptr, last_print, displ, seq1, seq2, g, gh, matrix);
         diff(A + midi, B + midj, M - midi, N - midj, g, te, print_ptr, last_print, displ, seq1, seq2, g, gh, matrix);
-        if (__apac_count_ok) {
-#pragma omp atomic
-          __apac_count--;
-        }
       }
     } else {
-      if (__apac_count_ok) {
-#pragma omp atomic
-        __apac_count++;
-      }
-#pragma omp task default(shared) depend(in : A, B, M, N, displ, g, gh, last_print, matrix, matrix[0], matrix[0][0], midi, midj, print_ptr, seq1, seq2, tb, te) depend(inout : displ[0], last_print[0], print_ptr[0]) if (__apac_count_ok)
+#pragma omp task default(shared) depend(in : A, B, M, N, displ, g, gh, last_print, matrix, matrix[0], matrix[0][0], midi, midj, print_ptr, seq1, seq2, tb, te) depend(inout : displ[0], last_print[0], print_ptr[0]) if (0.00299307487835 + seq1 * (A + midi + 1) * 1.50529966785e-05 > __apac_cutoff)
       {
         diff(A, B, midi - 1, midj, tb, 0., print_ptr, last_print, displ, seq1, seq2, g, gh, matrix);
         del(2, print_ptr, last_print, displ);
         diff(A + midi + 1, B + midj, M - midi - 1, N - midj, 0., te, print_ptr, last_print, displ, seq1, seq2, g, gh, matrix);
-        if (__apac_count_ok) {
-#pragma omp atomic
-          __apac_count--;
-        }
       }
     }
     __apac_result = midh;
@@ -722,7 +583,6 @@ double tracepath(int tsb1, int tsb2, int* print_ptr, int* displ, int seq1, int s
 }
 
 int pairalign() {
-  int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
   int __apac_result;
 #pragma omp taskgroup
   {
@@ -746,27 +606,13 @@ int pairalign() {
     for (int a = 0; a < 32; a++) {
       matrix[a] = (int*)malloc(32 * sizeof(int));
     }
-    if (__apac_count_ok) {
-#pragma omp atomic
-      __apac_count++;
-    }
-#pragma omp task default(shared) depend(in : def_aa_xref, matrix) depend(inout : mat_avscore, matrix[0], matrix[0][0], maxres) if (__apac_count_ok)
-    {
-      maxres = get_matrix(matptr, mat_xref, 10, matrix, &mat_avscore);
-      if (__apac_count_ok) {
-#pragma omp atomic
-        __apac_count--;
-      }
-    }
-#pragma omp taskwait depend(in : maxres)
+    maxres = get_matrix(matptr, mat_xref, 10, matrix, &mat_avscore);
     if (maxres == 0) {
-#pragma omp taskwait
       __apac_result = -1;
       goto __apac_exit;
     }
     bots_message("Start aligning ");
     for (si = 0; si < nseqs; si++) {
-#pragma omp taskwait depend(in : seqlen_array, seqlen_array[si + 1], si) depend(inout : n)
       n = seqlen_array[si + 1];
       len1 = 0;
       for (i = 1; i <= n; i++) {
@@ -776,7 +622,6 @@ int pairalign() {
         }
       }
       for (sj = si + 1; sj < nseqs; sj++) {
-#pragma omp taskwait depend(in : seqlen_array, seqlen_array[sj + 1], sj) depend(inout : m)
         m = seqlen_array[sj + 1];
         if (n == 0 || m == 0) {
           bench_output[si * nseqs + sj] = (int)1.;
@@ -816,46 +661,18 @@ int pairalign() {
           *seq1 = si + 1;
 #pragma omp taskwait depend(in : sj) depend(inout : seq2[0])
           *seq2 = sj + 1;
-          if (__apac_count_ok) {
-#pragma omp atomic
-            __apac_count++;
-          }
-#pragma omp task default(shared) depend(in : g[0], gh[0], m, matrix, matrix[0], matrix[0][0], n, seq1[0], seq2[0], seq_array, seq_array[*seq1], seq_array[*seq1][0], seq_array[*seq2], seq_array[*seq2][0]) depend(inout : maxscore[0], se1[0], se2[0]) if (__apac_count_ok) firstprivate(se1) firstprivate(se2) firstprivate(maxscore) firstprivate(seq1) firstprivate(seq2) firstprivate(g) firstprivate(gh)
-          {
-            forward_pass(&seq_array[*seq1][0], &seq_array[*seq2][0], n, m, se1, se2, maxscore, *g, *gh, matrix);
-            if (__apac_count_ok) {
-#pragma omp atomic
-              __apac_count--;
-            }
-          }
-          if (__apac_count_ok) {
-#pragma omp atomic
-            __apac_count++;
-          }
-#pragma omp task default(shared) depend(in : g[0], gh[0], matrix, matrix[0], matrix[0][0], maxscore[0], se1[0], se2[0], seq1[0], seq2[0], seq_array, seq_array[*seq1], seq_array[*seq1][0], seq_array[*seq2], seq_array[*seq2][0]) depend(inout : sb1[0], sb2[0]) if (__apac_count_ok) firstprivate(se1) firstprivate(se2) firstprivate(sb1) firstprivate(sb2) firstprivate(maxscore) firstprivate(seq1) firstprivate(seq2) firstprivate(g) firstprivate(gh)
-          {
-            reverse_pass(&seq_array[*seq1][0], &seq_array[*seq2][0], *se1, *se2, sb1, sb2, *maxscore, *g, *gh, matrix);
-            if (__apac_count_ok) {
-#pragma omp atomic
-              __apac_count--;
-            }
-          }
+#pragma omp taskwait depend(in : g[0], gh[0], m, matrix, matrix[0], matrix[0][0], n, seq1[0], seq2[0], seq_array, seq_array[*seq1], seq_array[*seq1][0], seq_array[*seq2], seq_array[*seq2][0]) depend(inout : maxscore[0], se1[0], se2[0])
+          forward_pass(&seq_array[*seq1][0], &seq_array[*seq2][0], n, m, se1, se2, maxscore, *g, *gh, matrix);
+#pragma omp taskwait depend(in : g[0], gh[0], matrix, matrix[0], matrix[0][0], maxscore[0], se1[0], se2[0], seq1[0], seq2[0], seq_array, seq_array[*seq1], seq_array[*seq1][0], seq_array[*seq2], seq_array[*seq2][0]) depend(inout : sb1[0], sb2[0])
+          reverse_pass(&seq_array[*seq1][0], &seq_array[*seq2][0], *se1, *se2, sb1, sb2, *maxscore, *g, *gh, matrix);
 #pragma omp taskwait depend(inout : print_ptr[0])
           *print_ptr = 1;
 #pragma omp taskwait depend(inout : last_print[0])
           *last_print = 0;
-          if (__apac_count_ok) {
-#pragma omp atomic
-            __apac_count++;
-          }
-#pragma omp task default(shared) depend(in : displ, g[0], gh[0], matrix, matrix[0], matrix[0][0], sb1[0], sb2[0], se1[0], se2[0], seq1[0], seq2[0]) depend(inout : displ[0], last_print[0], mm_score, print_ptr[0]) if (__apac_count_ok) firstprivate(se1) firstprivate(se2) firstprivate(sb1) firstprivate(sb2) firstprivate(seq1) firstprivate(seq2) firstprivate(g) firstprivate(gh) firstprivate(print_ptr) firstprivate(last_print)
+#pragma omp task default(shared) depend(in : displ, g[0], gh[0], matrix, matrix[0], matrix[0][0], sb1[0], sb2[0], se1[0], se2[0], seq1[0], seq2[0]) depend(inout : displ[0], last_print[0], mm_score, print_ptr[0]) if (-0.0982388225607 + *sb1 * 0.00254717131981 + apac_fpow(5, *sb1) * 1.20715600186e-14 > __apac_cutoff) firstprivate(se1) firstprivate(se2) firstprivate(sb1) firstprivate(sb2) firstprivate(seq1) firstprivate(seq2) firstprivate(g) firstprivate(gh) firstprivate(print_ptr) firstprivate(last_print)
           {
             diff(*sb1 - 1, *sb2 - 1, *se1 - *sb1 + 1, *se2 - *sb2 + 1, 0, 0, print_ptr, last_print, displ, *seq1, *seq2, *g, *gh, matrix);
             mm_score = tracepath(*sb1, *sb2, print_ptr, displ, *seq1, *seq2);
-            if (__apac_count_ok) {
-#pragma omp atomic
-              __apac_count--;
-            }
           }
           if (len1 == 0 || len2 == 0) {
 #pragma omp taskwait depend(inout : mm_score)
@@ -866,150 +683,30 @@ int pairalign() {
           }
 #pragma omp taskwait depend(in : bench_output, mm_score, nseqs, si, sj) depend(inout : bench_output[si * nseqs + sj])
           bench_output[si * nseqs + sj] = (int)mm_score;
-          if (__apac_count_ok) {
-#pragma omp atomic
-            __apac_count++;
-          }
-#pragma omp task default(shared) depend(inout : se1[0]) if (__apac_count_ok) firstprivate(se1)
-          {
-            delete se1;
-            if (__apac_count_ok) {
-#pragma omp atomic
-              __apac_count--;
-            }
-          }
-          if (__apac_count_ok) {
-#pragma omp atomic
-            __apac_count++;
-          }
-#pragma omp task default(shared) depend(inout : se2[0]) if (__apac_count_ok) firstprivate(se2)
-          {
-            delete se2;
-            if (__apac_count_ok) {
-#pragma omp atomic
-              __apac_count--;
-            }
-          }
-          if (__apac_count_ok) {
-#pragma omp atomic
-            __apac_count++;
-          }
-#pragma omp task default(shared) depend(inout : sb1[0]) if (__apac_count_ok) firstprivate(sb1)
-          {
-            delete sb1;
-            if (__apac_count_ok) {
-#pragma omp atomic
-              __apac_count--;
-            }
-          }
-          if (__apac_count_ok) {
-#pragma omp atomic
-            __apac_count++;
-          }
-#pragma omp task default(shared) depend(inout : sb2[0]) if (__apac_count_ok) firstprivate(sb2)
-          {
-            delete sb2;
-            if (__apac_count_ok) {
-#pragma omp atomic
-              __apac_count--;
-            }
-          }
-          if (__apac_count_ok) {
-#pragma omp atomic
-            __apac_count++;
-          }
-#pragma omp task default(shared) depend(inout : maxscore[0]) if (__apac_count_ok) firstprivate(maxscore)
-          {
-            delete maxscore;
-            if (__apac_count_ok) {
-#pragma omp atomic
-              __apac_count--;
-            }
-          }
-          if (__apac_count_ok) {
-#pragma omp atomic
-            __apac_count++;
-          }
-#pragma omp task default(shared) depend(inout : seq1[0]) if (__apac_count_ok) firstprivate(seq1)
-          {
-            delete seq1;
-            if (__apac_count_ok) {
-#pragma omp atomic
-              __apac_count--;
-            }
-          }
-          if (__apac_count_ok) {
-#pragma omp atomic
-            __apac_count++;
-          }
-#pragma omp task default(shared) depend(inout : seq2[0]) if (__apac_count_ok) firstprivate(seq2)
-          {
-            delete seq2;
-            if (__apac_count_ok) {
-#pragma omp atomic
-              __apac_count--;
-            }
-          }
-          if (__apac_count_ok) {
-#pragma omp atomic
-            __apac_count++;
-          }
-#pragma omp task default(shared) depend(inout : g[0]) if (__apac_count_ok) firstprivate(g)
-          {
-            delete g;
-            if (__apac_count_ok) {
-#pragma omp atomic
-              __apac_count--;
-            }
-          }
-          if (__apac_count_ok) {
-#pragma omp atomic
-            __apac_count++;
-          }
-#pragma omp task default(shared) depend(inout : gh[0]) if (__apac_count_ok) firstprivate(gh)
-          {
-            delete gh;
-            if (__apac_count_ok) {
-#pragma omp atomic
-              __apac_count--;
-            }
-          }
-          if (__apac_count_ok) {
-#pragma omp atomic
-            __apac_count++;
-          }
-#pragma omp task default(shared) depend(inout : displ[0]) if (__apac_count_ok) firstprivate(displ)
-          {
-            delete[] displ;
-            if (__apac_count_ok) {
-#pragma omp atomic
-              __apac_count--;
-            }
-          }
-          if (__apac_count_ok) {
-#pragma omp atomic
-            __apac_count++;
-          }
-#pragma omp task default(shared) depend(inout : print_ptr[0]) if (__apac_count_ok) firstprivate(print_ptr)
-          {
-            delete print_ptr;
-            if (__apac_count_ok) {
-#pragma omp atomic
-              __apac_count--;
-            }
-          }
-          if (__apac_count_ok) {
-#pragma omp atomic
-            __apac_count++;
-          }
-#pragma omp task default(shared) depend(inout : last_print[0]) if (__apac_count_ok) firstprivate(last_print)
-          {
-            delete last_print;
-            if (__apac_count_ok) {
-#pragma omp atomic
-              __apac_count--;
-            }
-          }
+#pragma omp task default(shared) depend(inout : se1[0]) firstprivate(se1)
+          delete se1;
+#pragma omp task default(shared) depend(inout : se2[0]) firstprivate(se2)
+          delete se2;
+#pragma omp task default(shared) depend(inout : sb1[0]) firstprivate(sb1)
+          delete sb1;
+#pragma omp task default(shared) depend(inout : sb2[0]) firstprivate(sb2)
+          delete sb2;
+#pragma omp task default(shared) depend(inout : maxscore[0]) firstprivate(maxscore)
+          delete maxscore;
+#pragma omp task default(shared) depend(inout : seq1[0]) firstprivate(seq1)
+          delete seq1;
+#pragma omp task default(shared) depend(inout : seq2[0]) firstprivate(seq2)
+          delete seq2;
+#pragma omp task default(shared) depend(inout : g[0]) firstprivate(g)
+          delete g;
+#pragma omp task default(shared) depend(inout : gh[0]) firstprivate(gh)
+          delete gh;
+#pragma omp task default(shared) depend(inout : displ[0]) firstprivate(displ)
+          delete[] displ;
+#pragma omp task default(shared) depend(inout : print_ptr[0]) firstprivate(print_ptr)
+          delete print_ptr;
+#pragma omp task default(shared) depend(inout : last_print[0]) firstprivate(last_print)
+          delete last_print;
         }
       }
     }

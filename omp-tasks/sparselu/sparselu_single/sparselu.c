@@ -219,8 +219,8 @@ void sparselu_par_call(float **BENCH)
    bots_message("Computing SparseLU Factorization (%dx%d matrix with %dx%d blocks) ",
            bots_arg_size,bots_arg_size,bots_arg_size_1,bots_arg_size_1);
 #pragma omp parallel
-#pragma omp single nowait
-#pragma omp task untied
+#pragma omp master
+#pragma omp taskgroup
    for (kk=0; kk<bots_arg_size; kk++) 
    {
       lu0(BENCH[kk*bots_arg_size+kk]);

@@ -67,16 +67,31 @@ void write_outputs(int n, int cc) {
 }
 
 void cc_core(int i, int cc) {
-  int j;
-  int n;
-  int expected = 0;
-  if (atomic_compare(&visited[i], &expected)) {
-    if (bots_verbose_mode) printf("Adding node %d to component %d\n", i, cc);
-    atomic_add(&components[cc], 1);
-    for (j = 0; j < nodes[i].n; j++) {
-      n = nodes[i].neighbor[j];
-      cc_core(n, cc);
+  int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
+#pragma omp taskgroup
+  {
+    int j;
+    int n;
+    int expected = 0;
+    if (atomic_compare(&visited[i], &expected)) {
+      atomic_add(&components[cc], 1);
+      for (j = 0; j < nodes[i].n; j++) {
+        if (__apac_count_ok) {
+#pragma omp atomic
+          __apac_count++;
+        }
+#pragma omp task default(shared) depend(in : cc, i, nodes) depend(inout : n) firstprivate(j) if (__apac_count_ok)
+        {
+          n = nodes[i].neighbor[j];
+          cc_core(n, cc);
+          if (__apac_count_ok) {
+#pragma omp atomic
+            __apac_count--;
+          }
+        }
+      }
     }
+  __apac_exit:;
   }
 }
 
@@ -84,7 +99,6 @@ void cc_core_seq(int i, int cc) {
   int j;
   int n;
   if (visited[i] == 0) {
-    if (bots_verbose_mode) printf("Adding node %d to component %d\n", i, cc);
     visited[i] = 1;
     components[cc]++;
     for (j = 0; j < nodes[i].n; j++) {
@@ -103,29 +117,16 @@ void cc_init() {
 }
 
 void cc(int* cc) {
-  int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
 #pragma omp parallel
 #pragma omp master
 #pragma omp taskgroup
   {
     int i;
-    int expected = 0;
     *cc = 0;
     for (i = 0; i < bots_arg_size; i++) {
-      if (atomic_compare(&visited[i], &expected)) {
-        if (__apac_count_ok) {
-#pragma omp atomic
-          __apac_count++;
-        }
-#pragma omp task default(shared) depend(in : cc) depend(inout : cc[0]) firstprivate(i) if (__apac_count_ok)
-        {
-          cc_core(i, *cc);
-          (*cc)++;
-          if (__apac_count_ok) {
-#pragma omp atomic
-            __apac_count--;
-          }
-        }
+      if (atomic_load(&visited[i]) == 0) {
+        cc_core(i, *cc);
+        (*cc)++;
       }
     }
   __apac_exit:;

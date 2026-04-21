@@ -78,9 +78,6 @@ void cc_core(int i, int cc) {
       int n;
       int expected = 0;
       if (atomic_compare(&visited[i], &expected)) {
-        if (bots_verbose_mode) {
-          printf("Adding node %d to component %d\n", i, cc);
-        }
         atomic_add(&components[cc], 1);
         for (j = 0; j < nodes[i].n; j++) {
 #pragma omp task default(shared) depend(in : cc, i, nodes) depend(inout : n) firstprivate(__apac_depth_local, j) if (__apac_depth_ok)
@@ -104,7 +101,6 @@ void cc_core_seq(int i, int cc) {
   int j;
   int n;
   if (visited[i] == 0) {
-    if (bots_verbose_mode) printf("Adding node %d to component %d\n", i, cc);
     visited[i] = 1;
     components[cc]++;
     for (j = 0; j < nodes[i].n; j++) {
@@ -123,32 +119,19 @@ void cc_init() {
 }
 
 void cc(int* cc) {
-  int __apac_depth_local = __apac_depth;
-  int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
-  if (__apac_depth_ok) {
 #pragma omp parallel
 #pragma omp master
 #pragma omp taskgroup
-    {
-      int i;
-      int expected = 0;
-      *cc = 0;
-      for (i = 0; i < bots_arg_size; i++) {
-        if (atomic_compare(&visited[i], &expected)) {
-#pragma omp task default(shared) depend(in : cc) depend(inout : cc[0]) firstprivate(__apac_depth_local, i) if (__apac_depth_ok)
-          {
-            if (__apac_depth_ok) {
-              __apac_depth = __apac_depth_local + 1;
-            }
-            cc_core(i, *cc);
-            (*cc)++;
-          }
-        }
+  {
+    int i;
+    *cc = 0;
+    for (i = 0; i < bots_arg_size; i++) {
+      if (atomic_load(&visited[i]) == 0) {
+        cc_core(i, *cc);
+        (*cc)++;
       }
-    __apac_exit:;
     }
-  } else {
-    cc_seq(cc);
+  __apac_exit:;
   }
 }
 

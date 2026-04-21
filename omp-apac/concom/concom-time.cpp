@@ -61,16 +61,22 @@ void write_outputs(int n, int cc) {
 }
 
 void cc_core(int i, int cc) {
-  int j;
-  int n;
-  int expected = 0;
-  if (atomic_compare(&visited[i], &expected)) {
-    if (bots_verbose_mode) printf("Adding node %d to component %d\n", i, cc);
-    atomic_add(&components[cc], 1);
-    for (j = 0; j < nodes[i].n; j++) {
-      n = nodes[i].neighbor[j];
-      cc_core(n, cc);
+#pragma omp taskgroup
+  {
+    int j;
+    int n;
+    int expected = 0;
+    if (atomic_compare(&visited[i], &expected)) {
+      atomic_add(&components[cc], 1);
+      for (j = 0; j < nodes[i].n; j++) {
+#pragma omp task default(shared) depend(in : cc, i, nodes) depend(inout : n) firstprivate(j)
+        {
+          n = nodes[i].neighbor[j];
+          cc_core(n, cc);
+        }
+      }
     }
+  __apac_exit:;
   }
 }
 
@@ -78,7 +84,6 @@ void cc_core_seq(int i, int cc) {
   int j;
   int n;
   if (visited[i] == 0) {
-    if (bots_verbose_mode) printf("Adding node %d to component %d\n", i, cc);
     visited[i] = 1;
     components[cc]++;
     for (j = 0; j < nodes[i].n; j++) {
@@ -102,15 +107,11 @@ void cc(int* cc) {
 #pragma omp taskgroup
   {
     int i;
-    int expected = 0;
     *cc = 0;
     for (i = 0; i < bots_arg_size; i++) {
-      if (atomic_compare(&visited[i], &expected)) {
-#pragma omp task default(shared) depend(in : cc) depend(inout : cc[0]) firstprivate(i)
-        {
-          cc_core(i, *cc);
-          (*cc)++;
-        }
+      if (atomic_load(&visited[i]) == 0) {
+        cc_core(i, *cc);
+        (*cc)++;
       }
     }
   __apac_exit:;

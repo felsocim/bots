@@ -19,7 +19,7 @@
 ##############################################################################################
 
 OTHER_OBJS = compare.o
-DISABLE_CUTOFF = %time
+DISABLE_CUTOFF = %time %depth %depth-time %count %count-time %count-depth %count-depth-time
 SKIP = read_input,knapsack_check
 MAIN = knapsack_main
 

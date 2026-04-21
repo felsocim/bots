@@ -35,7 +35,6 @@
 #include "bots.h"
 
 int best_so_far;
-int number_of_tasks;
 
 int read_input(const char *filename, item_t *items, int *capacity, int *n)
 {
@@ -73,7 +72,6 @@ void knapsack(item_t *e, int c, int n, int v, int *sol)
      int with, without, best;
      double ub;
 
-     number_of_tasks++;
      /* base case: full knapsack or no items */
      if (c < 0)
      {
@@ -122,7 +120,6 @@ void knapsack_seq(item_t *e, int c, int n, int v, int *sol)
      int with, without, best;
      double ub;
 
-     number_of_tasks++;
      /* base case: full knapsack or no items */
      if (c < 0)
      {
@@ -168,18 +165,14 @@ void knapsack_seq(item_t *e, int c, int n, int v, int *sol)
 void knapsack_main (item_t *e, int c, int n, int *sol)
 {
      best_so_far = INT_MIN;
-     number_of_tasks = 0;
      
      knapsack(e, c, n, 0, sol);
-
-     bots_number_of_tasks += number_of_tasks;
      
      if (bots_verbose_mode) printf("Best value for parallel execution is %d\n\n", *sol);
 }
 void knapsack_main_seq (item_t *e, int c, int n, int *sol)
 {
      best_so_far = INT_MIN;
-     number_of_tasks = 0;
 
      knapsack_seq(e, c, n, 0, sol);
 

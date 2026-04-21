@@ -9,8 +9,6 @@
 
 int best_so_far;
 
-int number_of_tasks;
-
 int read_input(const char* filename, item_t* items, int* capacity, int* n) {
   int i;
   FILE* f;
@@ -35,8 +33,6 @@ void knapsack(item_t* e, int c, int n, int v, int* sol) {
     int without;
     int best;
     double ub;
-#pragma omp critical
-    number_of_tasks++;
     if (c < 0) {
       *sol = -2147483647 - 1;
       goto __apac_exit;
@@ -71,8 +67,6 @@ void knapsack_seq(item_t* e, int c, int n, int v, int* sol) {
   int without;
   int best;
   double ub;
-#pragma omp critical
-  number_of_tasks++;
   if (c < 0) {
     *sol = -2147483647 - 1;
     return;
@@ -101,27 +95,16 @@ void knapsack_main(item_t* e, int c, int n, int* sol) {
 #pragma omp taskgroup
   {
 #pragma omp critical
-    {
-      best_so_far = -2147483647 - 1;
-      number_of_tasks = 0;
-      bots_number_of_tasks += number_of_tasks;
-    }
-#pragma omp task default(shared) depend(in : c, e, e[0], n, sol) depend(inout : sol[0])
+    best_so_far = -2147483647 - 1;
     knapsack(e, c, n, 0, sol);
-#pragma omp taskwait
-    if (bots_verbose_mode) {
-      printf("Best value for parallel execution is %d\n\n", *sol);
-    }
+    if (bots_verbose_mode) printf("Best value for parallel execution is %d\n\n", *sol);
   __apac_exit:;
   }
 }
 
 void knapsack_main_seq(item_t* e, int c, int n, int* sol) {
 #pragma omp critical
-  {
-    best_so_far = -2147483647 - 1;
-    number_of_tasks = 0;
-  }
+  best_so_far = -2147483647 - 1;
   knapsack_seq(e, c, n, 0, sol);
   if (bots_verbose_mode) printf("Best value for sequential execution is %d\n\n", *sol);
 }

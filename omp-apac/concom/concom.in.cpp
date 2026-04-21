@@ -98,7 +98,6 @@ void cc_core (int i, int cc)
    int expected = 0; // The expected value if the node has not been visited
    if (atomic_compare(&visited[i], &expected)) {
       /* Successfully marked as visited, proceed */
-      if (bots_verbose_mode) printf("Adding node %d to component %d\n", i, cc);
       atomic_add(&components[cc], 1);
 
       /* Add each neighbor's subtree to the current component */
@@ -115,7 +114,6 @@ void cc_core_seq (int i, int cc)
    /* if node has not been visited */
    if (visited[i] == 0) {
       /* add node to current component */
-      if (bots_verbose_mode) printf("Adding node %d to component %d\n", i, cc);
       visited[i] = 1;
       components[cc]++;
       /* add each neighbor's subtree to the current component */

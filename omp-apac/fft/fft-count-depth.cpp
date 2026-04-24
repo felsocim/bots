@@ -46,7 +46,7 @@ void compute_w_coefficients(int n, int a, int b, COMPLEX* W) {
 #pragma omp atomic
           __apac_count++;
         }
-#pragma omp task default(shared) depend(in : W, a, ab[0], b, n, ab) depend(inout : W[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+#pragma omp task default(shared) depend(in : W, a, ab[0], b, n) depend(inout : W[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok) firstprivate(ab)
         {
           if (__apac_count_ok || __apac_depth_ok) {
             __apac_depth = __apac_depth_local + 1;
@@ -62,7 +62,7 @@ void compute_w_coefficients(int n, int a, int b, COMPLEX* W) {
 #pragma omp atomic
           __apac_count++;
         }
-#pragma omp task default(shared) depend(inout : ab) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+#pragma omp task default(shared) depend(inout : ab[0]) if (__apac_count_ok || __apac_depth_ok) firstprivate(ab, __apac_depth_local)
         {
           if (__apac_count_ok || __apac_depth_ok) {
             __apac_depth = __apac_depth_local + 1;
@@ -152,7 +152,7 @@ void unshuffle(int a, int b, COMPLEX* in, COMPLEX* out, int r, int m) {
 #pragma omp atomic
           __apac_count++;
         }
-#pragma omp task default(shared) depend(in : a, ab[0], b, in, m, out, r, ab) depend(inout : in[0], out[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+#pragma omp task default(shared) depend(in : a, ab[0], b, in, m, out, r) depend(inout : in[0], out[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok) firstprivate(ab)
         {
           if (__apac_count_ok || __apac_depth_ok) {
             __apac_depth = __apac_depth_local + 1;
@@ -168,7 +168,7 @@ void unshuffle(int a, int b, COMPLEX* in, COMPLEX* out, int r, int m) {
 #pragma omp atomic
           __apac_count++;
         }
-#pragma omp task default(shared) depend(inout : ab) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+#pragma omp task default(shared) depend(inout : ab[0]) if (__apac_count_ok || __apac_depth_ok) firstprivate(ab, __apac_depth_local)
         {
           if (__apac_count_ok || __apac_depth_ok) {
             __apac_depth = __apac_depth_local + 1;
@@ -283,7 +283,7 @@ void fft_twiddle_gen(int i, int i1, COMPLEX* in, COMPLEX* out, COMPLEX* W, int n
 #pragma omp atomic
           __apac_count++;
         }
-#pragma omp task default(shared) depend(in : W, W[0], i, i1, i2[0], in, m, nW, nWdn, out, r, i2) depend(inout : in[0], out[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+#pragma omp task default(shared) depend(in : W, W[0], i, i1, i2[0], in, m, nW, nWdn, out, r) depend(inout : in[0], out[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok) firstprivate(i2)
         {
           if (__apac_count_ok || __apac_depth_ok) {
             __apac_depth = __apac_depth_local + 1;
@@ -299,7 +299,7 @@ void fft_twiddle_gen(int i, int i1, COMPLEX* in, COMPLEX* out, COMPLEX* W, int n
 #pragma omp atomic
           __apac_count++;
         }
-#pragma omp task default(shared) depend(inout : i2) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+#pragma omp task default(shared) depend(inout : i2[0]) if (__apac_count_ok || __apac_depth_ok) firstprivate(i2, __apac_depth_local)
         {
           if (__apac_count_ok || __apac_depth_ok) {
             __apac_depth = __apac_depth_local + 1;
@@ -388,7 +388,7 @@ void fft_twiddle_2(int a, int b, COMPLEX* in, COMPLEX* out, COMPLEX* W, int nW, 
 #pragma omp atomic
           __apac_count++;
         }
-#pragma omp task default(shared) depend(in : W, a, ab[0], b, in, in[0], m, nW, nWdn, out, ab) depend(inout : W[0], out[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+#pragma omp task default(shared) depend(in : W, W[0], a, ab[0], b, in, in[0], m, nW, nWdn, out) depend(inout : out[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok) firstprivate(ab)
         {
           if (__apac_count_ok || __apac_depth_ok) {
             __apac_depth = __apac_depth_local + 1;
@@ -404,7 +404,7 @@ void fft_twiddle_2(int a, int b, COMPLEX* in, COMPLEX* out, COMPLEX* W, int nW, 
 #pragma omp atomic
           __apac_count++;
         }
-#pragma omp task default(shared) depend(inout : ab) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+#pragma omp task default(shared) depend(inout : ab[0]) if (__apac_count_ok || __apac_depth_ok) firstprivate(ab, __apac_depth_local)
         {
           if (__apac_count_ok || __apac_depth_ok) {
             __apac_depth = __apac_depth_local + 1;
@@ -487,7 +487,7 @@ void fft_unshuffle_2(int a, int b, COMPLEX* in, COMPLEX* out, int m) {
 #pragma omp atomic
           __apac_count++;
         }
-#pragma omp task default(shared) depend(in : a, ab[0], b, in, m, out, ab) depend(inout : in[0], out[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+#pragma omp task default(shared) depend(in : a, ab[0], b, in, m, out) depend(inout : in[0], out[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok) firstprivate(ab)
         {
           if (__apac_count_ok || __apac_depth_ok) {
             __apac_depth = __apac_depth_local + 1;
@@ -503,7 +503,7 @@ void fft_unshuffle_2(int a, int b, COMPLEX* in, COMPLEX* out, int m) {
 #pragma omp atomic
           __apac_count++;
         }
-#pragma omp task default(shared) depend(inout : ab) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+#pragma omp task default(shared) depend(inout : ab[0]) if (__apac_count_ok || __apac_depth_ok) firstprivate(ab, __apac_depth_local)
         {
           if (__apac_count_ok || __apac_depth_ok) {
             __apac_depth = __apac_depth_local + 1;
@@ -665,7 +665,7 @@ void fft_twiddle_4(int a, int b, COMPLEX* in, COMPLEX* out, COMPLEX* W, int nW, 
 #pragma omp atomic
           __apac_count++;
         }
-#pragma omp task default(shared) depend(in : W, a, ab[0], b, in, in[0], m, nW, nWdn, out, ab) depend(inout : W[0], out[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+#pragma omp task default(shared) depend(in : W, a, ab[0], b, in, in[0], m, nW, nWdn, out) depend(inout : W[0], out[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok) firstprivate(ab)
         {
           if (__apac_count_ok || __apac_depth_ok) {
             __apac_depth = __apac_depth_local + 1;
@@ -681,7 +681,7 @@ void fft_twiddle_4(int a, int b, COMPLEX* in, COMPLEX* out, COMPLEX* W, int nW, 
 #pragma omp atomic
           __apac_count++;
         }
-#pragma omp task default(shared) depend(inout : ab) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+#pragma omp task default(shared) depend(inout : ab[0]) if (__apac_count_ok || __apac_depth_ok) firstprivate(ab, __apac_depth_local)
         {
           if (__apac_count_ok || __apac_depth_ok) {
             __apac_depth = __apac_depth_local + 1;
@@ -804,7 +804,7 @@ void fft_unshuffle_4(int a, int b, COMPLEX* in, COMPLEX* out, int m) {
 #pragma omp atomic
           __apac_count++;
         }
-#pragma omp task default(shared) depend(in : a, ab[0], b, in, m, out, ab) depend(inout : in[0], out[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+#pragma omp task default(shared) depend(in : a, ab[0], b, in, m, out) depend(inout : in[0], out[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok) firstprivate(ab)
         {
           if (__apac_count_ok || __apac_depth_ok) {
             __apac_depth = __apac_depth_local + 1;
@@ -820,7 +820,7 @@ void fft_unshuffle_4(int a, int b, COMPLEX* in, COMPLEX* out, int m) {
 #pragma omp atomic
           __apac_count++;
         }
-#pragma omp task default(shared) depend(inout : ab) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+#pragma omp task default(shared) depend(inout : ab[0]) if (__apac_count_ok || __apac_depth_ok) firstprivate(ab, __apac_depth_local)
         {
           if (__apac_count_ok || __apac_depth_ok) {
             __apac_depth = __apac_depth_local + 1;
@@ -1156,7 +1156,7 @@ void fft_twiddle_8(int a, int b, COMPLEX* in, COMPLEX* out, COMPLEX* W, int nW, 
 #pragma omp atomic
           __apac_count++;
         }
-#pragma omp task default(shared) depend(in : W, a, ab[0], b, in, in[0], m, nW, nWdn, out, ab) depend(inout : W[0], out[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+#pragma omp task default(shared) depend(in : W, a, ab[0], b, in, in[0], m, nW, nWdn, out) depend(inout : W[0], out[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok) firstprivate(ab)
         {
           if (__apac_count_ok || __apac_depth_ok) {
             __apac_depth = __apac_depth_local + 1;
@@ -1172,7 +1172,7 @@ void fft_twiddle_8(int a, int b, COMPLEX* in, COMPLEX* out, COMPLEX* W, int nW, 
 #pragma omp atomic
           __apac_count++;
         }
-#pragma omp task default(shared) depend(inout : ab) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+#pragma omp task default(shared) depend(inout : ab[0]) if (__apac_count_ok || __apac_depth_ok) firstprivate(ab, __apac_depth_local)
         {
           if (__apac_count_ok || __apac_depth_ok) {
             __apac_depth = __apac_depth_local + 1;
@@ -1395,7 +1395,7 @@ void fft_unshuffle_8(int a, int b, COMPLEX* in, COMPLEX* out, int m) {
 #pragma omp atomic
           __apac_count++;
         }
-#pragma omp task default(shared) depend(in : a, ab[0], b, in, m, out, ab) depend(inout : in[0], out[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+#pragma omp task default(shared) depend(in : a, ab[0], b, in, m, out) depend(inout : in[0], out[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok) firstprivate(ab)
         {
           if (__apac_count_ok || __apac_depth_ok) {
             __apac_depth = __apac_depth_local + 1;
@@ -1411,7 +1411,7 @@ void fft_unshuffle_8(int a, int b, COMPLEX* in, COMPLEX* out, int m) {
 #pragma omp atomic
           __apac_count++;
         }
-#pragma omp task default(shared) depend(inout : ab) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+#pragma omp task default(shared) depend(inout : ab[0]) if (__apac_count_ok || __apac_depth_ok) firstprivate(ab, __apac_depth_local)
         {
           if (__apac_count_ok || __apac_depth_ok) {
             __apac_depth = __apac_depth_local + 1;
@@ -2171,7 +2171,7 @@ void fft_twiddle_16(int a, int b, COMPLEX* in, COMPLEX* out, COMPLEX* W, int nW,
 #pragma omp atomic
           __apac_count++;
         }
-#pragma omp task default(shared) depend(in : W, a, ab[0], b, in, in[0], m, nW, nWdn, out, ab) depend(inout : W[0], out[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+#pragma omp task default(shared) depend(in : W, a, ab[0], b, in, in[0], m, nW, nWdn, out) depend(inout : W[0], out[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok) firstprivate(ab)
         {
           if (__apac_count_ok || __apac_depth_ok) {
             __apac_depth = __apac_depth_local + 1;
@@ -2187,7 +2187,7 @@ void fft_twiddle_16(int a, int b, COMPLEX* in, COMPLEX* out, COMPLEX* W, int nW,
 #pragma omp atomic
           __apac_count++;
         }
-#pragma omp task default(shared) depend(inout : ab) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+#pragma omp task default(shared) depend(inout : ab[0]) if (__apac_count_ok || __apac_depth_ok) firstprivate(ab, __apac_depth_local)
         {
           if (__apac_count_ok || __apac_depth_ok) {
             __apac_depth = __apac_depth_local + 1;
@@ -2650,7 +2650,7 @@ void fft_unshuffle_16(int a, int b, COMPLEX* in, COMPLEX* out, int m) {
 #pragma omp atomic
           __apac_count++;
         }
-#pragma omp task default(shared) depend(in : a, ab[0], b, in, m, out, ab) depend(inout : in[0], out[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+#pragma omp task default(shared) depend(in : a, ab[0], b, in, m, out) depend(inout : in[0], out[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok) firstprivate(ab)
         {
           if (__apac_count_ok || __apac_depth_ok) {
             __apac_depth = __apac_depth_local + 1;
@@ -2666,7 +2666,7 @@ void fft_unshuffle_16(int a, int b, COMPLEX* in, COMPLEX* out, int m) {
 #pragma omp atomic
           __apac_count++;
         }
-#pragma omp task default(shared) depend(inout : ab) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+#pragma omp task default(shared) depend(inout : ab[0]) if (__apac_count_ok || __apac_depth_ok) firstprivate(ab, __apac_depth_local)
         {
           if (__apac_count_ok || __apac_depth_ok) {
             __apac_depth = __apac_depth_local + 1;
@@ -4434,7 +4434,7 @@ void fft_twiddle_32(int a, int b, COMPLEX* in, COMPLEX* out, COMPLEX* W, int nW,
 #pragma omp atomic
           __apac_count++;
         }
-#pragma omp task default(shared) depend(in : W, a, ab[0], b, in, in[0], m, nW, nWdn, out, ab) depend(inout : W[0], out[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+#pragma omp task default(shared) depend(in : W, a, ab[0], b, in, in[0], m, nW, nWdn, out) depend(inout : W[0], out[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok) firstprivate(ab)
         {
           if (__apac_count_ok || __apac_depth_ok) {
             __apac_depth = __apac_depth_local + 1;
@@ -4450,7 +4450,7 @@ void fft_twiddle_32(int a, int b, COMPLEX* in, COMPLEX* out, COMPLEX* W, int nW,
 #pragma omp atomic
           __apac_count++;
         }
-#pragma omp task default(shared) depend(inout : ab) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+#pragma omp task default(shared) depend(inout : ab[0]) if (__apac_count_ok || __apac_depth_ok) firstprivate(ab, __apac_depth_local)
         {
           if (__apac_count_ok || __apac_depth_ok) {
             __apac_depth = __apac_depth_local + 1;
@@ -5473,7 +5473,7 @@ void fft_unshuffle_32(int a, int b, COMPLEX* in, COMPLEX* out, int m) {
 #pragma omp atomic
           __apac_count++;
         }
-#pragma omp task default(shared) depend(in : a, ab[0], b, in, m, out, ab) depend(inout : in[0], out[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+#pragma omp task default(shared) depend(in : a, ab[0], b, in, m, out) depend(inout : in[0], out[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok) firstprivate(ab)
         {
           if (__apac_count_ok || __apac_depth_ok) {
             __apac_depth = __apac_depth_local + 1;
@@ -5489,7 +5489,7 @@ void fft_unshuffle_32(int a, int b, COMPLEX* in, COMPLEX* out, int m) {
 #pragma omp atomic
           __apac_count++;
         }
-#pragma omp task default(shared) depend(inout : ab) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+#pragma omp task default(shared) depend(inout : ab[0]) if (__apac_count_ok || __apac_depth_ok) firstprivate(ab, __apac_depth_local)
         {
           if (__apac_count_ok || __apac_depth_ok) {
             __apac_depth = __apac_depth_local + 1;
@@ -5823,7 +5823,7 @@ void fft_aux(int n, COMPLEX* in, COMPLEX* out, int* factors, COMPLEX* W, int nW)
 #pragma omp atomic
           __apac_count++;
         }
-#pragma omp task default(shared) depend(in : W, in, in[0], m, n, nW, out) depend(inout : W[0], out[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
+#pragma omp task default(shared) depend(in : W, W[0], in, in[0], m, n, nW, out) depend(inout : out[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
         {
           if (__apac_count_ok || __apac_depth_ok) {
             __apac_depth = __apac_depth_local + 1;
@@ -6038,6 +6038,7 @@ void fft(int n, COMPLEX* in, COMPLEX* out) {
             __apac_count--;
           }
         }
+#pragma omp taskwait depend(in : r) depend(inout : factors)
         *p = r;
         p++;
 #pragma omp taskwait depend(in : r) depend(inout : l)

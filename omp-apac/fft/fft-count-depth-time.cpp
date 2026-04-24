@@ -23,63 +23,23 @@ int __apac_depth = 0;
 #pragma omp threadprivate(__apac_depth)
 
 void compute_w_coefficients(int n, int a, int b, COMPLEX* W) {
-  int __apac_count_ok = __apac_count_infinite || __apac_count < __apac_count_max;
-  int __apac_depth_local = __apac_depth;
-  int __apac_depth_ok = __apac_depth_infinite || __apac_depth_local < __apac_depth_max;
-  if (__apac_depth_ok) {
-#pragma omp taskgroup
-    {
-      double twoPiOverN;
-      int k;
-      REAL s;
-      REAL c;
-      if (b - a < 128) {
-        twoPiOverN = 2. * 3.14159265359 / n;
-        for (k = a; k <= b; ++k) {
-          c = cos(twoPiOverN * k);
-          W[k].re = W[n - k].re = c;
-          s = sin(twoPiOverN * k);
-          W[k].im = -s;
-          W[n - k].im = s;
-        }
-      } else {
-        int* ab = new int((a + b) / 2);
-        if (__apac_count_ok) {
-#pragma omp atomic
-          __apac_count++;
-        }
-#pragma omp task default(shared) depend(in : W, a, ab[0], b, n, ab) depend(inout : W[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
-        {
-          if (__apac_count_ok || __apac_depth_ok) {
-            __apac_depth = __apac_depth_local + 1;
-          }
-          compute_w_coefficients(n, a, *ab, W);
-          compute_w_coefficients(n, *ab + 1, b, W);
-          if (__apac_count_ok) {
-#pragma omp atomic
-            __apac_count--;
-          }
-        }
-        if (__apac_count_ok) {
-#pragma omp atomic
-          __apac_count++;
-        }
-#pragma omp task default(shared) depend(inout : ab) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
-        {
-          if (__apac_count_ok || __apac_depth_ok) {
-            __apac_depth = __apac_depth_local + 1;
-          }
-          delete ab;
-          if (__apac_count_ok) {
-#pragma omp atomic
-            __apac_count--;
-          }
-        }
-      }
-    __apac_exit:;
+  double twoPiOverN;
+  int k;
+  REAL s;
+  REAL c;
+  if (b - a < 128) {
+    twoPiOverN = 2. * 3.14159265359 / n;
+    for (k = a; k <= b; ++k) {
+      c = cos(twoPiOverN * k);
+      W[k].re = W[n - k].re = c;
+      s = sin(twoPiOverN * k);
+      W[k].im = -s;
+      W[n - k].im = s;
     }
   } else {
-    compute_w_coefficients_seq(n, a, b, W);
+    int ab = (a + b) / 2;
+    compute_w_coefficients(n, a, ab, W);
+    compute_w_coefficients(n, ab + 1, b, W);
   }
 }
 
@@ -5154,7 +5114,7 @@ void fft_aux(int n, COMPLEX* in, COMPLEX* out, int* factors, COMPLEX* W, int nW)
 #pragma omp atomic
             __apac_count++;
           }
-#pragma omp task default(shared) depend(in : W, factors, factors[0], in, in[0], nW, out, out[0]) depend(inout : W[0]) firstprivate(__apac_depth_local, m, k) if ((__apac_count_ok || __apac_depth_ok) && -0.000640102782045 + nW * 3.49074888688e-07 > __apac_cutoff)
+#pragma omp task default(shared) depend(in : W, factors, factors[0], in, in[0], nW, out, out[0]) depend(inout : W[0]) firstprivate(__apac_depth_local, m, k) if ((__apac_count_ok || __apac_depth_ok) && -0.0061973214858 + nW * 3.89767253198e-07 > __apac_cutoff)
           {
             if (__apac_count_ok || __apac_depth_ok) {
               __apac_depth = __apac_depth_local + 1;
@@ -5271,22 +5231,8 @@ void fft(int n, COMPLEX* in, COMPLEX* out) {
       int s = 1;
       COMPLEX* W;
       bots_message("Computing coefficients ");
-      if (__apac_count_ok) {
-#pragma omp atomic
-        __apac_count++;
-      }
-#pragma omp task default(shared) depend(in : n) depend(inout : W, W[0]) firstprivate(__apac_depth_local) if (__apac_count_ok || __apac_depth_ok)
-      {
-        if (__apac_count_ok || __apac_depth_ok) {
-          __apac_depth = __apac_depth_local + 1;
-        }
-        W = (COMPLEX*)malloc((n + 1) * sizeof(COMPLEX));
-        compute_w_coefficients(n, 0, n / 2, W);
-        if (__apac_count_ok) {
-#pragma omp atomic
-          __apac_count--;
-        }
-      }
+      W = (COMPLEX*)malloc((n + 1) * sizeof(COMPLEX));
+      compute_w_coefficients(n, 0, n / 2, W);
       bots_message(" completed!\n");
       while (l > 1 || s) {
         r = factor(l);

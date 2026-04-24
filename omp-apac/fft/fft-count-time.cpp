@@ -37,7 +37,7 @@ void compute_w_coefficients(int n, int a, int b, COMPLEX* W) {
 #pragma omp atomic
         __apac_count++;
       }
-#pragma omp task default(shared) depend(in : W, a, ab[0], b, n, ab) depend(inout : W[0]) if (__apac_count_ok)
+#pragma omp task default(shared) depend(in : W, a, ab[0], b, n) depend(inout : W[0]) if (__apac_count_ok) firstprivate(ab)
       {
         compute_w_coefficients(n, a, *ab, W);
         compute_w_coefficients(n, *ab + 1, b, W);
@@ -50,7 +50,7 @@ void compute_w_coefficients(int n, int a, int b, COMPLEX* W) {
 #pragma omp atomic
         __apac_count++;
       }
-#pragma omp task default(shared) depend(inout : ab) if (__apac_count_ok)
+#pragma omp task default(shared) depend(inout : ab[0]) if (__apac_count_ok) firstprivate(ab)
       {
         delete ab;
         if (__apac_count_ok) {
@@ -5131,7 +5131,7 @@ void fft_aux(int n, COMPLEX* in, COMPLEX* out, int* factors, COMPLEX* W, int nW)
 #pragma omp atomic
           __apac_count++;
         }
-#pragma omp task default(shared) depend(in : W, factors, factors[0], in, in[0], nW, out, out[0]) depend(inout : W[0]) firstprivate(m, k) if (__apac_count_ok && -0.000590048761897 + nW * 3.44200879494e-07 > __apac_cutoff)
+#pragma omp task default(shared) depend(in : W, factors, factors[0], in, in[0], nW, out, out[0]) depend(inout : W[0]) firstprivate(m, k) if (__apac_count_ok && -0.00824956045411 + nW * 3.67290583606e-07 > __apac_cutoff)
         {
           fft_aux(m, out + k, in + k, factors + 1, W, nW);
           if (__apac_count_ok) {

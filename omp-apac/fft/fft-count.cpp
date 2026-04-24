@@ -35,7 +35,7 @@ void compute_w_coefficients(int n, int a, int b, COMPLEX* W) {
 #pragma omp atomic
         __apac_count++;
       }
-#pragma omp task default(shared) depend(in : W, a, ab[0], b, n, ab) depend(inout : W[0]) if (__apac_count_ok)
+#pragma omp task default(shared) depend(in : W, a, ab[0], b, n) depend(inout : W[0]) if (__apac_count_ok) firstprivate(ab)
       {
         compute_w_coefficients(n, a, *ab, W);
         compute_w_coefficients(n, *ab + 1, b, W);
@@ -48,7 +48,7 @@ void compute_w_coefficients(int n, int a, int b, COMPLEX* W) {
 #pragma omp atomic
         __apac_count++;
       }
-#pragma omp task default(shared) depend(inout : ab) if (__apac_count_ok)
+#pragma omp task default(shared) depend(inout : ab[0]) if (__apac_count_ok) firstprivate(ab)
       {
         delete ab;
         if (__apac_count_ok) {
@@ -129,7 +129,7 @@ void unshuffle(int a, int b, COMPLEX* in, COMPLEX* out, int r, int m) {
 #pragma omp atomic
         __apac_count++;
       }
-#pragma omp task default(shared) depend(in : a, ab[0], b, in, m, out, r, ab) depend(inout : in[0], out[0]) if (__apac_count_ok)
+#pragma omp task default(shared) depend(in : a, ab[0], b, in, m, out, r) depend(inout : in[0], out[0]) if (__apac_count_ok) firstprivate(ab)
       {
         unshuffle(a, *ab, in, out, r, m);
         unshuffle(*ab, b, in, out, r, m);
@@ -142,7 +142,7 @@ void unshuffle(int a, int b, COMPLEX* in, COMPLEX* out, int r, int m) {
 #pragma omp atomic
         __apac_count++;
       }
-#pragma omp task default(shared) depend(inout : ab) if (__apac_count_ok)
+#pragma omp task default(shared) depend(inout : ab[0]) if (__apac_count_ok) firstprivate(ab)
       {
         delete ab;
         if (__apac_count_ok) {
@@ -245,7 +245,7 @@ void fft_twiddle_gen(int i, int i1, COMPLEX* in, COMPLEX* out, COMPLEX* W, int n
 #pragma omp atomic
         __apac_count++;
       }
-#pragma omp task default(shared) depend(in : W, W[0], i, i1, i2[0], in, m, nW, nWdn, out, r, i2) depend(inout : in[0], out[0]) if (__apac_count_ok)
+#pragma omp task default(shared) depend(in : W, W[0], i, i1, i2[0], in, m, nW, nWdn, out, r) depend(inout : in[0], out[0]) if (__apac_count_ok) firstprivate(i2)
       {
         fft_twiddle_gen(i, *i2, in, out, W, nW, nWdn, r, m);
         fft_twiddle_gen(*i2, i1, in, out, W, nW, nWdn, r, m);
@@ -258,7 +258,7 @@ void fft_twiddle_gen(int i, int i1, COMPLEX* in, COMPLEX* out, COMPLEX* W, int n
 #pragma omp atomic
         __apac_count++;
       }
-#pragma omp task default(shared) depend(inout : i2) if (__apac_count_ok)
+#pragma omp task default(shared) depend(inout : i2[0]) if (__apac_count_ok) firstprivate(i2)
       {
         delete i2;
         if (__apac_count_ok) {
@@ -338,7 +338,7 @@ void fft_twiddle_2(int a, int b, COMPLEX* in, COMPLEX* out, COMPLEX* W, int nW, 
 #pragma omp atomic
         __apac_count++;
       }
-#pragma omp task default(shared) depend(in : W, a, ab[0], b, in, in[0], m, nW, nWdn, out, ab) depend(inout : W[0], out[0]) if (__apac_count_ok)
+#pragma omp task default(shared) depend(in : W, W[0], a, ab[0], b, in, in[0], m, nW, nWdn, out) depend(inout : out[0]) if (__apac_count_ok) firstprivate(ab)
       {
         fft_twiddle_2(a, *ab, in, out, W, nW, nWdn, m);
         fft_twiddle_2(*ab, b, in, out, W, nW, nWdn, m);
@@ -351,7 +351,7 @@ void fft_twiddle_2(int a, int b, COMPLEX* in, COMPLEX* out, COMPLEX* W, int nW, 
 #pragma omp atomic
         __apac_count++;
       }
-#pragma omp task default(shared) depend(inout : ab) if (__apac_count_ok)
+#pragma omp task default(shared) depend(inout : ab[0]) if (__apac_count_ok) firstprivate(ab)
       {
         delete ab;
         if (__apac_count_ok) {
@@ -425,7 +425,7 @@ void fft_unshuffle_2(int a, int b, COMPLEX* in, COMPLEX* out, int m) {
 #pragma omp atomic
         __apac_count++;
       }
-#pragma omp task default(shared) depend(in : a, ab[0], b, in, m, out, ab) depend(inout : in[0], out[0]) if (__apac_count_ok)
+#pragma omp task default(shared) depend(in : a, ab[0], b, in, m, out) depend(inout : in[0], out[0]) if (__apac_count_ok) firstprivate(ab)
       {
         fft_unshuffle_2(a, *ab, in, out, m);
         fft_unshuffle_2(*ab, b, in, out, m);
@@ -438,7 +438,7 @@ void fft_unshuffle_2(int a, int b, COMPLEX* in, COMPLEX* out, int m) {
 #pragma omp atomic
         __apac_count++;
       }
-#pragma omp task default(shared) depend(inout : ab) if (__apac_count_ok)
+#pragma omp task default(shared) depend(inout : ab[0]) if (__apac_count_ok) firstprivate(ab)
       {
         delete ab;
         if (__apac_count_ok) {
@@ -591,7 +591,7 @@ void fft_twiddle_4(int a, int b, COMPLEX* in, COMPLEX* out, COMPLEX* W, int nW, 
 #pragma omp atomic
         __apac_count++;
       }
-#pragma omp task default(shared) depend(in : W, a, ab[0], b, in, in[0], m, nW, nWdn, out, ab) depend(inout : W[0], out[0]) if (__apac_count_ok)
+#pragma omp task default(shared) depend(in : W, a, ab[0], b, in, in[0], m, nW, nWdn, out) depend(inout : W[0], out[0]) if (__apac_count_ok) firstprivate(ab)
       {
         fft_twiddle_4(a, *ab, in, out, W, nW, nWdn, m);
         fft_twiddle_4(*ab, b, in, out, W, nW, nWdn, m);
@@ -604,7 +604,7 @@ void fft_twiddle_4(int a, int b, COMPLEX* in, COMPLEX* out, COMPLEX* W, int nW, 
 #pragma omp atomic
         __apac_count++;
       }
-#pragma omp task default(shared) depend(inout : ab) if (__apac_count_ok)
+#pragma omp task default(shared) depend(inout : ab[0]) if (__apac_count_ok) firstprivate(ab)
       {
         delete ab;
         if (__apac_count_ok) {
@@ -718,7 +718,7 @@ void fft_unshuffle_4(int a, int b, COMPLEX* in, COMPLEX* out, int m) {
 #pragma omp atomic
         __apac_count++;
       }
-#pragma omp task default(shared) depend(in : a, ab[0], b, in, m, out, ab) depend(inout : in[0], out[0]) if (__apac_count_ok)
+#pragma omp task default(shared) depend(in : a, ab[0], b, in, m, out) depend(inout : in[0], out[0]) if (__apac_count_ok) firstprivate(ab)
       {
         fft_unshuffle_4(a, *ab, in, out, m);
         fft_unshuffle_4(*ab, b, in, out, m);
@@ -731,7 +731,7 @@ void fft_unshuffle_4(int a, int b, COMPLEX* in, COMPLEX* out, int m) {
 #pragma omp atomic
         __apac_count++;
       }
-#pragma omp task default(shared) depend(inout : ab) if (__apac_count_ok)
+#pragma omp task default(shared) depend(inout : ab[0]) if (__apac_count_ok) firstprivate(ab)
       {
         delete ab;
         if (__apac_count_ok) {
@@ -1058,7 +1058,7 @@ void fft_twiddle_8(int a, int b, COMPLEX* in, COMPLEX* out, COMPLEX* W, int nW, 
 #pragma omp atomic
         __apac_count++;
       }
-#pragma omp task default(shared) depend(in : W, a, ab[0], b, in, in[0], m, nW, nWdn, out, ab) depend(inout : W[0], out[0]) if (__apac_count_ok)
+#pragma omp task default(shared) depend(in : W, a, ab[0], b, in, in[0], m, nW, nWdn, out) depend(inout : W[0], out[0]) if (__apac_count_ok) firstprivate(ab)
       {
         fft_twiddle_8(a, *ab, in, out, W, nW, nWdn, m);
         fft_twiddle_8(*ab, b, in, out, W, nW, nWdn, m);
@@ -1071,7 +1071,7 @@ void fft_twiddle_8(int a, int b, COMPLEX* in, COMPLEX* out, COMPLEX* W, int nW, 
 #pragma omp atomic
         __apac_count++;
       }
-#pragma omp task default(shared) depend(inout : ab) if (__apac_count_ok)
+#pragma omp task default(shared) depend(inout : ab[0]) if (__apac_count_ok) firstprivate(ab)
       {
         delete ab;
         if (__apac_count_ok) {
@@ -1285,7 +1285,7 @@ void fft_unshuffle_8(int a, int b, COMPLEX* in, COMPLEX* out, int m) {
 #pragma omp atomic
         __apac_count++;
       }
-#pragma omp task default(shared) depend(in : a, ab[0], b, in, m, out, ab) depend(inout : in[0], out[0]) if (__apac_count_ok)
+#pragma omp task default(shared) depend(in : a, ab[0], b, in, m, out) depend(inout : in[0], out[0]) if (__apac_count_ok) firstprivate(ab)
       {
         fft_unshuffle_8(a, *ab, in, out, m);
         fft_unshuffle_8(*ab, b, in, out, m);
@@ -1298,7 +1298,7 @@ void fft_unshuffle_8(int a, int b, COMPLEX* in, COMPLEX* out, int m) {
 #pragma omp atomic
         __apac_count++;
       }
-#pragma omp task default(shared) depend(inout : ab) if (__apac_count_ok)
+#pragma omp task default(shared) depend(inout : ab[0]) if (__apac_count_ok) firstprivate(ab)
       {
         delete ab;
         if (__apac_count_ok) {
@@ -2049,7 +2049,7 @@ void fft_twiddle_16(int a, int b, COMPLEX* in, COMPLEX* out, COMPLEX* W, int nW,
 #pragma omp atomic
         __apac_count++;
       }
-#pragma omp task default(shared) depend(in : W, a, ab[0], b, in, in[0], m, nW, nWdn, out, ab) depend(inout : W[0], out[0]) if (__apac_count_ok)
+#pragma omp task default(shared) depend(in : W, a, ab[0], b, in, in[0], m, nW, nWdn, out) depend(inout : W[0], out[0]) if (__apac_count_ok) firstprivate(ab)
       {
         fft_twiddle_16(a, *ab, in, out, W, nW, nWdn, m);
         fft_twiddle_16(*ab, b, in, out, W, nW, nWdn, m);
@@ -2062,7 +2062,7 @@ void fft_twiddle_16(int a, int b, COMPLEX* in, COMPLEX* out, COMPLEX* W, int nW,
 #pragma omp atomic
         __apac_count++;
       }
-#pragma omp task default(shared) depend(inout : ab) if (__apac_count_ok)
+#pragma omp task default(shared) depend(inout : ab[0]) if (__apac_count_ok) firstprivate(ab)
       {
         delete ab;
         if (__apac_count_ok) {
@@ -2516,7 +2516,7 @@ void fft_unshuffle_16(int a, int b, COMPLEX* in, COMPLEX* out, int m) {
 #pragma omp atomic
         __apac_count++;
       }
-#pragma omp task default(shared) depend(in : a, ab[0], b, in, m, out, ab) depend(inout : in[0], out[0]) if (__apac_count_ok)
+#pragma omp task default(shared) depend(in : a, ab[0], b, in, m, out) depend(inout : in[0], out[0]) if (__apac_count_ok) firstprivate(ab)
       {
         fft_unshuffle_16(a, *ab, in, out, m);
         fft_unshuffle_16(*ab, b, in, out, m);
@@ -2529,7 +2529,7 @@ void fft_unshuffle_16(int a, int b, COMPLEX* in, COMPLEX* out, int m) {
 #pragma omp atomic
         __apac_count++;
       }
-#pragma omp task default(shared) depend(inout : ab) if (__apac_count_ok)
+#pragma omp task default(shared) depend(inout : ab[0]) if (__apac_count_ok) firstprivate(ab)
       {
         delete ab;
         if (__apac_count_ok) {
@@ -4288,7 +4288,7 @@ void fft_twiddle_32(int a, int b, COMPLEX* in, COMPLEX* out, COMPLEX* W, int nW,
 #pragma omp atomic
         __apac_count++;
       }
-#pragma omp task default(shared) depend(in : W, a, ab[0], b, in, in[0], m, nW, nWdn, out, ab) depend(inout : W[0], out[0]) if (__apac_count_ok)
+#pragma omp task default(shared) depend(in : W, a, ab[0], b, in, in[0], m, nW, nWdn, out) depend(inout : W[0], out[0]) if (__apac_count_ok) firstprivate(ab)
       {
         fft_twiddle_32(a, *ab, in, out, W, nW, nWdn, m);
         fft_twiddle_32(*ab, b, in, out, W, nW, nWdn, m);
@@ -4301,7 +4301,7 @@ void fft_twiddle_32(int a, int b, COMPLEX* in, COMPLEX* out, COMPLEX* W, int nW,
 #pragma omp atomic
         __apac_count++;
       }
-#pragma omp task default(shared) depend(inout : ab) if (__apac_count_ok)
+#pragma omp task default(shared) depend(inout : ab[0]) if (__apac_count_ok) firstprivate(ab)
       {
         delete ab;
         if (__apac_count_ok) {
@@ -5315,7 +5315,7 @@ void fft_unshuffle_32(int a, int b, COMPLEX* in, COMPLEX* out, int m) {
 #pragma omp atomic
         __apac_count++;
       }
-#pragma omp task default(shared) depend(in : a, ab[0], b, in, m, out, ab) depend(inout : in[0], out[0]) if (__apac_count_ok)
+#pragma omp task default(shared) depend(in : a, ab[0], b, in, m, out) depend(inout : in[0], out[0]) if (__apac_count_ok) firstprivate(ab)
       {
         fft_unshuffle_32(a, *ab, in, out, m);
         fft_unshuffle_32(*ab, b, in, out, m);
@@ -5328,7 +5328,7 @@ void fft_unshuffle_32(int a, int b, COMPLEX* in, COMPLEX* out, int m) {
 #pragma omp atomic
         __apac_count++;
       }
-#pragma omp task default(shared) depend(inout : ab) if (__apac_count_ok)
+#pragma omp task default(shared) depend(inout : ab[0]) if (__apac_count_ok) firstprivate(ab)
       {
         delete ab;
         if (__apac_count_ok) {
@@ -5617,7 +5617,7 @@ void fft_aux(int n, COMPLEX* in, COMPLEX* out, int* factors, COMPLEX* W, int nW)
 #pragma omp atomic
         __apac_count++;
       }
-#pragma omp task default(shared) depend(in : W, in, in[0], m, n, nW, out) depend(inout : W[0], out[0]) if (__apac_count_ok)
+#pragma omp task default(shared) depend(in : W, W[0], in, in[0], m, n, nW, out) depend(inout : out[0]) if (__apac_count_ok)
       {
         fft_twiddle_2(0, m, in, out, W, nW, nW / n, m);
         if (__apac_count_ok) {
@@ -5802,6 +5802,7 @@ void fft(int n, COMPLEX* in, COMPLEX* out) {
           __apac_count--;
         }
       }
+#pragma omp taskwait depend(in : r) depend(inout : factors)
       *p = r;
       p++;
 #pragma omp taskwait depend(in : r) depend(inout : l)

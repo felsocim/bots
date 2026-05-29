@@ -18,7 +18,7 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA            #
 ##############################################################################################
 
-DISABLE_CUTOFF = %time
+DISABLE_CUTOFF = %time %depth %depth-time %count %count-time %count-depth %count-depth-time
 SKIP = verify_queens
 MAIN = find_queens
 

@@ -56,17 +56,17 @@ void nqueens(int n, int j, char* a, int* solutions) {
     csols = (int*)__builtin_alloca(n * sizeof(int));
     memset(csols, 0, n * sizeof(int));
     for (i = 0; i < n; i++) {
-      char* b;
-      b = (char*)malloc(n * sizeof(char));
-      memcpy(b, a, j * sizeof(char));
-      b[j] = (char)i;
-#pragma omp taskwait depend(in : b, j) depend(inout : b[0])
-      if (ok(j + 1, b)) {
-#pragma omp task default(shared) depend(in : b, csols, j, n) depend(inout : b[0], csols[i]) firstprivate(i)
-        nqueens(n, j + 1, b, &csols[i]);
+#pragma omp task default(shared) depend(in : a, a[0], csols, j, n) depend(inout : csols[i]) firstprivate(i)
+      {
+        char* b;
+        b = (char*)malloc(n * sizeof(char));
+        memcpy(b, a, j * sizeof(char));
+        b[j] = (char)i;
+        if (ok(j + 1, b)) {
+          nqueens(n, j + 1, b, &csols[i]);
+        }
+        free(b);
       }
-#pragma omp taskwait depend(in : b) depend(inout : b[0])
-      free(b);
     }
 #pragma omp taskwait
     for (i = 0; i < n; i++) {
@@ -81,16 +81,11 @@ void find_queens(int size) {
 #pragma omp master
 #pragma omp taskgroup
   {
-#pragma omp critical
     total_count = 0;
     bots_message("Computing N-Queens algorithm (n=%d) ", size);
     char* a;
     a = (char*)__builtin_alloca(size * sizeof(char));
-#pragma omp task default(shared) depend(in : a, size) depend(inout : a[0], total_count)
-    {
-#pragma omp critical
-      nqueens(size, 0, a, &total_count);
-    }
+    nqueens(size, 0, a, &total_count);
     bots_message(" completed!\n");
   __apac_exit:;
   }
@@ -98,7 +93,6 @@ void find_queens(int size) {
 
 int verify_queens(int size) {
   if (size > sizeof(solutions) / sizeof(int)) return 0;
-#pragma omp critical
   if (total_count == solutions[size - 1]) return 1;
   return 2;
 }

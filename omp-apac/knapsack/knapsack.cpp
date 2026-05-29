@@ -76,7 +76,6 @@ void knapsack_seq(item_t* e, int c, int n, int v, int* sol) {
     return;
   }
   ub = (double)v + c * e->value / e->weight;
-#pragma omp critical
   if (ub < best_so_far) {
     *sol = -2147483647 - 1;
     return;
@@ -84,7 +83,6 @@ void knapsack_seq(item_t* e, int c, int n, int v, int* sol) {
   knapsack_seq(e + 1, c, n - 1, v, &without);
   knapsack_seq(e + 1, c - e->weight, n - 1, v + e->value, &with);
   best = (with > without ? with : without);
-#pragma omp critical
   if (best > best_so_far) best_so_far = best;
   *sol = best;
 }
@@ -103,7 +101,6 @@ void knapsack_main(item_t* e, int c, int n, int* sol) {
 }
 
 void knapsack_main_seq(item_t* e, int c, int n, int* sol) {
-#pragma omp critical
   best_so_far = -2147483647 - 1;
   knapsack_seq(e, c, n, 0, sol);
   if (bots_verbose_mode) printf("Best value for sequential execution is %d\n\n", *sol);

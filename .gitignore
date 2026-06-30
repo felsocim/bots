@@ -9,3 +9,6 @@ bots-*.tar.gz
 *_profiling.*
 *_invalid.cpp
 tmp_*.cpp
+*~
+\#*\#
+.\#*

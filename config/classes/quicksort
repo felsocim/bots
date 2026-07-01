@@ -1,11 +1,11 @@
 [test]
-inputs=1000000
+inputs=8388608
 
 [small]
-inputs=1000000
+inputs=33554432
 
 [medium]
-inputs=10000000
+inputs=134217728
 
 [large]
-inputs=100000000
+inputs=536870912

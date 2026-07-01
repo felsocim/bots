@@ -25,8 +25,8 @@
 #define BOTS_APP_PARAMETERS_LIST ,bots_arg_size
 
 #define BOTS_APP_USES_ARG_SIZE
-#define BOTS_APP_DEF_ARG_SIZE 10000000
-#define BOTS_APP_DESC_ARG_SIZE "Number of items to sort"
+#define BOTS_APP_DEF_ARG_SIZE (32*1024*1024)
+#define BOTS_APP_DESC_ARG_SIZE "Array size"
 
 int * init(int);
 void sort(int *, int);
